@@ -1,0 +1,17 @@
+[package]
+name = "axum_typed_multipart"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["core", "macros"]
+
+[dependencies]
+axum_typed_multipart_core = { path = "core" }
+axum_typed_multipart_macros = { path = "macros" }
+
+[dev-dependencies]
+axum = "0.6"
+common-multipart-rfc7578 = "0.6"
+futures-util = "0.3"
+tokio = { version = "1.25", features = ["macros"] }
