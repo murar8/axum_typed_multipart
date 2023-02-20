@@ -87,6 +87,7 @@ name = "axum_typed_multipart_core"
 version = "0.0.0"
 dependencies = [
  "axum",
+ "axum_typed_multipart",
 ]
 
 [[package]]
