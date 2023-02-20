@@ -1,47 +1,51 @@
+use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::quote;
-use syn::{parse_macro_input, Data, DataStruct, DeriveInput, Field, Ident, Type};
 
+#[derive(Debug, FromField)]
+#[darling(attributes(form_data))]
 struct FieldData {
-    ident: Ident,
-    ty: Type,
-    name: String,
+    ident: Option<syn::Ident>,
+    ty: syn::Type,
+    field_name: Option<String>,
 }
 
-fn get_field_data(field: Field) -> FieldData {
-    match field.ident {
-        Some(ident) => FieldData {
-            name: ident.clone().to_string(),
-            ident,
-            ty: field.ty,
-        },
-        None => {
-            abort!(field, "all fields must have a name")
-        }
+impl FieldData {
+    fn name(&self) -> String {
+        self.field_name
+            .to_owned()
+            .unwrap_or_else(|| self.ident.as_ref().unwrap().to_string())
     }
 }
 
-#[proc_macro_error]
-#[proc_macro_derive(TryFromMultipart)]
-pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
-    let DeriveInput { ident, data, .. } = parse_macro_input!(input);
+#[derive(Debug, FromDeriveInput)]
+#[darling(attributes(form_data), supports(struct_named))]
+struct InputData {
+    ident: syn::Ident,
+    data: darling::ast::Data<(), FieldData>,
+}
 
-    let fields = match data {
-        Data::Struct(DataStruct { fields, .. }) => fields,
-        Data::Enum(e) => abort!(e.enum_token, "input must be a struct"),
-        Data::Union(u) => abort!(u.union_token, "input must be a struct"),
+#[proc_macro_error]
+#[proc_macro_derive(TryFromMultipart, attributes(form_data))]
+pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    let InputData { ident, data } = match InputData::from_derive_input(&input) {
+        Ok(input) => input,
+        Err(err) => abort!(input, err.to_string()),
     };
 
-    let field_data = fields.into_iter().map(get_field_data).collect::<Vec<_>>();
+    let fields = data.take_struct().unwrap();
 
-    let declarations = field_data.iter().map(|FieldData { ident, ty, .. }| {
+    let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
         quote! {
             let mut #ident: Option<#ty> = None;
         }
     });
 
-    let assignments = field_data.iter().map(|FieldData { ident, ty, name }| {
+    let assignments = fields.iter().map(|field @ FieldData { ident, ty, .. }| {
+        let name = field.name();
         quote! {
             if __field__name__ == #name {
                 #ident = Some(
@@ -51,7 +55,8 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
-    let checks = field_data.iter().map(|FieldData { ident, name, .. }| {
+    let checks = fields.iter().map(|field @ FieldData { ident, .. }| {
+        let name = field.name();
         quote! {
             let #ident = #ident.ok_or(
                 axum_typed_multipart::TypedMultipartError::MissingField(
@@ -61,7 +66,7 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
-    let idents = field_data.iter().map(|FieldData { ident, .. }| ident);
+    let idents = fields.iter().map(|FieldData { ident, .. }| ident);
 
     let output = quote! {
         #[axum::async_trait]
@@ -71,7 +76,6 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
 
                 while let Some(__field__) = multipart.next_field().await? {
                     let __field__name__ = __field__.name().unwrap().to_string();
-
                     #(#assignments) else *
                 }
 

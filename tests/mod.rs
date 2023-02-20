@@ -8,6 +8,7 @@ use futures_util::TryStreamExt;
 #[derive(TryFromMultipart)]
 struct Bar {
     name: String,
+    #[form_data(field_name = "site_url")]
     url: String,
 }
 
@@ -15,7 +16,7 @@ struct Bar {
 async fn test_typed_multipart() {
     let mut form = Form::default();
     form.add_text("name", "john");
-    form.add_text("url", "https://www.rust-lang.org/");
+    form.add_text("site_url", "https://www.rust-lang.org/");
 
     let content_type = form.content_type();
 
