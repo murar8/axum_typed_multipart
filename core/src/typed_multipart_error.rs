@@ -2,36 +2,43 @@ use axum::extract::multipart::{MultipartError, MultipartRejection};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
-    InvalidBody(MultipartRejection),
-    InvalidField(MultipartError),
-    MissingField(String),
+    #[error("request body is malformed")]
+    UnparseableBody {
+        #[from]
+        source: MultipartRejection,
+    },
+
+    #[error("field is malformed")]
+    UnparseableField {
+        #[from]
+        source: MultipartError,
+    },
+
+    #[error("field '{field_name}' must be of type '{field_type}'")]
+    InvalidFieldType {
+        field_name: String,
+        field_type: String,
+    },
+
+    #[error("field '{field_name}' is required")]
+    MissingField { field_name: String },
 }
 
-impl IntoResponse for TypedMultipartError {
-    fn into_response(self) -> Response {
+impl TypedMultipartError {
+    fn get_status(&self) -> StatusCode {
         match self {
-            Self::InvalidBody(e) => e.into_response(),
-            Self::InvalidField(e) => {
-                (StatusCode::UNPROCESSABLE_ENTITY, e.to_string()).into_response()
+            Self::UnparseableField { .. } | Self::UnparseableBody { .. } => {
+                StatusCode::UNPROCESSABLE_ENTITY
             }
-            Self::MissingField(field) => {
-                let message = format!("field '{}' is required", field);
-                (StatusCode::BAD_REQUEST, message).into_response()
-            }
+            Self::InvalidFieldType { .. } | Self::MissingField { .. } => StatusCode::BAD_REQUEST,
         }
     }
 }
 
-impl From<MultipartRejection> for TypedMultipartError {
-    fn from(error: MultipartRejection) -> Self {
-        TypedMultipartError::InvalidBody(error)
-    }
-}
-
-impl From<MultipartError> for TypedMultipartError {
-    fn from(error: MultipartError) -> Self {
-        TypedMultipartError::InvalidField(error)
+impl IntoResponse for TypedMultipartError {
+    fn into_response(self) -> Response {
+        (self.get_status(), self.to_string()).into_response()
     }
 }

@@ -56,12 +56,12 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
     });
 
     let checks = fields.iter().map(|field @ FieldData { ident, .. }| {
-        let name = field.name();
+        let field_name = field.name();
         quote! {
             let #ident = #ident.ok_or(
-                axum_typed_multipart::TypedMultipartError::MissingField(
-                    String::from(#name)
-                )
+                axum_typed_multipart::TypedMultipartError::MissingField {
+                    field_name: String::from(#field_name)
+                }
             )?;
         }
     });
