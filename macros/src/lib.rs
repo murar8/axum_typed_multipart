@@ -13,9 +13,7 @@ struct FieldData {
 
 impl FieldData {
     fn name(&self) -> String {
-        self.field_name
-            .to_owned()
-            .unwrap_or_else(|| self.ident.as_ref().unwrap().to_string())
+        self.field_name.to_owned().unwrap_or_else(|| self.ident.as_ref().unwrap().to_string())
     }
 }
 

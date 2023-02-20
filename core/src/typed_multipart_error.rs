@@ -17,10 +17,7 @@ pub enum TypedMultipartError {
     },
 
     #[error("field '{field_name}' must be of type '{field_type}'")]
-    InvalidFieldType {
-        field_name: String,
-        field_type: String,
-    },
+    InvalidFieldType { field_name: String, field_type: String },
 
     #[error("field '{field_name}' is required")]
     MissingField { field_name: String },
@@ -32,7 +29,9 @@ impl TypedMultipartError {
             Self::UnparseableField { .. } | Self::UnparseableBody { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY
             }
-            Self::InvalidFieldType { .. } | Self::MissingField { .. } => StatusCode::BAD_REQUEST,
+            Self::InvalidFieldType { .. } | Self::MissingField { .. } => {
+                StatusCode::BAD_REQUEST //
+            }
         }
     }
 }

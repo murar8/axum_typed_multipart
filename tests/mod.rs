@@ -30,10 +30,7 @@ async fn test_typed_multipart() {
         .body(body)
         .unwrap();
 
-    let bar = TypedMultipart::<Bar>::from_request(request, &())
-        .await
-        .unwrap()
-        .0;
+    let bar = TypedMultipart::<Bar>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(bar.name, "john");
     assert_eq!(bar.url, "https://www.rust-lang.org/");

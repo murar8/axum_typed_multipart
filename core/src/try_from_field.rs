@@ -10,10 +10,9 @@ use axum::extract::multipart::Field;
 /// ### Example
 ///
 /// ```rust
-/// use axum_typed_multipart::TypedMultipartError;
-/// use axum_typed_multipart::TryFromField;
 /// use axum::async_trait;
 /// use axum::extract::multipart::Field;
+/// use axum_typed_multipart::{TryFromField, TypedMultipartError};
 ///
 /// struct CoolString(String);
 ///
