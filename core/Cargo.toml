@@ -7,6 +7,3 @@ publish = false
 [dependencies]
 axum = { version = "0.6", features = ["multipart"] }
 thiserror = "1.0"
-
-[dev-dependencies]
-axum_typed_multipart = { path = "../" }

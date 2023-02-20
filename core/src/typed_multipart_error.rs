@@ -10,6 +10,7 @@ pub enum TypedMultipartError {
         source: MultipartRejection,
     },
 
+    // TODO: add `field_name` in the error data.
     #[error("field is malformed")]
     UnparseableField {
         #[from]
@@ -26,11 +27,9 @@ pub enum TypedMultipartError {
 impl TypedMultipartError {
     fn get_status(&self) -> StatusCode {
         match self {
+            Self::InvalidFieldType { .. } | Self::MissingField { .. } => StatusCode::BAD_REQUEST,
             Self::UnparseableField { .. } | Self::UnparseableBody { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY
-            }
-            Self::InvalidFieldType { .. } | Self::MissingField { .. } => {
-                StatusCode::BAD_REQUEST //
             }
         }
     }
