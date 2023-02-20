@@ -40,7 +40,7 @@ struct InputData {
 /// #### Arguments
 ///
 /// - `field_name` => Can be used to configure a different name for the source
-/// field in the incoming request.
+///    field in the incoming request.
 #[proc_macro_error]
 #[proc_macro_derive(TryFromMultipart, attributes(form_data))]
 pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {

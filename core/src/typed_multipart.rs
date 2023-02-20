@@ -5,6 +5,7 @@ use axum::extract::{FromRequest, Multipart};
 use axum::http::Request;
 use axum::{async_trait, BoxError};
 
+#[derive(Debug)]
 pub struct TypedMultipart<T>(pub T);
 
 #[async_trait]

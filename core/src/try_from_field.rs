@@ -1,8 +1,7 @@
-use std::any::type_name;
-
 use crate::typed_multipart_error::TypedMultipartError;
 use axum::async_trait;
 use axum::extract::multipart::Field;
+use std::any::type_name;
 
 /// Types that can be created from an instance of [Field].
 ///
