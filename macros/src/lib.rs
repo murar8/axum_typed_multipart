@@ -1,7 +1,10 @@
+mod util;
+
 use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::quote;
+use util::get_option_type;
 
 #[derive(Debug, FromField)]
 #[darling(attributes(form_data))]
@@ -31,13 +34,14 @@ struct InputData {
 /// All fields for the supplied struct must implement the [TryFromField] trait
 /// to be able to derive the trait.
 ///
-/// ## Attributes
+/// An error will be returned if at least one field is missing with the
+/// exception of [Option] types, which will be set as [Option::None].
 ///
-/// ### `form_data`
+/// ## `form_data` attribute
 ///
 /// Can be applied to the struct fields to configure the parser behaviour.
 ///
-/// #### Arguments
+/// ### Arguments
 ///
 /// - `field_name` => Can be used to configure a different name for the source
 ///    field in the incoming request.
@@ -54,13 +58,15 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
     let fields = data.take_struct().unwrap();
 
     let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
+        let ty = get_option_type(ty).unwrap_or(ty);
         quote! {
-            let mut #ident: Option<#ty> = None;
+            let mut #ident: core::option::Option<#ty> = None;
         }
     });
 
     let assignments = fields.iter().map(|field @ FieldData { ident, ty, .. }| {
         let name = field.name();
+        let ty = get_option_type(ty).unwrap_or(ty);
         quote! {
             if __field__name__ == #name {
                 #ident = Some(
@@ -70,7 +76,10 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
-    let checks = fields.iter().map(|field @ FieldData { ident, .. }| {
+    let required_fields =
+        fields.iter().filter(|FieldData { ty, .. }| get_option_type(ty).is_none());
+
+    let checks = required_fields.map(|field @ FieldData { ident, .. }| {
         let field_name = field.name();
         quote! {
             let #ident = #ident.ok_or(

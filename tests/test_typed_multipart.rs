@@ -1,7 +1,7 @@
 use axum::extract::FromRequest;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
-use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
+use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
 
@@ -81,4 +81,59 @@ async fn test_primitive_types() {
     assert_eq!(foo.bool_field, true);
     assert_eq!(foo.char_field, '$');
     assert_eq!(foo.string_field, "Hello, world!");
+}
+
+#[tokio::test]
+async fn test_option_populated() {
+    let mut form = Form::default();
+    form.add_text("option_field_0", "0");
+    form.add_text("option_field_1", "1");
+    form.add_text("option_field_2", "2");
+
+    #[derive(TryFromMultipart)]
+    struct Foo {
+        option_field_0: std::option::Option<u8>,
+        option_field_1: core::option::Option<u8>,
+        option_field_2: Option<u8>,
+    }
+
+    let request = get_request_from_form(form).await;
+    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+
+    assert_eq!(foo.option_field_0, Some(0));
+    assert_eq!(foo.option_field_1, Some(1));
+    assert_eq!(foo.option_field_2, Some(2));
+}
+
+#[tokio::test]
+async fn test_option_empty() {
+    let mut form = Form::default();
+    form.add_text("other_field", "0");
+
+    #[derive(TryFromMultipart)]
+    struct Foo {
+        option_field: Option<u8>,
+    }
+
+    let request = get_request_from_form(form).await;
+    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+
+    assert_eq!(foo.option_field, None);
+}
+
+#[tokio::test]
+async fn test_renamed_field() {
+    let mut form = Form::default();
+    form.add_text("renamed_field", "42");
+
+    #[derive(TryFromMultipart)]
+    struct Foo {
+        #[form_data(field_name = "renamed_field")]
+        field: u8,
+    }
+
+    let request = get_request_from_form(form).await;
+    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+
+    assert_eq!(foo.field, 42);
 }
