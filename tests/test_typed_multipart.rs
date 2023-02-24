@@ -5,6 +5,48 @@ use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
 
+#[derive(TryFromMultipart, Debug)]
+struct Simple {
+    #[allow(dead_code)]
+    field: u8,
+}
+
+#[derive(TryFromMultipart)]
+struct PrimitiveTypes {
+    i8_field: i8,
+    i16_field: i16,
+    i32_field: i32,
+    i64_field: i64,
+    i128_field: i128,
+    isize_field: isize,
+    u8_field: u8,
+    u16_field: u16,
+    u32_field: u32,
+    u64_field: u64,
+    u128_field: u128,
+    usize_field: usize,
+    f32_field: f32,
+    f64_field: f64,
+    bool_field: bool,
+    char_field: char,
+    string_field: String,
+}
+
+/// The fields are declared this way to make sure the derive macro supports
+/// all [Option] signatures.
+#[derive(TryFromMultipart)]
+struct OptionVariants {
+    option_field_0: std::option::Option<u8>,
+    option_field_1: core::option::Option<u8>,
+    option_field_2: Option<u8>,
+}
+
+#[derive(TryFromMultipart)]
+struct Renamed {
+    #[form_data(field_name = "renamed_field")]
+    field: u8,
+}
+
 async fn get_request_from_form<'a>(form: Form<'a>) -> Request<String> {
     let content_type = form.content_type();
 
@@ -40,29 +82,8 @@ async fn test_primitive_types() {
     form.add_text("char_field", "$");
     form.add_text("string_field", "Hello, world!");
 
-    #[derive(TryFromMultipart)]
-    struct Foo {
-        i8_field: i8,
-        i16_field: i16,
-        i32_field: i32,
-        i64_field: i64,
-        i128_field: i128,
-        isize_field: isize,
-        u8_field: u8,
-        u16_field: u16,
-        u32_field: u32,
-        u64_field: u64,
-        u128_field: u128,
-        usize_field: usize,
-        f32_field: f32,
-        f64_field: f64,
-        bool_field: bool,
-        char_field: char,
-        string_field: String,
-    }
-
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let foo = TypedMultipart::<PrimitiveTypes>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(foo.i8_field, -42);
     assert_eq!(foo.i16_field, -42);
@@ -90,15 +111,8 @@ async fn test_option_populated() {
     form.add_text("option_field_1", "1");
     form.add_text("option_field_2", "2");
 
-    #[derive(TryFromMultipart)]
-    struct Foo {
-        option_field_0: std::option::Option<u8>,
-        option_field_1: core::option::Option<u8>,
-        option_field_2: Option<u8>,
-    }
-
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let foo = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(foo.option_field_0, Some(0));
     assert_eq!(foo.option_field_1, Some(1));
@@ -110,15 +124,12 @@ async fn test_option_empty() {
     let mut form = Form::default();
     form.add_text("other_field", "0");
 
-    #[derive(TryFromMultipart)]
-    struct Foo {
-        option_field: Option<u8>,
-    }
-
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let foo = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.option_field, None);
+    assert_eq!(foo.option_field_0, None);
+    assert_eq!(foo.option_field_1, None);
+    assert_eq!(foo.option_field_2, None);
 }
 
 #[tokio::test]
@@ -126,14 +137,8 @@ async fn test_renamed_field() {
     let mut form = Form::default();
     form.add_text("renamed_field", "42");
 
-    #[derive(TryFromMultipart)]
-    struct Foo {
-        #[form_data(field_name = "renamed_field")]
-        field: u8,
-    }
-
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let foo = TypedMultipart::<Renamed>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(foo.field, 42);
 }
@@ -143,9 +148,6 @@ async fn test_invalid_request() {
     let mut form = Form::default();
     form.add_text("field", "hello");
 
-    #[derive(TryFromMultipart, Debug)]
-    struct Foo {}
-
     let request = Request::builder()
         .uri("https://www.rust-lang.org/")
         .method("POST")
@@ -153,7 +155,7 @@ async fn test_invalid_request() {
         .body(String::from(""))
         .unwrap();
 
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = TypedMultipart::<Simple>::from_request(request, &()).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::InvalidRequest { .. }));
 }
@@ -163,9 +165,6 @@ async fn test_invalid_request_body() {
     let mut form = Form::default();
     form.add_text("field", "hello");
 
-    #[derive(TryFromMultipart, Debug)]
-    struct Foo {}
-
     let request = Request::builder()
         .uri("https://www.rust-lang.org/")
         .method("POST")
@@ -173,7 +172,7 @@ async fn test_invalid_request_body() {
         .body(String::from("WRONG_DATA"))
         .unwrap();
 
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = TypedMultipart::<Simple>::from_request(request, &()).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::InvalidRequestBody { .. }));
 }
@@ -183,14 +182,8 @@ async fn test_missing_field() {
     let mut form = Form::default();
     form.add_text("other_field", "42");
 
-    #[derive(TryFromMultipart, Debug)]
-    struct Foo {
-        #[allow(dead_code)]
-        field: u8,
-    }
-
     let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = TypedMultipart::<Simple>::from_request(request, &()).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::MissingField { .. }));
 }
@@ -200,14 +193,8 @@ async fn test_wrong_field_type() {
     let mut form = Form::default();
     form.add_text("field", "hello");
 
-    #[derive(TryFromMultipart, Debug)]
-    struct Foo {
-        #[allow(dead_code)]
-        field: u8,
-    }
-
     let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = TypedMultipart::<Simple>::from_request(request, &()).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::WrongFieldType { .. }));
 }
