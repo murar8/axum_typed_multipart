@@ -29,22 +29,7 @@ struct InputData {
     data: darling::ast::Data<(), FieldData>,
 }
 
-/// Derive the [TryFromMultipart] trait for arbitrary named structs.
-///
-/// All fields for the supplied struct must implement the [TryFromField] trait
-/// to be able to derive the trait.
-///
-/// An error will be returned if at least one field is missing with the
-/// exception of [Option] types, which will be set as [Option::None].
-///
-/// ## `form_data` attribute
-///
-/// Can be applied to the struct fields to configure the parser behaviour.
-///
-/// ### Arguments
-///
-/// - `field_name` => Can be used to configure a different name for the source
-///    field in the incoming request.
+/// Derive the `TryFromMultipart` trait for arbitrary named structs.
 #[proc_macro_error]
 #[proc_macro_derive(TryFromMultipart, attributes(form_data))]
 pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {

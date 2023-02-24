@@ -5,6 +5,28 @@ use axum::extract::{FromRequest, Multipart};
 use axum::http::Request;
 use axum::{async_trait, BoxError};
 
+/// Used as as an argument for [axum handlers](axum::handler::Handler).
+///
+/// Implements [FromRequest] when the generic argument implements the
+/// [TryFromMultipart] trait.
+///
+/// ## Example
+///
+/// ```rust
+/// use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+///
+/// #[derive(TryFromMultipart)]
+/// struct Foo {
+///     name: String,
+///     email: Option<String>,
+///     #[form_data(field_name = "website_url")]
+///     url: Option<String>,
+/// }
+///
+/// async fn handle_foo(TypedMultipart(foo): TypedMultipart<Foo>) {
+///     // ...
+/// }
+/// ```
 #[derive(Debug)]
 pub struct TypedMultipart<T>(pub T);
 

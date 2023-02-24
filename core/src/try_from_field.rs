@@ -6,7 +6,25 @@ use std::any::type_name;
 /// Types that can be created from an instance of [Field].
 ///
 /// All fields for a given struct must implement this trait to be able to derive
-/// the [TryFromMultipart] trait.
+/// the [TryFromMultipart](crate::try_from_multipart::TryFromMultipart) trait.
+///
+/// ## Example
+///
+/// ```rust
+/// use axum::async_trait;
+/// use axum::extract::multipart::Field;
+/// use axum_typed_multipart::{TryFromField, TypedMultipartError};
+///
+/// struct Foo(String);
+///
+/// #[async_trait]
+/// impl<'a> TryFromField<'a> for Foo {
+///     async fn try_from_field(field: Field<'a>) -> Result<Self, TypedMultipartError> {
+///         let text = field.text().await?;
+///         Ok(Foo(text))
+///     }
+/// }
+/// ```
 #[async_trait]
 pub trait TryFromField<'a>: Sized {
     /// Consume the input [Field] to create the supplied type.
@@ -46,7 +64,7 @@ gen_try_from_field_impl!(u128);
 gen_try_from_field_impl!(usize);
 gen_try_from_field_impl!(f32);
 gen_try_from_field_impl!(f64);
-gen_try_from_field_impl!(bool);
+gen_try_from_field_impl!(bool); // TODO?: Consider accepting any thruthy value.
 gen_try_from_field_impl!(char);
 
 #[async_trait]
