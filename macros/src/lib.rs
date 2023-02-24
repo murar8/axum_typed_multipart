@@ -49,13 +49,12 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
-    let assignments = fields.iter().map(|field @ FieldData { ident, ty, .. }| {
+    let assignments = fields.iter().map(|field @ FieldData { ident, .. }| {
         let name = field.name();
-        let ty = get_option_type(ty).unwrap_or(ty);
         quote! {
             if __field__name__ == #name {
                 #ident = Some(
-                    <#ty as axum_typed_multipart::TryFromField>::try_from_field(__field__).await?
+                    axum_typed_multipart::TryFromField::try_from_field(__field__).await?
                 );
             }
         }
