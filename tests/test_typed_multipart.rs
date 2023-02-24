@@ -1,7 +1,7 @@
 use axum::extract::FromRequest;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
-use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
 
@@ -136,4 +136,38 @@ async fn test_renamed_field() {
     let foo = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(foo.field, 42);
+}
+
+#[tokio::test]
+async fn test_missing_field() {
+    let mut form = Form::default();
+    form.add_text("other_field", "42");
+
+    #[derive(TryFromMultipart, Debug)]
+    struct Foo {
+        #[allow(dead_code)]
+        field: u8,
+    }
+
+    let request = get_request_from_form(form).await;
+    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+
+    assert!(matches!(error, TypedMultipartError::MissingField { .. }));
+}
+
+#[tokio::test]
+async fn test_invalid_field_type() {
+    let mut form = Form::default();
+    form.add_text("field", "hello");
+
+    #[derive(TryFromMultipart, Debug)]
+    struct Foo {
+        #[allow(dead_code)]
+        field: u8,
+    }
+
+    let request = get_request_from_form(form).await;
+    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+
+    assert!(matches!(error, TypedMultipartError::InvalidFieldType { .. }));
 }
