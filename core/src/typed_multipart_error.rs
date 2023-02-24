@@ -4,31 +4,31 @@ use axum::response::{IntoResponse, Response};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
-    #[error("request body is malformed")]
-    UnparseableBody {
+    #[error("request is malformed")]
+    InvalidRequest {
         #[from]
         source: MultipartRejection,
     },
 
     // TODO: add `field_name` in the error data.
-    #[error("field is malformed")]
-    UnparseableField {
+    #[error("request body is malformed")]
+    InvalidRequestBody {
         #[from]
         source: MultipartError,
     },
 
-    #[error("field '{field_name}' must be of type '{field_type}'")]
-    InvalidFieldType { field_name: String, field_type: String },
-
     #[error("field '{field_name}' is required")]
     MissingField { field_name: String },
+
+    #[error("field '{field_name}' must be of type '{field_type}'")]
+    WrongFieldType { field_name: String, field_type: String },
 }
 
 impl TypedMultipartError {
     fn get_status(&self) -> StatusCode {
         match self {
-            Self::InvalidFieldType { .. } | Self::MissingField { .. } => StatusCode::BAD_REQUEST,
-            Self::UnparseableField { .. } | Self::UnparseableBody { .. } => {
+            Self::MissingField { .. } | Self::WrongFieldType { .. } => StatusCode::BAD_REQUEST,
+            Self::InvalidRequest { .. } | Self::InvalidRequestBody { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY
             }
         }

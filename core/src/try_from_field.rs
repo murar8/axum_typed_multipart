@@ -41,7 +41,7 @@ macro_rules! gen_try_from_field_impl {
                 let field_name = field.name().unwrap().to_string();
                 let text = field.text().await?;
 
-                str::parse(&text).map_err(move |_| TypedMultipartError::InvalidFieldType {
+                str::parse(&text).map_err(move |_| TypedMultipartError::WrongFieldType {
                     field_name,
                     field_type: type_name::<$type>().to_string(),
                 })

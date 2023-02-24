@@ -139,6 +139,46 @@ async fn test_renamed_field() {
 }
 
 #[tokio::test]
+async fn test_invalid_request() {
+    let mut form = Form::default();
+    form.add_text("field", "hello");
+
+    #[derive(TryFromMultipart, Debug)]
+    struct Foo {}
+
+    let request = Request::builder()
+        .uri("https://www.rust-lang.org/")
+        .method("POST")
+        .header(CONTENT_TYPE, "multipart/form-data") // Missing boundary.
+        .body(String::from(""))
+        .unwrap();
+
+    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+
+    assert!(matches!(error, TypedMultipartError::InvalidRequest { .. }));
+}
+
+#[tokio::test]
+async fn test_invalid_request_body() {
+    let mut form = Form::default();
+    form.add_text("field", "hello");
+
+    #[derive(TryFromMultipart, Debug)]
+    struct Foo {}
+
+    let request = Request::builder()
+        .uri("https://www.rust-lang.org/")
+        .method("POST")
+        .header(CONTENT_TYPE, "multipart/form-data; boundary=BOUNDARY")
+        .body(String::from("WRONG_DATA"))
+        .unwrap();
+
+    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+
+    assert!(matches!(error, TypedMultipartError::InvalidRequestBody { .. }));
+}
+
+#[tokio::test]
 async fn test_missing_field() {
     let mut form = Form::default();
     form.add_text("other_field", "42");
@@ -156,7 +196,7 @@ async fn test_missing_field() {
 }
 
 #[tokio::test]
-async fn test_invalid_field_type() {
+async fn test_wrong_field_type() {
     let mut form = Form::default();
     form.add_text("field", "hello");
 
@@ -169,5 +209,5 @@ async fn test_invalid_field_type() {
     let request = get_request_from_form(form).await;
     let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
 
-    assert!(matches!(error, TypedMultipartError::InvalidFieldType { .. }));
+    assert!(matches!(error, TypedMultipartError::WrongFieldType { .. }));
 }
