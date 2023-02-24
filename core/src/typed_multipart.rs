@@ -42,7 +42,7 @@ where
     type Rejection = TypedMultipartError;
 
     async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
-        let multipart = Multipart::from_request(req, state).await?;
+        let multipart = &mut Multipart::from_request(req, state).await?;
         let data = T::try_from_multipart(multipart).await?;
         Ok(Self(data))
     }
