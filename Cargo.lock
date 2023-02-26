@@ -79,6 +79,7 @@ dependencies = [
  "axum_typed_multipart_macros",
  "common-multipart-rfc7578",
  "futures-util",
+ "mime",
  "tokio",
 ]
 

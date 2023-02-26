@@ -2,13 +2,27 @@ use axum::extract::FromRequest;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
+use axum_typed_multipart_core::field_data::FieldData;
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
+use std::io::BufReader;
 
 #[derive(TryFromMultipart, Debug)]
 struct Simple {
     #[allow(dead_code)]
     field: u8,
+}
+
+#[derive(TryFromMultipart)]
+struct Renamed {
+    #[form_data(field_name = "renamed_field")]
+    field: u8,
+}
+
+#[derive(TryFromMultipart)]
+struct FileUpload {
+    #[form_data(field_name = "input_file")]
+    file: FieldData<String>,
 }
 
 #[derive(TryFromMultipart)]
@@ -39,12 +53,6 @@ struct OptionVariants {
     option_field_0: std::option::Option<u8>,
     option_field_1: core::option::Option<u8>,
     option_field_2: Option<u8>,
-}
-
-#[derive(TryFromMultipart)]
-struct Renamed {
-    #[form_data(field_name = "renamed_field")]
-    field: u8,
 }
 
 async fn get_request_from_form<'a>(form: Form<'a>) -> Request<String> {
@@ -197,4 +205,24 @@ async fn test_wrong_field_type() {
     let error = TypedMultipart::<Simple>::from_request(request, &()).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::WrongFieldType { .. }));
+}
+
+#[tokio::test]
+async fn test_field_data() {
+    let mut form = Form::default();
+
+    form.add_reader_file_with_mime(
+        "input_file",
+        BufReader::new("Potato!".as_bytes()),
+        "index.html",
+        mime::TEXT_PLAIN,
+    );
+
+    let request = get_request_from_form(form).await;
+    let foo = TypedMultipart::<FileUpload>::from_request(request, &()).await.unwrap().0;
+
+    assert_eq!(foo.file.metadata.name, "input_file");
+    assert_eq!(foo.file.metadata.file_name, Some(String::from("index.html")));
+    assert_eq!(foo.file.metadata.content_type, Some(String::from("text/plain")));
+    assert_eq!(foo.file.contents, "Potato!");
 }

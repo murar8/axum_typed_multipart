@@ -14,4 +14,5 @@ axum_typed_multipart_macros = { path = "macros" }
 axum = "0.6"
 common-multipart-rfc7578 = "0.6"
 futures-util = "0.3"
+mime = "0.3.16"
 tokio = { version = "1.25", features = ["macros"] }
