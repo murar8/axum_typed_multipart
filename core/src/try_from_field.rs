@@ -18,17 +18,17 @@ use std::any::type_name;
 /// struct Foo(String);
 ///
 /// #[async_trait]
-/// impl<'a> TryFromField<'a> for Foo {
-///     async fn try_from_field(field: Field<'a>) -> Result<Self, TypedMultipartError> {
+/// impl TryFromField for Foo {
+///     async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
 ///         let text = field.text().await?;
 ///         Ok(Foo(text))
 ///     }
 /// }
 /// ```
 #[async_trait]
-pub trait TryFromField<'a>: Sized {
+pub trait TryFromField: Sized {
     /// Consume the input [Field] to create the supplied type.
-    async fn try_from_field(field: Field<'a>) -> Result<Self, TypedMultipartError>;
+    async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError>;
 }
 
 /// Generate a [TryFromField] implementation for the supplied type using the
@@ -36,8 +36,8 @@ pub trait TryFromField<'a>: Sized {
 macro_rules! gen_try_from_field_impl {
     ( $type: ty ) => {
         #[async_trait]
-        impl<'a> TryFromField<'a> for $type {
-            async fn try_from_field(field: Field<'a>) -> Result<Self, TypedMultipartError> {
+        impl TryFromField for $type {
+            async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
                 let field_name = field.name().unwrap().to_string();
                 let text = field.text().await?;
 
@@ -68,8 +68,8 @@ gen_try_from_field_impl!(bool); // TODO?: Consider accepting any thruthy value.
 gen_try_from_field_impl!(char);
 
 #[async_trait]
-impl<'a> TryFromField<'a> for String {
-    async fn try_from_field(field: Field<'a>) -> Result<Self, TypedMultipartError> {
+impl TryFromField for String {
+    async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
         let text = field.text().await?;
         Ok(text)
     }
