@@ -1,11 +1,14 @@
 use crate::field_metadata::FieldMetadata;
 
 /// Wrapper struct that allows to retrieve both the field contents and the
-/// additional information uploaded in the form.
+/// additional metadata provided by the client.
+///
+/// This is mainly useful for file uploads but can be used for every field where
+/// you need access to the metadata.
 ///
 /// If the generic argument implements
-/// [TryFromField](axum_typed_multipart::try_from_field::TryFromField) the
-/// struct will implement the trait itself.
+/// [TryFromField](crate::try_from_field::TryFromField) the struct will
+/// implement the trait itself.
 ///
 /// ## Example
 ///

@@ -221,7 +221,7 @@ async fn test_field_data() {
     let request = get_request_from_form(form).await;
     let foo = TypedMultipart::<FileUpload>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.file.metadata.name, "input_file");
+    assert_eq!(foo.file.metadata.name, Some(String::from("input_file")));
     assert_eq!(foo.file.metadata.file_name, Some(String::from("index.html")));
     assert_eq!(foo.file.metadata.content_type, Some(String::from("text/plain")));
     assert_eq!(foo.file.contents, "Potato!");

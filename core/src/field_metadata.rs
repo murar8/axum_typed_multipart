@@ -5,10 +5,16 @@ use axum::http::HeaderMap;
 pub struct FieldMetadata {
     /// Name of the HTML field in the form.
     ///
+    /// If the [TryFromMultipart](crate::try_from_multipart::TryFromMultipart)
+    /// implementation for the struct where this field is used was generated
+    /// using the derive macro it will make it safe to unwrap this value since
+    /// the field name must always be present to allow for mapping it to a
+    /// struct field.
+    ///
     /// Extracted from the
     /// [`Content-Disposition`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition)
     /// header.
-    pub name: String,
+    pub name: Option<String>,
 
     /// Original name of the file transmitted.
     ///
@@ -35,7 +41,7 @@ pub struct FieldMetadata {
 impl From<&Field<'_>> for FieldMetadata {
     fn from(field: &Field) -> Self {
         Self {
-            name: field.name().unwrap().to_string(),
+            name: field.name().map(String::from),
             file_name: field.file_name().map(String::from),
             content_type: field.content_type().map(String::from),
             headers: field.headers().clone(),
