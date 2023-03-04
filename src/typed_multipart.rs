@@ -1,5 +1,4 @@
-use crate::try_from_multipart::TryFromMultipart;
-use crate::typed_multipart_error::TypedMultipartError;
+use crate::{TryFromMultipart, TypedMultipartError};
 use axum::body::{Bytes, HttpBody};
 use axum::extract::{FromRequest, Multipart};
 use axum::http::Request;

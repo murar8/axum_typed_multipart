@@ -80,30 +80,20 @@ dependencies = [
 name = "axum_typed_multipart"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axum",
- "axum_typed_multipart_core",
  "axum_typed_multipart_macros",
  "common-multipart-rfc7578",
  "futures-util",
  "mime",
  "tempfile",
+ "thiserror",
  "tokio",
 ]
 
 [[package]]
-name = "axum_typed_multipart_core"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum",
- "axum_typed_multipart",
- "tempfile",
- "thiserror",
-]
-
-[[package]]
 name = "axum_typed_multipart_macros"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "darling",
  "proc-macro-error",

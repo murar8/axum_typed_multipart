@@ -5,7 +5,7 @@ use axum::http::HeaderMap;
 pub struct FieldMetadata {
     /// Name of the HTML field in the form.
     ///
-    /// If the [TryFromMultipart](crate::try_from_multipart::TryFromMultipart)
+    /// If the [TryFromMultipart](crate::TryFromMultipart)
     /// implementation for the struct where this field is used was generated
     /// using the derive macro it will make it safe to unwrap this value since
     /// the field name must always be present to allow for mapping it to a

@@ -1,4 +1,4 @@
-use crate::typed_multipart_error::TypedMultipartError;
+use crate::TypedMultipartError;
 use axum::async_trait;
 use axum::extract::multipart::Field;
 use std::any::type_name;
@@ -6,7 +6,7 @@ use std::any::type_name;
 /// Types that can be created from an instance of [Field].
 ///
 /// All fields for a given struct must implement this trait to be able to derive
-/// the [TryFromMultipart](crate::try_from_multipart::TryFromMultipart) trait.
+/// the [TryFromMultipart](crate::TryFromMultipart) trait.
 ///
 /// ## Example
 ///

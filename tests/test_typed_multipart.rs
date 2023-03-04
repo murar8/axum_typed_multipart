@@ -1,9 +1,9 @@
 use axum::extract::FromRequest;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
-use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
-use axum_typed_multipart_core::field_data::FieldData;
-use axum_typed_multipart_core::temp_file::TempFile;
+use axum_typed_multipart::{
+    FieldData, TempFile, TryFromMultipart, TypedMultipart, TypedMultipartError,
+};
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
 use std::fs::read_to_string;

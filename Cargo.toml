@@ -8,14 +8,16 @@ edition = "2021"
 version = "0.1.0"
 
 [workspace]
-members = ["core", "macros"]
+members = ["macros"]
 
 [dependencies]
-axum_typed_multipart_core = { path = "core" }
-axum_typed_multipart_macros = { path = "macros" }
+anyhow = "1.0"
+axum = { version = "0.6", features = ["multipart"] }
+axum_typed_multipart_macros = { version = "0.1.0", path = "macros" }
+tempfile = "3.4"
+thiserror = "1.0"
 
 [dev-dependencies]
-axum = { version = "0.6", features = ["multipart"] }
 common-multipart-rfc7578 = "0.6"
 futures-util = "0.3"
 mime = "0.3"

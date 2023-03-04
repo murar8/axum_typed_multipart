@@ -1,11 +1,11 @@
-use crate::typed_multipart_error::TypedMultipartError;
+use crate::TypedMultipartError;
 use axum::async_trait;
 use axum::extract::Multipart;
 
 /// Types that can be created from an instance of [Multipart].
 ///
 /// Structs that implement this trait can be used as type parameters for
-/// [TypedMultipart](crate::typed_multipart::TypedMultipart) allowing to
+/// [TypedMultipart](crate::TypedMultipart) allowing to
 /// generate the supplied struct from the request data.
 ///
 /// ## Derive macro
@@ -14,7 +14,7 @@ use axum::extract::Multipart;
 /// macro.
 ///
 /// All fields for the supplied struct must implement the
-/// [TryFromField](crate::try_from_field::TryFromField) trait to be able to
+/// [TryFromField](crate::TryFromField) trait to be able to
 /// derive the trait.
 ///
 /// An error will be returned if at least one field is missing, with the

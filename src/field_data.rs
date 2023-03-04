@@ -1,6 +1,4 @@
-use crate::field_metadata::FieldMetadata;
-use crate::try_from_field::TryFromField;
-use crate::typed_multipart_error::TypedMultipartError;
+use crate::{FieldMetadata, TryFromField, TypedMultipartError};
 use axum::async_trait;
 use axum::extract::multipart::Field;
 
@@ -11,7 +9,7 @@ use axum::extract::multipart::Field;
 /// you need access to the metadata.
 ///
 /// If the generic argument implements
-/// [TryFromField](crate::try_from_field::TryFromField) the struct will
+/// [TryFromField](crate::TryFromField) the struct will
 /// implement the trait itself.
 ///
 /// ## Example
