@@ -63,7 +63,7 @@ struct OptionVariants {
     option_field_2: Option<u8>,
 }
 
-async fn get_request_from_form<'a>(form: Form<'a>) -> Request<String> {
+async fn get_request_from_form(form: Form<'_>) -> Request<String> {
     let content_type = form.content_type();
 
     let body = Body::from(form).try_concat().await.unwrap();
@@ -99,25 +99,25 @@ async fn test_primitive_types() {
     form.add_text("string_field", "Hello, world!");
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<PrimitiveTypes>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<PrimitiveTypes>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.i8_field, -42);
-    assert_eq!(foo.i16_field, -42);
-    assert_eq!(foo.i32_field, -42);
-    assert_eq!(foo.i64_field, -42);
-    assert_eq!(foo.i128_field, -42);
-    assert_eq!(foo.isize_field, -42);
-    assert_eq!(foo.u8_field, 42);
-    assert_eq!(foo.u16_field, 42);
-    assert_eq!(foo.u32_field, 42);
-    assert_eq!(foo.u64_field, 42);
-    assert_eq!(foo.u128_field, 42);
-    assert_eq!(foo.usize_field, 42);
-    assert_eq!(foo.f32_field, 42.5);
-    assert_eq!(foo.f64_field, 42.5);
-    assert_eq!(foo.bool_field, true);
-    assert_eq!(foo.char_field, '$');
-    assert_eq!(foo.string_field, "Hello, world!");
+    assert_eq!(data.i8_field, -42);
+    assert_eq!(data.i16_field, -42);
+    assert_eq!(data.i32_field, -42);
+    assert_eq!(data.i64_field, -42);
+    assert_eq!(data.i128_field, -42);
+    assert_eq!(data.isize_field, -42);
+    assert_eq!(data.u8_field, 42);
+    assert_eq!(data.u16_field, 42);
+    assert_eq!(data.u32_field, 42);
+    assert_eq!(data.u64_field, 42);
+    assert_eq!(data.u128_field, 42);
+    assert_eq!(data.usize_field, 42);
+    assert_eq!(data.f32_field, 42.5);
+    assert_eq!(data.f64_field, 42.5);
+    assert!(data.bool_field);
+    assert_eq!(data.char_field, '$');
+    assert_eq!(data.string_field, "Hello, world!");
 }
 
 #[tokio::test]
@@ -128,11 +128,11 @@ async fn test_option_populated() {
     form.add_text("option_field_2", "2");
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.option_field_0, Some(0));
-    assert_eq!(foo.option_field_1, Some(1));
-    assert_eq!(foo.option_field_2, Some(2));
+    assert_eq!(data.option_field_0, Some(0));
+    assert_eq!(data.option_field_1, Some(1));
+    assert_eq!(data.option_field_2, Some(2));
 }
 
 #[tokio::test]
@@ -141,11 +141,11 @@ async fn test_option_empty() {
     form.add_text("other_field", "0");
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.option_field_0, None);
-    assert_eq!(foo.option_field_1, None);
-    assert_eq!(foo.option_field_2, None);
+    assert_eq!(data.option_field_0, None);
+    assert_eq!(data.option_field_1, None);
+    assert_eq!(data.option_field_2, None);
 }
 
 #[tokio::test]
@@ -154,9 +154,9 @@ async fn test_renamed_field() {
     form.add_text("renamed_field", "42");
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<Renamed>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<Renamed>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.field, 42);
+    assert_eq!(data.field, 42);
 }
 
 #[tokio::test]
@@ -227,12 +227,12 @@ async fn test_field_data() {
     );
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<FileUploadMemory>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<FileUploadMemory>::from_request(request, &()).await.unwrap().0;
 
-    assert_eq!(foo.file.metadata.name, Some(String::from("input_file")));
-    assert_eq!(foo.file.metadata.file_name, Some(String::from("potato.txt")));
-    assert_eq!(foo.file.metadata.content_type, Some(String::from("text/plain")));
-    assert_eq!(foo.file.contents, "Potato!");
+    assert_eq!(data.file.metadata.name, Some(String::from("input_file")));
+    assert_eq!(data.file.metadata.file_name, Some(String::from("potato.txt")));
+    assert_eq!(data.file.metadata.content_type, Some(String::from("text/plain")));
+    assert_eq!(data.file.contents, "Potato!");
 }
 
 #[tokio::test]
@@ -247,12 +247,12 @@ async fn test_temp_file() {
     );
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<FileUploadFS>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<FileUploadFS>::from_request(request, &()).await.unwrap().0;
 
     let temp_dir = tempdir().unwrap();
     let file_path = temp_dir.path().join("potato.txt");
 
-    foo.file.persist(&file_path, false).await.unwrap();
+    data.file.persist(&file_path, false).await.unwrap();
 
     let data = read_to_string(&file_path).unwrap();
 

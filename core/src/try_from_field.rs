@@ -1,5 +1,3 @@
-use crate::field_data::FieldData;
-use crate::field_metadata::FieldMetadata;
 use crate::typed_multipart_error::TypedMultipartError;
 use axum::async_trait;
 use axum::extract::multipart::Field;
@@ -45,7 +43,7 @@ macro_rules! gen_try_from_field_impl {
 
                 str::parse(&text).map_err(move |_| TypedMultipartError::WrongFieldType {
                     field_name,
-                    field_type: type_name::<$type>().to_string(),
+                    wanted_type: type_name::<$type>().to_string(),
                 })
             }
         }
@@ -82,14 +80,5 @@ impl TryFromField for Vec<u8> {
     async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
         let bytes = field.bytes().await?.to_vec();
         Ok(bytes)
-    }
-}
-
-#[async_trait]
-impl<T: TryFromField> TryFromField for FieldData<T> {
-    async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
-        let metadata = FieldMetadata::from(&field);
-        let contents = T::try_from_field(field).await?;
-        Ok(Self { metadata, contents })
     }
 }

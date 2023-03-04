@@ -7,10 +7,10 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::{NamedTempFile, PersistError};
 
-/// Save the field data on a temporary file.
+/// Stream the field data on the file system using a temporary file.
 ///
-/// Once the data is saved it will be useless until it is persisted to the file
-/// system using the `persist` method.
+/// Once the data is saved you must save it permanently to the file system using
+/// the `persist` method.
 ///
 /// This is especially useful for large file uploads where you might not be able
 /// to store all the file contents into memory.
@@ -27,21 +27,20 @@ use tempfile::{NamedTempFile, PersistError};
 /// struct FileUpload {
 ///     file: TempFile,
 /// }
-///
-/// fn handler(TypedMultipart(data): TypedMultipart<FileUpload>) {
-///     // ...
-/// }
 /// ```
 pub struct TempFile(NamedTempFile);
 
 impl TempFile {
     /// Persist the data permanently at the supplied `path`.
+    ///
+    /// When `replace` is `true` the file at the target path will be replaced if
+    /// it exists.
     pub async fn persist<P: AsRef<Path>>(
         self,
         path: P,
-        overwrite: bool,
+        replace: bool,
     ) -> Result<File, PersistError> {
-        match overwrite {
+        match replace {
             true => self.0.persist(path),
             false => self.0.persist_noclobber(path),
         }

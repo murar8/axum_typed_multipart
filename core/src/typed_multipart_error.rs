@@ -19,8 +19,8 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' is required")]
     MissingField { field_name: String },
 
-    #[error("field '{field_name}' must be of type '{field_type}'")]
-    WrongFieldType { field_name: String, field_type: String },
+    #[error("field '{field_name}' must be of type '{wanted_type}'")]
+    WrongFieldType { field_name: String, wanted_type: String },
 
     #[error(transparent)]
     Other {
