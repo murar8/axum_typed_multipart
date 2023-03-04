@@ -10,7 +10,6 @@ pub enum TypedMultipartError {
         source: MultipartRejection,
     },
 
-    // TODO: add `field_name` in the error data.
     #[error("request body is malformed")]
     InvalidRequestBody {
         #[from]
@@ -22,11 +21,18 @@ pub enum TypedMultipartError {
 
     #[error("field '{field_name}' must be of type '{field_type}'")]
     WrongFieldType { field_name: String, field_type: String },
+
+    #[error(transparent)]
+    Other {
+        #[from]
+        source: anyhow::Error,
+    },
 }
 
 impl TypedMultipartError {
     fn get_status(&self) -> StatusCode {
         match self {
+            Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             Self::MissingField { .. } | Self::WrongFieldType { .. } => StatusCode::BAD_REQUEST,
             Self::InvalidRequest { .. } | Self::InvalidRequestBody { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY

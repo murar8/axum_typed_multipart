@@ -11,8 +11,9 @@ axum_typed_multipart_core = { path = "core" }
 axum_typed_multipart_macros = { path = "macros" }
 
 [dev-dependencies]
-axum = "0.6"
+axum = { version = "0.6", features = ["multipart"] }
 common-multipart-rfc7578 = "0.6"
 futures-util = "0.3"
-mime = "0.3.16"
+mime = "0.3"
+tempfile = "3.4"
 tokio = { version = "1.25", features = ["macros"] }

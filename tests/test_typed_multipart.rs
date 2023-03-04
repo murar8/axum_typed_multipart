@@ -3,9 +3,12 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
 use axum_typed_multipart_core::field_data::FieldData;
+use axum_typed_multipart_core::temp_file::TempFile;
 use common_multipart_rfc7578::client::multipart::{Body, Form};
 use futures_util::TryStreamExt;
+use std::fs::read_to_string;
 use std::io::BufReader;
+use tempfile::tempdir;
 
 #[derive(TryFromMultipart, Debug)]
 struct Simple {
@@ -20,9 +23,14 @@ struct Renamed {
 }
 
 #[derive(TryFromMultipart)]
-struct FileUpload {
+struct FileUploadMemory {
     #[form_data(field_name = "input_file")]
     file: FieldData<String>,
+}
+
+#[derive(TryFromMultipart)]
+struct FileUploadFS {
+    file: TempFile,
 }
 
 #[derive(TryFromMultipart)]
@@ -214,15 +222,39 @@ async fn test_field_data() {
     form.add_reader_file_with_mime(
         "input_file",
         BufReader::new("Potato!".as_bytes()),
-        "index.html",
+        "potato.txt",
         mime::TEXT_PLAIN,
     );
 
     let request = get_request_from_form(form).await;
-    let foo = TypedMultipart::<FileUpload>::from_request(request, &()).await.unwrap().0;
+    let foo = TypedMultipart::<FileUploadMemory>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(foo.file.metadata.name, Some(String::from("input_file")));
-    assert_eq!(foo.file.metadata.file_name, Some(String::from("index.html")));
+    assert_eq!(foo.file.metadata.file_name, Some(String::from("potato.txt")));
     assert_eq!(foo.file.metadata.content_type, Some(String::from("text/plain")));
     assert_eq!(foo.file.contents, "Potato!");
+}
+
+#[tokio::test]
+async fn test_temp_file() {
+    let mut form = Form::default();
+
+    form.add_reader_file_with_mime(
+        "file",
+        BufReader::new("Potato!".as_bytes()),
+        "potato.txt",
+        mime::TEXT_PLAIN,
+    );
+
+    let request = get_request_from_form(form).await;
+    let foo = TypedMultipart::<FileUploadFS>::from_request(request, &()).await.unwrap().0;
+
+    let temp_dir = tempdir().unwrap();
+    let file_path = temp_dir.path().join("potato.txt");
+
+    foo.file.persist(&file_path, false).await.unwrap();
+
+    let data = read_to_string(&file_path).unwrap();
+
+    assert_eq!(data, "Potato!");
 }

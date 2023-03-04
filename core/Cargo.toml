@@ -5,7 +5,9 @@ edition = "2021"
 publish = false
 
 [dependencies]
+anyhow = "1.0"
 axum = { version = "0.6", features = ["multipart"] }
+tempfile = "3.4"
 thiserror = "1.0"
 
 [dev-dependencies]
