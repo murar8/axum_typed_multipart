@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
 [![](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
-[![](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml)
+[![](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml)
 
 Helper library for the [axum framework](https://github.com/tokio-rs/axum) designed to allow you to parse the `multipart/form-data` body of the supplied request into an arbitrary struct.
 
