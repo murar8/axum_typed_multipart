@@ -79,9 +79,13 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: cargo-edit
 
       - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-edit
 
       - uses: actions-rs/cargo@v1
         with:
