@@ -7,7 +7,7 @@ authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
 edition = "2021"
 version = "0.1.1"
 categories = ["web-programming"]
-keywords = ["axum", "multipart", "form-data", "multipart/form-data"]
+keywords = ["axum", "multipart", "form"]
 
 [workspace]
 members = ["macros"]
