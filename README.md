@@ -10,6 +10,12 @@ Helper library for the [axum framework](https://github.com/tokio-rs/axum) design
 
 Documentation and installation instructions are available on [docs.rs](https://docs.rs/axum_typed_multipart)
 
+## Release process
+
+Direct push to the `main` branch is not allowed, any updates require a pull request to be opened. After all status checks pass the PR will be eligible for review and merge.
+
+If a [SemVer](https://semver.org/) compatible git tag is pushed to the repo a new version of the package will be published to [crates.io].
+
 ## Improvements
 
 - Allow populating optional fields using the `std::default::Default` implementation for the type.

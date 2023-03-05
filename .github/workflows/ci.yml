@@ -1,6 +1,6 @@
 on:
   pull_request: { branches: [main] }
-  push: { branches: [main] }
+  push: { tags: ["[0-9]+.[0-9]+.[0-9]+"] }
 
 env:
   RUSTFLAGS: -Dwarnings # Make sure CI fails on all warnings.
@@ -62,7 +62,7 @@ jobs:
           args: --workspace --all-features --all-targets
 
   publish:
-    if: github.event_name != 'pull_request'
+    if: startsWith(github.event.ref, 'refs/tags/')
 
     needs:
       - lint
@@ -79,8 +79,14 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          components: cargo-edit
 
       - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: set-version
+          args: --workspace "${{ github.ref_name }}"
 
       - uses: actions-rs/cargo@v1
         with:
