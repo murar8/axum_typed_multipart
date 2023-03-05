@@ -1,57 +1,93 @@
 on:
-  pull_request: { branches: ["main"] }
-  push: { branches: ["main"] }
+  pull_request: { branches: [main] }
+  push: { branches: [main] }
+
+env:
+  RUSTFLAGS: -Dwarnings # Make sure CI fails on all warnings.
 
 jobs:
-  deploy:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: "actions/checkout@v3"
+      - uses: actions/checkout@v3
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with: { toolchain: "stable" }
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
-      - name: Restore Cargo Cache
-        uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
 
-      - name: Check Format
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all --check
 
-      - name: Clippy
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --workspace --all-features --no-deps
+          args: --workspace --all-features --all-targets --no-deps
 
-      - name: Check Docs
-        uses: actions-rs/cargo@v1
+      - uses: actions-rs/cargo@v1
         with:
           command: doc
           args: --workspace --all-features
 
-      - name: Test
-        uses: actions-rs/cargo@v1
+  test:
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --workspace --all-features --all-targets
 
-      - name: Publish Macros
-        if: github.event_name != 'pull_request'
-        uses: actions-rs/cargo@v1
-        env: { CARGO_REGISTRY_TOKEN: "${{secrets.CARGO_REGISTRY_TOKEN}}" }
-        with:
-          command: publish
-          args: --package axum_typed_multipart_macros
+  publish:
+    if: github.event_name != 'pull_request'
 
-      - name: Publish Core
-        if: github.event_name != 'pull_request'
-        uses: actions-rs/cargo@v1
-        env: { CARGO_REGISTRY_TOKEN: "${{secrets.CARGO_REGISTRY_TOKEN}}" }
+    needs:
+      - lint
+      - test
+
+    env:
+      CARGO_REGISTRY_TOKEN: ${{secrets.CARGO_REGISTRY_TOKEN}}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
         with:
           command: publish
+          args: --locked --package axum_typed_multipart_macros
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --locked
