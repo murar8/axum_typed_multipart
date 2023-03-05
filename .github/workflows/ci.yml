@@ -84,16 +84,6 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         with:
-          command: install
-          args: cargo-edit
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: set-version
-          args: --workspace "${{ github.ref_name }}"
-
-      - uses: actions-rs/cargo@v1
-        with:
           command: publish
           args: --locked --package axum_typed_multipart_macros
 
