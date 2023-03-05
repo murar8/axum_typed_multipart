@@ -2,7 +2,16 @@
 //! designed to allow you to parse the `multipart/form-data` body of the
 //! supplied request into an arbitrary struct.
 //!
+//! **This library is still under heavy development and is subject to change
+//! without notice.**
+//!
 //! ## Usage
+//!
+//! ### Installation
+//!
+//! ```bash
+//! cargo add axum_typed_multipart
+//! ```
 //!
 //! ### Getting started
 //!
