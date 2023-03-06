@@ -18,7 +18,7 @@ When a [SemVer](https://semver.org/) compatible git tag is pushed to the repo a 
 
 Direct push to the `main` branch is not allowed, any updates require a pull request to be opened. After all status checks pass the PR will be eligible for review and merge.
 
-Commit messages should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification.
+Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification.
 
 ## Improvements
 
