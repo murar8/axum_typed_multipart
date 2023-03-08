@@ -22,7 +22,6 @@ Commit messages should follow the [Conventional Commits](https://www.conventiona
 
 ## Improvements
 
-- Allow populating optional fields using the `std::default::Default` implementation for the type.
 - Allow for setting an arbitrary default value for optional fields.
 
 ## License

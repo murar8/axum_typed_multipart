@@ -12,6 +12,8 @@ struct FieldData {
     ident: Option<syn::Ident>,
     ty: syn::Type,
     field_name: Option<String>,
+    #[darling(default)]
+    default: bool,
 }
 
 impl FieldData {
@@ -42,10 +44,18 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
 
     let fields = data.take_struct().unwrap();
 
-    let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
+    let declarations = fields.iter().map(|FieldData { ident, ty, default, .. }| {
+        // When the value is an option we want to extract the inner type.
         let ty = get_option_type(ty).unwrap_or(ty);
+
+        let value = if *default {
+            quote! { Some(#ty::default()) }
+        } else {
+            quote! { None }
+        };
+
         quote! {
-            let mut #ident: core::option::Option<#ty> = None;
+            let mut #ident: core::option::Option<#ty> = #value;
         }
     });
 
@@ -60,6 +70,8 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    // We want to throw an error when a field is missing only if the former is
+    // not an Option.
     let required_fields =
         fields.iter().filter(|FieldData { ty, .. }| get_option_type(ty).is_none());
 
