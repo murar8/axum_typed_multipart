@@ -5,7 +5,7 @@ license = "MIT"
 repository = "https://github.com/murar8/axum_typed_multipart"
 authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
 edition = "2021"
-version = "0.1.2"
+version = "0.2.0"
 categories = ["web-programming"]
 keywords = ["axum", "multipart", "form"]
 
@@ -15,7 +15,7 @@ members = ["macros"]
 [dependencies]
 anyhow = "1.0"
 axum = { version = "0.6", features = ["multipart"] }
-axum_typed_multipart_macros = { version = "0.1.2", path = "macros" }
+axum_typed_multipart_macros = { version = "0.2.0", path = "macros" }
 tempfile = "3.4"
 thiserror = "1.0"
 

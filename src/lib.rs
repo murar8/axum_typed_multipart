@@ -72,6 +72,22 @@
 //! }
 //! ```
 //!
+//! ### Default values
+//!
+//! If the `default` parameter in the `form_data` attribute is present the value
+//! will be populated using the type's [std::default::Default] implementation
+//! when the field is missing.
+//!
+//! ```rust
+//! use axum_typed_multipart::TryFromMultipart;
+//!
+//! #[derive(TryFromMultipart)]
+//! struct RequestData {
+//!     #[form_data(default)]
+//!     name: String, // defaults to ""
+//! }
+//! ```
+//!
 //! ### Field metadata
 //!
 //! If you need access to the field metadata (e.g. the request headers) you can
