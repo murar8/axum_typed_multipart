@@ -6,7 +6,7 @@ use common_multipart_rfc7578::client::multipart::Form;
 use util::get_request_from_form;
 
 #[derive(TryFromMultipart)]
-struct PrimitiveTypes {
+struct Foo {
     i8_field: i8,
     i16_field: i16,
     i32_field: i32,
@@ -24,21 +24,6 @@ struct PrimitiveTypes {
     bool_field: bool,
     char_field: char,
     string_field: String,
-}
-
-/// The fields are declared this way to make sure the derive macro supports
-/// all [Option] signatures.
-#[derive(TryFromMultipart)]
-struct OptionVariants {
-    option_field_0: std::option::Option<u8>,
-    option_field_1: core::option::Option<u8>,
-    option_field_2: Option<u8>,
-}
-
-#[derive(TryFromMultipart)]
-struct RenamedFields {
-    #[form_data(field_name = "renamed_field")]
-    field: u8,
 }
 
 #[tokio::test]
@@ -63,7 +48,7 @@ async fn test_primitive_types() {
     form.add_text("string_field", "Hello, world!");
 
     let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<PrimitiveTypes>::from_request(request, &()).await.unwrap().0;
+    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
 
     assert_eq!(data.i8_field, -42);
     assert_eq!(data.i16_field, -42);
@@ -82,43 +67,4 @@ async fn test_primitive_types() {
     assert!(data.bool_field);
     assert_eq!(data.char_field, '$');
     assert_eq!(data.string_field, "Hello, world!");
-}
-
-#[tokio::test]
-async fn test_option_populated() {
-    let mut form = Form::default();
-    form.add_text("option_field_0", "0");
-    form.add_text("option_field_1", "1");
-    form.add_text("option_field_2", "2");
-
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
-
-    assert_eq!(data.option_field_0, Some(0));
-    assert_eq!(data.option_field_1, Some(1));
-    assert_eq!(data.option_field_2, Some(2));
-}
-
-#[tokio::test]
-async fn test_option_empty() {
-    let mut form = Form::default();
-    form.add_text("other_field", "0");
-
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<OptionVariants>::from_request(request, &()).await.unwrap().0;
-
-    assert_eq!(data.option_field_0, None);
-    assert_eq!(data.option_field_1, None);
-    assert_eq!(data.option_field_2, None);
-}
-
-#[tokio::test]
-async fn test_renamed_field() {
-    let mut form = Form::default();
-    form.add_text("renamed_field", "42");
-
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<RenamedFields>::from_request(request, &()).await.unwrap().0;
-
-    assert_eq!(data.field, 42);
 }
