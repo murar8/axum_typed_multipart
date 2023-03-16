@@ -4,7 +4,7 @@ use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::quote;
-use util::get_option_type;
+use util::{matches_option_signature, matches_vec_signature};
 
 #[derive(Debug, FromField)]
 #[darling(attributes(form_data))]
@@ -45,35 +45,40 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
     let fields = data.take_struct().unwrap();
 
     let declarations = fields.iter().map(|FieldData { ident, ty, default, .. }| {
-        // When the value is an option we want to extract the inner type.
-        let ty = get_option_type(ty).unwrap_or(ty);
-
-        let value = if *default {
-            quote! { Some(#ty::default()) }
+         if matches_vec_signature(ty) {
+            quote! { let mut #ident: #ty = std::vec::Vec::new(); }
+        } else if matches_option_signature(ty) {
+            quote! { let mut #ident: #ty = std::option::Option::None; }
+        } else if *default {
+            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::Some(#ty::default()); }
         } else {
-            quote! { None }
-        };
-
-        quote! {
-            let mut #ident: core::option::Option<#ty> = #value;
+            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::None; }
         }
     });
 
-    let assignments = fields.iter().map(|field @ FieldData { ident, .. }| {
+    let assignments = fields.iter().map(|field @ FieldData { ident, ty, .. }| {
         let name = field.name();
+
+        let value = quote! {
+            axum_typed_multipart::TryFromField::try_from_field(__field__).await?
+        };
+
+        let assignment = if matches_vec_signature(ty) {
+            quote! { #ident.push(#value); }
+        } else {
+            quote! { #ident = Some(#value); }
+        };
+
         quote! {
             if __field__name__ == #name {
-                #ident = Some(
-                    axum_typed_multipart::TryFromField::try_from_field(__field__).await?
-                );
+                #assignment
             }
         }
     });
 
-    // We want to throw an error when a field is missing only if the former is
-    // not an Option.
-    let required_fields =
-        fields.iter().filter(|FieldData { ty, .. }| get_option_type(ty).is_none());
+    let required_fields = fields
+        .iter()
+        .filter(|FieldData { ty, .. }| !matches_option_signature(ty) && !matches_vec_signature(ty));
 
     let checks = required_fields.map(|field @ FieldData { ident, .. }| {
         let field_name = field.name();

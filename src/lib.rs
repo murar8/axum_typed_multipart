@@ -1,9 +1,9 @@
-//! Helper library for the [axum framework](https://github.com/tokio-rs/axum)
-//! designed to allow you to parse the `multipart/form-data` body of the
-//! supplied request into an arbitrary struct.
+//! Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum),
+//! this crate simplifies the process of handling `multipart/form-data` requests
+//! in your web application by allowing you to parse the request body into a
+//! type-safe struct.
 //!
-//! **This library is still under heavy development and is subject to change
-//! without notice.**
+//! **This library is still under development and the API is not yet stable.**
 //!
 //! ## Usage
 //!
@@ -19,15 +19,18 @@
 //! implement the [TryFromMultipart](crate::TryFromMultipart) trait. In the vast
 //! majority of cases you will want to use the derive macro to generate the
 //! implementation automatically.
-//! To be able to derive the implementation every field must implement the
-//! [TryFromField](crate::TryFromField) trait. The trait is
-//! implemented by default for all primitive types, [`String`], and [`Vec<u8>`]
-//! in case you just want to access the raw bytes.
 //!
-//! If the request body is malformed or it does not contain the necessary data
+//! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
+//! every field in the struct must implement the [TryFromField](crate::TryFromField)
+//! trait. The trait is implemented by default for all primitive types,
+//! [String], and [Bytes][axum::body::Bytes] in case you want to access the
+//! raw bytes.
+//!
+//! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
 //!
 //! ```rust
+//! use axum::http::StatusCode;
 //! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 //!
 //! #[derive(TryFromMultipart)]
@@ -38,18 +41,20 @@
 //!
 //! async fn handler(
 //!     TypedMultipart(RequestData { first_name, last_name }): TypedMultipart<RequestData>,
-//! ) {
-//!     // All fields are guaranteed to be populated.
+//! ) -> StatusCode {
+//!     println!("full name = '{}' '{}'", first_name, last_name);
+//!     StatusCode::OK
 //! }
 //! ```
 //!
 //! ### Optional fields
 //!
 //! If a field is declared as an [Option] the value will default to
-//! [Option::None] when the field is missing from the request body.
+//! [None] when the field is missing from the request body.
 //!
 //! ```rust
-//! use axum_typed_multipart::TryFromMultipart;
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -59,15 +64,16 @@
 //!
 //! ### Renaming fields
 //!
-//! If you would like to assign a custom name to the struct field you can use
-//! the `field_name` parameter in the `form_data` attribute.
+//! If you would like to assign a custom name for the source field you can use
+//! the `field_name` parameter of the `form_data` attribute.
 //!
 //! ```rust
-//! use axum_typed_multipart::TryFromMultipart;
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
-//!     #[form_data(field_name = "input_file")]
+//!     #[form_data(field_name = "first_name")]
 //!     name: Option<String>,
 //! }
 //! ```
@@ -75,11 +81,12 @@
 //! ### Default values
 //!
 //! If the `default` parameter in the `form_data` attribute is present the value
-//! will be populated using the type's [std::default::Default] implementation
-//! when the field is missing.
+//! will be populated using the type's [Default] implementation when the field
+//! is not supplied in the request.
 //!
 //! ```rust
-//! use axum_typed_multipart::TryFromMultipart;
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -94,34 +101,80 @@
 //! use the [FieldData](crate::FieldData) struct to wrap your field.
 //!
 //! ```rust
+//! use axum::body::Bytes;
+//! use axum::http::StatusCode;
 //! use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
-//!     image: FieldData<Vec<u8>>,
+//!     image: FieldData<Bytes>,
 //! }
 //!
-//! async fn handler(TypedMultipart(RequestData { image }): TypedMultipart<RequestData>) {
-//!     println!("content_type = {}", image.metadata.content_type.unwrap());
+//! async fn handler(
+//!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
+//! ) -> StatusCode {
+//!     println!(
+//!         "file name = '{}', content type = '{}', size = '{}'",
+//!         image.metadata.file_name.unwrap_or(String::new()),
+//!         image.metadata.content_type.unwrap_or(String::from("text/plain")),
+//!         image.contents.len()
+//!     );
+//!
+//!     StatusCode::OK
 //! }
 //! ```
 //!
 //! ### Large uploads
 //!
 //! For large file uploads you can save the contents of the file to the file
-//! system using the [TempFile](crate::TempFile) helper. This will stream the
-//! field body to the file system allowing you to save the contents later.
+//! system using the [TempFile](crate::TempFile) helper. This will efficiently
+//! stream the field data to the file system allowing you to save the contents
+//! later.
 //!
 //! ```rust
-//! use axum_typed_multipart::{FieldData, TempFile, TryFromMultipart, TypedMultipart};
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{
+//!     FieldData, TempFile, TryFromMultipart, TypedMultipart, TypedMultipartError,
+//! };
+//! use std::path::Path;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
 //!     image: FieldData<TempFile>,
 //! }
 //!
-//! async fn handler(TypedMultipart(RequestData { image }): TypedMultipart<RequestData>) {
-//!     image.contents.persist("/data/file.bin", false).await.unwrap();
+//! async fn handler(
+//!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
+//! ) -> StatusCode {
+//!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
+//!     let path = Path::new("/tmp").join(file_name);
+//!
+//!     match image.contents.persist(path, false).await {
+//!         Ok(_) => StatusCode::OK,
+//!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+//!     }
+//! }
+//! ```
+//!
+//! ### Lists
+//!
+//! If the incoming request will include multiple fields that share the same
+//! name (AKA lists) the field can be declared as a [Vec], allowing for all
+//! occurrences of the field to be stored.
+//! ```rust
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//!
+//! #[derive(TryFromMultipart)]
+//! struct RequestData {
+//!     names: Vec<String>,
+//! }
+//!
+//! async fn handler(
+//!     TypedMultipart(RequestData { names }): TypedMultipart<RequestData>,
+//! ) -> StatusCode {
+//!     println!("first name = '{}'", names[0]);
+//!     StatusCode::OK
 //! }
 //! ```
 

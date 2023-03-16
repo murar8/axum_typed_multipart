@@ -1,31 +1,28 @@
-/// Check if the supplied type matches the [Option] signature and return the
-/// enclosed type if it does.
+/// Check if the supplied type matches at least one of the provided signatures
+/// and return the enclosed generic argument type if it does.
 ///
 /// Note that this method is not guaranteed to work on every possible input
 /// since we don't have access to type information in the AST representation.
 ///
 /// Adapted from https://stackoverflow.com/a/56264023
-pub fn get_option_type(ty: &syn::Type) -> Option<&syn::Type> {
+pub fn matches_signature(ty: &syn::Type, signatures: &[&str]) -> bool {
     let path = match ty {
         syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
-        _ => return None,
+        _ => return false,
     };
 
-    let full_path =
+    let signature =
         path.segments.iter().map(|s| s.ident.to_string()).collect::<Vec<_>>().join("::");
 
-    match full_path.as_ref() {
-        "Option" | "std::option::Option" | "core::option::Option" => {}
-        _ => return None,
-    }
+    signatures.contains(&signature.as_ref())
+}
 
-    let argument = match path.segments.last().unwrap().arguments {
-        syn::PathArguments::AngleBracketed(ref params) => params.args.first(),
-        _ => return None,
-    };
+/// Check if the supplied type matches the [Option] signature.
+pub fn matches_option_signature(ty: &syn::Type) -> bool {
+    matches_signature(ty, &["Option", "std::option::Option", "core::option::Option"])
+}
 
-    match argument {
-        Some(syn::GenericArgument::Type(ref ty)) => Some(ty),
-        _ => None,
-    }
+/// Check if the supplied type matches the [Vec] signature.
+pub fn matches_vec_signature(ty: &syn::Type) -> bool {
+    matches_signature(ty, &["Vec", "std::vec::Vec"])
 }

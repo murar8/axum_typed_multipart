@@ -1,5 +1,6 @@
 mod util;
 
+use axum::body::Bytes;
 use axum::extract::FromRequest;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 use common_multipart_rfc7578::client::multipart::Form;
@@ -24,6 +25,7 @@ struct Foo {
     bool_field: bool,
     char_field: char,
     string_field: String,
+    bytes_field: Bytes,
 }
 
 #[tokio::test]
@@ -46,6 +48,7 @@ async fn test_primitive_types() {
     form.add_text("bool_field", "true");
     form.add_text("char_field", "$");
     form.add_text("string_field", "Hello, world!");
+    form.add_text("bytes_field", "123");
 
     let request = get_request_from_form(form).await;
     let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
@@ -67,4 +70,5 @@ async fn test_primitive_types() {
     assert!(data.bool_field);
     assert_eq!(data.char_field, '$');
     assert_eq!(data.string_field, "Hello, world!");
+    assert_eq!(data.bytes_field, "123");
 }

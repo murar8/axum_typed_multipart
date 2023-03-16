@@ -1,5 +1,6 @@
 use crate::TypedMultipartError;
 use axum::async_trait;
+use axum::body::Bytes;
 use axum::extract::multipart::Field;
 use std::any::type_name;
 
@@ -76,9 +77,9 @@ impl TryFromField for String {
 }
 
 #[async_trait]
-impl TryFromField for Vec<u8> {
+impl TryFromField for Bytes {
     async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
-        let bytes = field.bytes().await?.to_vec();
+        let bytes = field.bytes().await?;
         Ok(bytes)
     }
 }
