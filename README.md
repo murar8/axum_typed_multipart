@@ -4,7 +4,10 @@
 [![](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
 [![](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml)
 
-Helper library for the [axum framework](https://github.com/tokio-rs/axum) designed to allow you to parse the `multipart/form-data` body of the supplied request into an arbitrary struct.
+Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum),
+this crate simplifies the process of handling `multipart/form-data` requests
+in your web application by allowing you to parse the request body into a
+type-safe struct.
 
 ## Documentation
 

@@ -3,8 +3,6 @@
 //! in your web application by allowing you to parse the request body into a
 //! type-safe struct.
 //!
-//! **This library is still under development and the API is not yet stable.**
-//!
 //! ## Usage
 //!
 //! ### Installation
@@ -23,8 +21,8 @@
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
 //! every field in the struct must implement the [TryFromField](crate::TryFromField)
 //! trait. The trait is implemented by default for all primitive types,
-//! [String], and [Bytes][axum::body::Bytes] in case you want to access the
-//! raw bytes.
+//! [String], and [Bytes](axum::body::Bytes), in case you want to access the
+//! raw data.
 //!
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
@@ -128,8 +126,10 @@
 //!
 //! For large file uploads you can save the contents of the file to the file
 //! system using the [TempFile](crate::TempFile) helper. This will efficiently
-//! stream the field data to the file system allowing you to save the contents
-//! later.
+//! stream the field data directly to the file system, without needing to fit
+//! all the data in memory. Once the upload is complete, you can then save the
+//! contents to a location of your choice using the
+//! [persist](crate::TempFile::persist) method.
 //!
 //! ```rust
 //! use axum::http::StatusCode;
