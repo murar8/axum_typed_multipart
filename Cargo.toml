@@ -24,4 +24,4 @@ common-multipart-rfc7578 = "0.6"
 futures-util = "0.3"
 mime = "0.3"
 tempfile = "3.4"
-tokio = { version = "1.26", features = ["macros"] }
+tokio = { version = "1.27", features = ["macros"] }
