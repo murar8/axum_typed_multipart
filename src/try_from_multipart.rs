@@ -29,6 +29,9 @@ use axum::extract::Multipart;
 /// - `field_name` => Can be used to configure a different name for the source
 /// field in the incoming form data.
 ///
+/// - `default` => Populate the field using the type's [Default] implementation
+/// when the field is not supplied in the request.
+///
 /// ## Example
 ///
 /// ```rust
