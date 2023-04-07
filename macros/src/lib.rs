@@ -20,7 +20,19 @@ impl FieldData {
     /// Get the name of the field from the `field_name` attribute, falling back
     /// to the field identifier.
     fn name(&self) -> String {
-        self.field_name.to_owned().unwrap_or_else(|| self.ident.as_ref().unwrap().to_string())
+        if let Some(field_name) = &self.field_name {
+            return field_name.to_string();
+        }
+
+        let ident = self.ident.as_ref().unwrap().to_string();
+
+        if ident.starts_with("r#") {
+            // If the field is using a raw identifier we want to strip the
+            // leading characters.
+            ident.chars().skip(2).collect()
+        } else {
+            ident
+        }
     }
 }
 
