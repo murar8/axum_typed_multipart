@@ -1,5 +1,4 @@
-/// Check if the supplied type matches at least one of the provided signatures
-/// and return the enclosed generic argument type if it does.
+/// Check if the supplied type matches at least one of the provided signatures.
 ///
 /// Note that this method is not guaranteed to work on every possible input
 /// since we don't have access to type information in the AST representation.

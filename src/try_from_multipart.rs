@@ -18,7 +18,8 @@ use axum::extract::Multipart;
 /// derive the trait.
 ///
 /// An error will be returned if at least one field is missing, with the
-/// exception of [Option] types, which will be set as [Option::None].
+/// exception of [Option] and [Vec] types, which will be set respectively as
+/// [Option::None] and `[]`.
 ///
 /// ### `form_data` attribute
 ///

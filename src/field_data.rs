@@ -8,9 +8,8 @@ use axum::extract::multipart::Field;
 /// This is mainly useful for file uploads but can be used for every field where
 /// you need access to the metadata.
 ///
-/// If the generic argument implements
-/// [TryFromField](crate::TryFromField) the struct will
-/// implement the trait itself.
+/// If the generic argument implements [TryFromField](crate::TryFromField) the
+/// struct will implement the trait itself.
 ///
 /// ## Example
 ///
