@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "axum_typed_multipart"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "axum",
@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "axum_typed_multipart_macros"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "darling",
  "proc-macro-error",
