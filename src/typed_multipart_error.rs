@@ -4,13 +4,13 @@ use axum::response::{IntoResponse, Response};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
-    #[error("request is malformed")]
+    #[error("request is malformed ({})", .source.body_text())]
     InvalidRequest {
         #[from]
         source: MultipartRejection,
     },
 
-    #[error("request body is malformed")]
+    #[error("request body is malformed ({})", .source.body_text())]
     InvalidRequestBody {
         #[from]
         source: MultipartError,
@@ -34,9 +34,8 @@ impl TypedMultipartError {
         match self {
             Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             Self::MissingField { .. } | Self::WrongFieldType { .. } => StatusCode::BAD_REQUEST,
-            Self::InvalidRequest { .. } | Self::InvalidRequestBody { .. } => {
-                StatusCode::UNPROCESSABLE_ENTITY
-            }
+            Self::InvalidRequest { source } => source.status(),
+            Self::InvalidRequestBody { source } => source.status(),
         }
     }
 }
