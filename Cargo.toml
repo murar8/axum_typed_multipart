@@ -13,15 +13,15 @@ keywords = ["axum", "multipart", "form"]
 members = ["macros"]
 
 [dependencies]
-anyhow = "1.0"
-axum = { version = "0.6", features = ["multipart"] }
+anyhow = "1.0.71"
+axum = { version = "0.6.18", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.3.4", path = "macros" }
-tempfile = "3.5"
-thiserror = "1.0"
+tempfile = "3.5.0"
+thiserror = "1.0.40"
 
 [dev-dependencies]
-common-multipart-rfc7578 = "0.6"
-futures-util = "0.3"
-mime = "0.3"
-tempfile = "3.5"
-tokio = { version = "1.27", features = ["macros", "rt-multi-thread"] }
+common-multipart-rfc7578 = "0.6.0"
+futures-util = "0.3.28"
+mime = "0.3.17"
+tempfile = "3.5.0"
+tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
