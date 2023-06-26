@@ -5,8 +5,8 @@ use axum::extract::Multipart;
 /// Types that can be created from an instance of [Multipart].
 ///
 /// Structs that implement this trait can be used as type parameters for
-/// [TypedMultipart](crate::TypedMultipart) allowing to
-/// generate the supplied struct from the request data.
+/// [TypedMultipart](crate::TypedMultipart) allowing to generate the supplied
+/// struct from the request data.
 ///
 /// ## Derive macro
 ///
@@ -14,12 +14,14 @@ use axum::extract::Multipart;
 /// macro.
 ///
 /// All fields for the supplied struct must implement the
-/// [TryFromField](crate::TryFromField) trait to be able to
-/// derive the trait.
+/// [TryFromField](crate::TryFromField) trait to be able to derive the trait.
 ///
 /// An error will be returned if at least one field is missing, with the
 /// exception of [Option] and [Vec] types, which will be set respectively as
 /// [Option::None] and `[]`.
+///
+/// If the same field is supplied multiple times, the last occurrence of the
+/// value in the request body will be used.
 ///
 /// ### `form_data` attribute
 ///
