@@ -1,5 +1,6 @@
 use_field_init_shorthand = true
 use_small_heuristics = "Max"
+match_arm_leading_pipes = "Preserve"
 
 # UNSTABLE FEATURES
 
