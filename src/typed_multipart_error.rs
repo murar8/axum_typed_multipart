@@ -22,6 +22,12 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' must be of type '{wanted_type}'")]
     WrongFieldType { field_name: String, wanted_type: String },
 
+    #[error("field '{field_name}' is already present")]
+    DuplicateField { field_name: String },
+
+    #[error("field '{field_name}' is not expected")]
+    UnknownField { field_name: String },
+
     #[error(transparent)]
     Other {
         #[from]
@@ -32,10 +38,13 @@ pub enum TypedMultipartError {
 impl TypedMultipartError {
     fn get_status(&self) -> StatusCode {
         match self {
-            Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::MissingField { .. } | Self::WrongFieldType { .. } => StatusCode::BAD_REQUEST,
-            Self::InvalidRequest { source } => source.status(),
-            Self::InvalidRequestBody { source } => source.status(),
+            | Self::MissingField { .. }
+            | Self::WrongFieldType { .. }
+            | Self::DuplicateField { .. }
+            | Self::UnknownField { .. } => StatusCode::BAD_REQUEST,
+            | Self::InvalidRequest { source } => source.status(),
+            | Self::InvalidRequestBody { source } => source.status(),
+            | Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

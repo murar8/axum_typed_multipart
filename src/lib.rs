@@ -1,7 +1,7 @@
-//! Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum),
-//! this crate simplifies the process of handling `multipart/form-data` requests
-//! in your web application by allowing you to parse the request body into a
-//! type-safe struct.
+//! Designed to seamlessly integrate with
+//! [Axum](https://github.com/tokio-rs/axum), this crate simplifies the process
+//! of handling `multipart/form-data` requests in your web application by
+//! allowing you to parse the request body into a type-safe struct.
 //!
 //! ## Usage
 //!
@@ -19,10 +19,10 @@
 //! implementation automatically.
 //!
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
-//! every field in the struct must implement the [TryFromField](crate::TryFromField)
-//! trait. The trait is implemented by default for all primitive types,
-//! [String], and [Bytes](axum::body::Bytes), in case you want to access the
-//! raw data.
+//! every field in the struct must implement the
+//! [TryFromField](crate::TryFromField) trait. The trait is implemented by
+//! default for all primitive types, [String], and [Bytes](axum::body::Bytes),
+//! in case you want to access the raw data.
 //!
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
@@ -47,8 +47,8 @@
 //!
 //! ### Optional fields
 //!
-//! If a field is declared as an [Option] the value will default to
-//! [None] when the field is missing from the request body.
+//! If a field is declared as an [Option] the value will default to [None] when
+//! the field is missing from the request body.
 //!
 //! ```rust
 //! use axum::http::StatusCode;
@@ -161,6 +161,7 @@
 //! If the incoming request will include multiple fields that share the same
 //! name (AKA lists) the field can be declared as a [Vec], allowing for all
 //! occurrences of the field to be stored.
+//!
 //! ```rust
 //! use axum::http::StatusCode;
 //! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
@@ -175,6 +176,25 @@
 //! ) -> StatusCode {
 //!     println!("first name = '{}'", names[0]);
 //!     StatusCode::OK
+//! }
+//! ```
+//!
+//! ### Strict mode
+//!
+//! By default the derive macro will store the last occurrence of a field and it
+//! will ignore unknown fields. This behavior can be changed by using the
+//! `strict` parameter in the derive macro. This will make the macro throw an
+//! error if the request contains multiple fields with the same name or if it
+//! contains unknown fields.
+//!
+//! ```rust
+//! use axum::http::StatusCode;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//!
+//! #[derive(TryFromMultipart)]
+//! #[try_from_multipart(strict)]
+//! struct RequestData {
+//!     name: String,
 //! }
 //! ```
 

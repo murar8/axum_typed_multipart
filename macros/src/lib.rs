@@ -37,19 +37,21 @@ impl FieldData {
 }
 
 #[derive(Debug, FromDeriveInput)]
-#[darling(attributes(form_data), supports(struct_named))]
+#[darling(attributes(try_from_multipart), supports(struct_named))]
 struct InputData {
     ident: syn::Ident,
     data: darling::ast::Data<(), FieldData>,
+    #[darling(default)]
+    strict: bool,
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
 #[proc_macro_error]
-#[proc_macro_derive(TryFromMultipart, attributes(form_data))]
+#[proc_macro_derive(TryFromMultipart, attributes(try_from_multipart, form_data))]
 pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
-    let InputData { ident, data } = match InputData::from_derive_input(&input) {
+    let InputData { ident, data, strict } = match InputData::from_derive_input(&input) {
         Ok(input) => input,
         Err(err) => abort!(input, err.to_string()),
     };
@@ -68,25 +70,52 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         }
     });
 
-    let assignments = fields.iter().map(|field @ FieldData { ident, ty, .. }| {
-        let name = field.name();
+    let mut assignments = fields
+        .iter()
+        .map(|field @ FieldData { ident, ty, .. }| {
+            let name = field.name();
 
-        let value = quote! {
-            axum_typed_multipart::TryFromField::try_from_field(__field__).await?
-        };
+            let value = quote! {
+                axum_typed_multipart::TryFromField::try_from_field(__field__).await?
+            };
 
-        let assignment = if matches_vec_signature(ty) {
-            quote! { #ident.push(#value); }
-        } else {
-            quote! { #ident = Some(#value); }
-        };
+            let assignment = if matches_vec_signature(ty) {
+                quote! { #ident.push(#value); }
+            } else if strict {
+                quote! {
+                    if #ident.is_none() {
+                        #ident = Some(#value);
+                    } else {
+                        return Err(
+                            axum_typed_multipart::TypedMultipartError::DuplicateField {
+                                field_name: String::from(#name)
+                            }
+                        );
+                    }
+                }
+            } else {
+                quote! { #ident = Some(#value); }
+            };
 
-        quote! {
-            if __field__name__ == #name {
-                #assignment
+            quote! {
+                if __field__name__ == #name {
+                    #assignment
+                }
             }
-        }
-    });
+        })
+        .collect::<Vec<_>>();
+
+    if strict {
+        assignments.push(quote! {
+            {
+                return Err(
+                    axum_typed_multipart::TypedMultipartError::UnknownField {
+                        field_name: __field__name__
+                    }
+                );
+            }
+        })
+    }
 
     let required_fields = fields
         .iter()

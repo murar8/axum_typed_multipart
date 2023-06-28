@@ -21,7 +21,17 @@ use axum::extract::Multipart;
 /// [Option::None] and `[]`.
 ///
 /// If the same field is supplied multiple times, the last occurrence of the
-/// value in the request body will be used.
+/// value in the request body will be used unless strict mode is enabled.
+///
+/// ### `try_from_multipart` attribute
+///
+/// Can be applied to the struct to configure the parser behaviour.
+///
+/// #### Arguments
+///
+/// - `strict` => When enabled, an error will be returned if the same field is
+/// supplied multiple times in the request body or if an unknown field is
+/// supplied.
 ///
 /// ### `form_data` attribute
 ///
