@@ -5,7 +5,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::Request;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
 use common_multipart_rfc7578::client::multipart::Form;
-use util::get_request_from_form;
+use util::get_typed_multipart_from_form;
 
 #[derive(TryFromMultipart, Debug)]
 struct Foo {
@@ -52,8 +52,7 @@ async fn test_missing_field() {
     let mut form = Form::default();
     form.add_text("other_field", "42");
 
-    let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = get_typed_multipart_from_form::<Foo>(form).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::MissingField { .. }));
 }
@@ -63,8 +62,7 @@ async fn test_wrong_field_type() {
     let mut form = Form::default();
     form.add_text("field", "hello");
 
-    let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = get_typed_multipart_from_form::<Foo>(form).await.unwrap_err();
 
     assert!(matches!(error, TypedMultipartError::WrongFieldType { .. }));
 }

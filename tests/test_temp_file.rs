@@ -1,12 +1,11 @@
 mod util;
 
-use axum::extract::FromRequest;
-use axum_typed_multipart::{TempFile, TryFromMultipart, TypedMultipart};
+use axum_typed_multipart::{TempFile, TryFromMultipart};
 use common_multipart_rfc7578::client::multipart::Form;
 use std::fs::read_to_string;
 use std::io::BufReader;
 use tempfile::tempdir;
-use util::get_request_from_form;
+use util::get_typed_multipart_from_form;
 
 #[derive(TryFromMultipart)]
 struct Foo {
@@ -24,8 +23,7 @@ async fn test_temp_file() {
         mime::TEXT_PLAIN,
     );
 
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let data = get_typed_multipart_from_form::<Foo>(form).await.unwrap().0;
 
     let temp_dir = tempdir().unwrap();
     let file_path = temp_dir.path().join("potato.txt");

@@ -1,9 +1,8 @@
 mod util;
 
-use axum::extract::FromRequest;
-use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+use axum_typed_multipart::TryFromMultipart;
 use common_multipart_rfc7578::client::multipart::Form;
-use util::get_request_from_form;
+use util::get_typed_multipart_from_form;
 
 #[derive(TryFromMultipart)]
 struct Foo {
@@ -17,8 +16,7 @@ async fn test_field_order() {
     form.add_text("string_field", "Hello, cargo!");
     form.add_text("string_field", "Hello, rust!");
 
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let data = get_typed_multipart_from_form::<Foo>(form).await.unwrap().0;
 
     assert_eq!(data.string_field, "Hello, rust!");
 }

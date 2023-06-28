@@ -1,9 +1,8 @@
 mod util;
 
-use axum::extract::FromRequest;
-use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
+use axum_typed_multipart::{TryFromMultipart, TypedMultipartError};
 use common_multipart_rfc7578::client::multipart::Form;
-use util::get_request_from_form;
+use util::get_typed_multipart_from_form;
 
 #[derive(TryFromMultipart, Debug)]
 #[try_from_multipart(strict)]
@@ -17,8 +16,8 @@ async fn test_strict() {
     let mut form = Form::default();
     form.add_text("first_name", "John");
 
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let data = get_typed_multipart_from_form::<Foo>(form).await.unwrap().0;
+
     assert_eq!(data.first_name, "John");
 }
 
@@ -29,8 +28,7 @@ async fn test_strict_list() {
     form.add_text("items", "bread");
     form.add_text("items", "cheese");
 
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let data = get_typed_multipart_from_form::<Foo>(form).await.unwrap().0;
 
     assert_eq!(data.items, vec![String::from("bread"), String::from("cheese")]);
 }
@@ -41,8 +39,8 @@ async fn test_strict_duplicate_field() {
     form.add_text("first_name", "John");
     form.add_text("first_name", "Frank");
 
-    let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = get_typed_multipart_from_form::<Foo>(form).await.unwrap_err();
+
     assert!(matches!(error, TypedMultipartError::DuplicateField { .. }));
 }
 
@@ -52,7 +50,7 @@ async fn test_strict_unknown_field() {
     form.add_text("first_name", "John");
     form.add_text("last_name", "John");
 
-    let request = get_request_from_form(form).await;
-    let error = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap_err();
+    let error = get_typed_multipart_from_form::<Foo>(form).await.unwrap_err();
+
     assert!(matches!(error, TypedMultipartError::UnknownField { .. }));
 }

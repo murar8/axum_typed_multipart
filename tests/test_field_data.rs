@@ -1,10 +1,9 @@
 mod util;
 
-use axum::extract::FromRequest;
-use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
+use axum_typed_multipart::{FieldData, TryFromMultipart};
 use common_multipart_rfc7578::client::multipart::Form;
 use std::io::BufReader;
-use util::get_request_from_form;
+use util::get_typed_multipart_from_form;
 
 #[derive(TryFromMultipart)]
 struct Foo {
@@ -23,8 +22,7 @@ async fn test_field_data() {
         mime::TEXT_PLAIN,
     );
 
-    let request = get_request_from_form(form).await;
-    let data = TypedMultipart::<Foo>::from_request(request, &()).await.unwrap().0;
+    let data = get_typed_multipart_from_form::<Foo>(form).await.unwrap().0;
 
     assert_eq!(data.file.metadata.name, Some(String::from("input_file")));
     assert_eq!(data.file.metadata.file_name, Some(String::from("potato.txt")));
