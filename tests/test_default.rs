@@ -14,7 +14,7 @@ struct Foo {
 }
 
 #[tokio::test]
-async fn test_field_data() {
+async fn test_default() {
     let mut form = Form::default();
     form.add_text("first_name", "John");
 
