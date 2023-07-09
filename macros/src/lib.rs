@@ -98,7 +98,7 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
             };
 
             quote! {
-                if __field__name__ == #name {
+                if __field_name__ == #name {
                     #assignment
                 }
             }
@@ -110,7 +110,7 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
             {
                 return Err(
                     axum_typed_multipart::TypedMultipartError::UnknownField {
-                        field_name: __field__name__
+                        field_name: __field_name__
                     }
                 );
             }
@@ -141,7 +141,7 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
                 #(#declarations)*
 
                 while let Some(__field__) = multipart.next_field().await? {
-                    let __field__name__ = __field__.name().unwrap().to_string();
+                    let __field_name__ = __field__.name().unwrap().to_string();
                     #(#assignments) else *
                 }
 
