@@ -149,7 +149,7 @@
 //!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
 //!     let path = Path::new("/tmp").join(file_name);
 //!
-//!     match image.contents.persist(path, false).await {
+//!     match image.contents.persist(path, false) {
 //!         Ok(_) => StatusCode::OK,
 //!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
 //!     }

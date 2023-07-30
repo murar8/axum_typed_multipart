@@ -35,11 +35,7 @@ impl TempFile {
     ///
     /// When `replace` is `true` the file at the target path will be replaced if
     /// it exists.
-    pub async fn persist<P: AsRef<Path>>(
-        self,
-        path: P,
-        replace: bool,
-    ) -> Result<File, PersistError> {
+    pub fn persist<P: AsRef<Path>>(self, path: P, replace: bool) -> Result<File, PersistError> {
         match replace {
             true => self.0.persist(path),
             false => self.0.persist_noclobber(path),
