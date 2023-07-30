@@ -13,6 +13,10 @@ jobs:
 
       - uses: webiny/action-conventional-commits@v1.1.0
 
+      - uses: creyD/prettier_action@v4.3
+        with:
+          dry: true
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
