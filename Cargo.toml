@@ -9,8 +9,10 @@ version = "0.5.1"
 categories = ["web-programming"]
 keywords = ["axum", "multipart", "form"]
 
+
 [workspace]
 members = ["macros"]
+
 
 [dependencies]
 anyhow = "1.0.72"
@@ -19,9 +21,13 @@ axum_typed_multipart_macros = { version = "0.5.1", path = "macros" }
 tempfile = "3.5.0"
 thiserror = "1.0.40"
 
+[dependencies.tokio]
+version = "1.29.1"
+features = ["macros", "rt-multi-thread", "fs", "io-util"]
+
+
 [dev-dependencies]
 common-multipart-rfc7578 = "0.6.0"
 futures-util = "0.3.28"
 mime = "0.3.17"
 tempfile = "3.5.0"
-tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }

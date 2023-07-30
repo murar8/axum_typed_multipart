@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tempfile::{NamedTempFile, PersistError};
+use tokio::fs::File as AsyncFile;
+use tokio::io::AsyncWriteExt;
 
 /// Stream the field data on the file system using a temporary file.
 ///
@@ -49,12 +51,16 @@ impl TempFile {
 #[async_trait]
 impl TryFromField for TempFile {
     async fn try_from_field(mut field: Field<'_>) -> Result<Self, TypedMultipartError> {
-        let mut file = NamedTempFile::new().map_err(anyhow::Error::new)?;
+        let temp_file = NamedTempFile::new().map_err(anyhow::Error::new)?;
+        let std_file = temp_file.reopen().map_err(anyhow::Error::new)?;
+        let mut async_file = AsyncFile::from_std(std_file);
 
         while let Some(chunk) = field.chunk().await? {
-            file.write(&chunk).map_err(anyhow::Error::new)?;
+            async_file.write_all(&chunk).await.map_err(anyhow::Error::new)?;
         }
 
-        Ok(TempFile(file))
+        async_file.flush().await.map_err(anyhow::Error::new)?;
+
+        Ok(TempFile(temp_file))
     }
 }
