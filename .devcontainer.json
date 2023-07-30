@@ -1,4 +1,11 @@
 {
   "name": "axum_typed_multipart",
-  "image": "mcr.microsoft.com/devcontainers/rust:1"
+  "image": "mcr.microsoft.com/devcontainers/rust:1",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "github.vscode-github-actions"
+      ]
+    }
+  }
 }
