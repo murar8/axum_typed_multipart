@@ -7,8 +7,10 @@ authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
 edition = "2021"
 version = "0.5.1"
 
+
 [lib]
 proc_macro = true
+
 
 [dependencies]
 darling = "0.20.3"
