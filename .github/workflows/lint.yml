@@ -13,6 +13,11 @@ jobs:
 
       - uses: webiny/action-conventional-commits@v1.1.0
 
+      - uses: creyD/prettier_action@v4.3
+        with:
+          dry: true
+          prettier_options: --check --ignore-path .gitignore .
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
