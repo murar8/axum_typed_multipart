@@ -16,7 +16,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ahmadnassri/action-dependabot-auto-merge@v2
+      - uses: dependabot/fetch-metadata@v1
+        id: metadata
         with:
-          target: minor
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - run: gh pr merge --auto --merge ${{github.event.pull_request.html_url}}
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
