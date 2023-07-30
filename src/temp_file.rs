@@ -2,7 +2,6 @@ use crate::{TryFromField, TypedMultipartError};
 use axum::async_trait;
 use axum::extract::multipart::Field;
 use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 use tempfile::{NamedTempFile, PersistError};
 use tokio::fs::File as AsyncFile;
