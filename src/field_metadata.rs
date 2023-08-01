@@ -2,6 +2,7 @@ use axum::extract::multipart::Field;
 use axum::http::HeaderMap;
 
 /// Additional information about the file supplied by the client in the request.
+#[derive(Debug)]
 pub struct FieldMetadata {
     /// Name of the HTML field in the form.
     ///

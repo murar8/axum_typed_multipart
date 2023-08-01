@@ -21,6 +21,7 @@ use axum::extract::multipart::Field;
 ///     input_file: FieldData<String>,
 /// }
 /// ```
+#[derive(Debug)]
 pub struct FieldData<T> {
     pub metadata: FieldMetadata,
     pub contents: T,
@@ -28,9 +29,12 @@ pub struct FieldData<T> {
 
 #[async_trait]
 impl<T: TryFromField> TryFromField for FieldData<T> {
-    async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
+    async fn try_from_field(
+        field: Field<'_>,
+        limit_bytes: Option<usize>,
+    ) -> Result<Self, TypedMultipartError> {
         let metadata = FieldMetadata::from(&field);
-        let contents = T::try_from_field(field).await?;
+        let contents = T::try_from_field(field, limit_bytes).await?;
         Ok(Self { metadata, contents })
     }
 }
