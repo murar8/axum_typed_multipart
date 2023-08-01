@@ -131,6 +131,14 @@
 //! contents to a location of your choice using the
 //! [persist](crate::TempFile::persist) method.
 //!
+//! #### **Note**
+//! When handling large uploads you will need to increase both the request body
+//! size limit and the field size limit. The request body size limit can be
+//! increased using the [DefaultBodyLimit](axum::extract::DefaultBodyLimit)
+//! middleware, while the field size limit can be increased using the `limit`
+//! parameter of the `form_data` attribute. For more information see
+//! `examples/upload.rs`.
+//!
 //! ```rust
 //! use axum::http::StatusCode;
 //! use axum_typed_multipart::{
@@ -140,14 +148,16 @@
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
+//!     #[form_data(limit = "16MiB")]
 //!     image: FieldData<TempFile>,
+//!     author: String,
 //! }
 //!
 //! async fn handler(
-//!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
+//!     TypedMultipart(RequestData { image, author }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
 //!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
-//!     let path = Path::new("/tmp").join(file_name);
+//!     let path = Path::new("/tmp").join(author).join(file_name);
 //!
 //!     match image.contents.persist(path, false) {
 //!         Ok(_) => StatusCode::OK,

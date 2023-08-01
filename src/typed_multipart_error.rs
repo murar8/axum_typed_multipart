@@ -28,6 +28,9 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' is not expected")]
     UnknownField { field_name: String },
 
+    #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
+    FieldTooLarge { field_name: String, limit_bytes: usize },
+
     #[error(transparent)]
     Other {
         #[from]
@@ -42,6 +45,7 @@ impl TypedMultipartError {
             | Self::WrongFieldType { .. }
             | Self::DuplicateField { .. }
             | Self::UnknownField { .. } => StatusCode::BAD_REQUEST,
+            | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),
             | Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,

@@ -15,5 +15,6 @@ proc_macro = true
 [dependencies]
 darling = "0.20.3"
 proc-macro-error = "1.0.4"
-quote = "1.0.32"
-syn = "2.0.28"
+quote = "1.0.28"
+syn = "2.0.27"
+ubyte = "0.10.3"

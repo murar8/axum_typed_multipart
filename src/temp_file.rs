@@ -13,7 +13,7 @@ use tokio::io::AsyncWriteExt;
 /// the `persist` method.
 ///
 /// This is especially useful for large file uploads where you might not be able
-/// to store all the file contents into memory.
+/// to fit all the file contents in RAM.
 ///
 /// If the program exits before the destructor is run, the temporary file will
 /// not be deleted. For more details about this check the [NamedTempFile]
@@ -25,9 +25,11 @@ use tokio::io::AsyncWriteExt;
 ///
 /// #[derive(TryFromMultipart)]
 /// struct FileUpload {
+///     #[form_data(limit = "1MiB")]
 ///     file: TempFile,
 /// }
 /// ```
+#[derive(Debug)]
 pub struct TempFile(NamedTempFile);
 
 impl TempFile {
@@ -45,13 +47,24 @@ impl TempFile {
 
 #[async_trait]
 impl TryFromField for TempFile {
-    async fn try_from_field(mut field: Field<'_>) -> Result<Self, TypedMultipartError> {
+    async fn try_from_field(
+        mut field: Field<'_>,
+        limit_bytes: Option<usize>,
+    ) -> Result<Self, TypedMultipartError> {
         let temp_file = NamedTempFile::new().map_err(anyhow::Error::new)?;
         let std_file = temp_file.reopen().map_err(anyhow::Error::new)?;
         let mut async_file = AsyncFile::from_std(std_file);
+        let mut size_bytes = 0;
 
         while let Some(chunk) = field.chunk().await? {
+            if let Some(limit_bytes) = limit_bytes {
+                if size_bytes + chunk.len() > limit_bytes {
+                    let field_name = field.name().unwrap().to_string();
+                    return Err(TypedMultipartError::FieldTooLarge { field_name, limit_bytes });
+                }
+            }
             async_file.write_all(&chunk).await.map_err(anyhow::Error::new)?;
+            size_bytes += chunk.len();
         }
 
         async_file.flush().await.map_err(anyhow::Error::new)?;
