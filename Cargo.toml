@@ -16,7 +16,7 @@ members = ["macros"]
 
 [dependencies]
 anyhow = "1.0.72"
-axum = { version = "0.6.19", features = ["multipart"] }
+axum = { version = "0.6.20", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.5.2", path = "macros" }
 tempfile = "3.7.0"
 thiserror = "1.0.44"
