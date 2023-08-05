@@ -5,8 +5,14 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - update-types: ["version-update:semver-patch"]
+      - update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - update-types: ["version-update:semver-patch"]
+      - update-types: ["version-update:semver-minor"]
