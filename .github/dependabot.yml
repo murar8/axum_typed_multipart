@@ -6,13 +6,17 @@ updates:
     schedule:
       interval: "daily"
     ignore:
-      - update-types: ["version-update:semver-patch"]
-      - update-types: ["version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "daily"
     ignore:
-      - update-types: ["version-update:semver-patch"]
-      - update-types: ["version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
