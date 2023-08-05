@@ -27,6 +27,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
+          profile: minimal
 
       - uses: Swatinem/rust-cache@v2
 
@@ -34,3 +35,46 @@ jobs:
         with:
           command: test
           args: --workspace --all-features --all-targets
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: llvm-tools-preview
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --all-features --all-targets
+        env:
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "-Cinstrument-coverage"
+          LLVM_PROFILE_FILE: "target/coverage/coverage-%p-%m.profraw"
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: grcov
+
+      - run: >
+          grcov target/coverage
+          --binary-path target/debug/deps
+          --output-type lcov
+          --output-path target/coverage/coverage.lcov
+          --source-dir .
+          --branch
+          --ignore-not-existing
+          --ignore 'tests/*'
+
+      - uses: codecov/codecov-action@v3
+        with:
+          files: target/coverage/coverage.lcov
+          fail_ci_if_error: true
