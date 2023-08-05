@@ -46,3 +46,32 @@ where
         Ok(Self(data))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::Multipart;
+    use axum::http::StatusCode;
+    use axum::routing::post;
+    use axum::{async_trait, Router};
+    use axum_test_helper::TestClient;
+    use reqwest::multipart::Form;
+
+    struct Foo();
+
+    #[async_trait]
+    impl TryFromMultipart for Foo {
+        async fn try_from_multipart(_: &mut Multipart) -> Result<Self, TypedMultipartError> {
+            Ok(Self())
+        }
+    }
+
+    async fn handler(_: TypedMultipart<Foo>) {}
+
+    #[tokio::test]
+    async fn test_typed_multipart() {
+        let client = TestClient::new(Router::new().route("/", post(handler)));
+        let res = client.post("/").multipart(Form::new()).send().await;
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+}

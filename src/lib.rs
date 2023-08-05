@@ -209,15 +209,13 @@
 //! ```
 
 mod field_data;
-mod field_metadata;
 mod temp_file;
 mod try_from_field;
 mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
-pub use crate::field_data::FieldData;
-pub use crate::field_metadata::FieldMetadata;
+pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::temp_file::TempFile;
 pub use crate::try_from_field::TryFromField;
 pub use crate::try_from_multipart::TryFromMultipart;

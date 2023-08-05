@@ -58,3 +58,108 @@ impl IntoResponse for TypedMultipartError {
         (self.get_status(), self.to_string()).into_response()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+    use super::*;
+    use axum::body::HttpBody;
+    use axum::extract::{FromRequest, Multipart};
+    use axum::http::{Request, StatusCode};
+    use axum::routing::post;
+    use axum::{async_trait, BoxError, Router};
+    use axum_test_helper::TestClient;
+    use bytes::Bytes;
+    use lazy_static::lazy_static;
+    use reqwest::multipart::Form;
+
+    struct Foo();
+
+    #[async_trait]
+    impl<S, B> FromRequest<S, B> for Foo
+    where
+        B: HttpBody + Send + 'static,
+        B::Data: Into<Bytes>,
+        B::Error: Into<BoxError>,
+        S: Send + Sync,
+    {
+        type Rejection = TypedMultipartError;
+
+        async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+            let multipart = &mut Multipart::from_request(req, state).await?;
+            while multipart.next_field().await?.is_some() {}
+            unreachable!()
+        }
+    }
+
+    lazy_static! {
+        static ref CLIENT: TestClient = {
+            let handler = |_: Foo| async { panic!("should never be called") };
+            TestClient::new(Router::new().route("/", post(handler)))
+        };
+    }
+
+    #[tokio::test]
+    async fn test_invalid_request() {
+        let res = CLIENT.post("/").json(&"{}").send().await;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert!(res.text().await.contains("request is malformed"));
+    }
+
+    #[tokio::test]
+    async fn test_invalid_request_body() {
+        let res = CLIENT.post("/").multipart(Form::new()).send().await;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert!(res.text().await.contains("request body is malformed"));
+    }
+
+    #[tokio::test]
+    async fn test_missing_field() {
+        let field_name = "foo".to_string();
+        let error = TypedMultipartError::MissingField { field_name };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field 'foo' is required");
+    }
+
+    #[tokio::test]
+    async fn test_wrong_field_type() {
+        let field_name = "foo".to_string();
+        let wanted_type = "bar".to_string();
+        let error = TypedMultipartError::WrongFieldType { field_name, wanted_type };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field 'foo' must be of type 'bar'");
+    }
+
+    #[tokio::test]
+    async fn test_duplicate_field() {
+        let field_name = "foo".to_string();
+        let error = TypedMultipartError::DuplicateField { field_name };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field 'foo' is already present");
+    }
+
+    #[tokio::test]
+    async fn test_unknown_field() {
+        let field_name = "foo".to_string();
+        let error = TypedMultipartError::UnknownField { field_name };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field 'foo' is not expected");
+    }
+
+    #[tokio::test]
+    async fn test_field_too_large() {
+        let field_name = "foo".to_string();
+        let limit_bytes = 42;
+        let error = TypedMultipartError::FieldTooLarge { field_name, limit_bytes };
+        assert_eq!(error.get_status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(error.to_string(), "field 'foo' is larger than 42 bytes");
+    }
+
+    #[tokio::test]
+    async fn test_other() {
+        let source = anyhow::anyhow!("foo");
+        let error = TypedMultipartError::Other { source };
+        assert_eq!(error.get_status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(error.to_string(), "foo");
+    }
+}

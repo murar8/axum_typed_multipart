@@ -125,3 +125,145 @@ gen_try_from_field_impl!(f32);
 gen_try_from_field_impl!(f64);
 gen_try_from_field_impl!(bool); // TODO?: Consider accepting any thruthy value.
 gen_try_from_field_impl!(char);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::Multipart;
+    use axum::http::StatusCode;
+    use axum::routing::post;
+    use axum::Router;
+    use axum_test_helper::TestClient;
+    use reqwest::multipart::{Form, Part};
+    use std::borrow::Cow;
+    use std::fmt::Debug;
+
+    async fn test_try_from_field<T, U>(wanted_value: T, valid_input: U, invalid_input: Option<U>)
+    where
+        T: TryFromField + Debug + PartialEq + Clone + Send + Sync + 'static,
+        U: Into<Cow<'static, str>>,
+    {
+        let handler = |mut multipart: Multipart| async move {
+            let field = multipart.next_field().await?.unwrap();
+            let data = <T as TryFromField>::try_from_field(field, Some(512)).await?;
+            assert_eq!(data, wanted_value);
+            Ok::<(), TypedMultipartError>(())
+        };
+
+        let client = TestClient::new(Router::new().route("/", post(handler)));
+
+        let form = Form::new().part("data", Part::text(valid_input));
+        let res = client.post("/").multipart(form).send().await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        if let Some(invalid_input) = invalid_input {
+            let form = Form::new().part("data", Part::text(invalid_input));
+            let res = client.post("/").multipart(form).send().await;
+            let status = res.status();
+            let msg = res.text().await;
+
+            assert_eq!(status, StatusCode::BAD_REQUEST);
+            assert!(msg.contains("field 'data' must be of type"));
+        }
+
+        let data = "x".repeat(513);
+        let form = Form::new().part("data", Part::text(data));
+        let res = client.post("/").multipart(form).send().await;
+        let status = res.status();
+        let msg = res.text().await;
+
+        assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(msg, "field 'data' is larger than 512 bytes");
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_bytes() {
+        test_try_from_field(Bytes::from("test"), "test", None).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_string() {
+        test_try_from_field(String::from("test"), "test", None).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_i8() {
+        test_try_from_field(-1i8, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_i16() {
+        test_try_from_field(-1i16, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_i32() {
+        test_try_from_field(-1i32, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_i64() {
+        test_try_from_field(-1i64, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_i128() {
+        test_try_from_field(-1i128, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_isize() {
+        test_try_from_field(-1isize, "-1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_u8() {
+        test_try_from_field(1u8, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_u16() {
+        test_try_from_field(1u16, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_u32() {
+        test_try_from_field(1u32, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_u64() {
+        test_try_from_field(1u64, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_u128() {
+        test_try_from_field(1u128, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_usize() {
+        test_try_from_field(1usize, "1", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_f32() {
+        test_try_from_field(1.5f32, "1.5", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_f64() {
+        test_try_from_field(1.5f64, "1.5", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_bool() {
+        test_try_from_field(true, "true", Some("x")).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_char() {
+        test_try_from_field('a', "a", Some("abc")).await;
+    }
+}
