@@ -18,3 +18,10 @@ proc-macro-error = "1.0.4"
 quote = "1.0.28"
 syn = "2.0.27"
 ubyte = "0.10.3"
+
+[dev-dependencies]
+axum-test-helper = "0.3.0"
+axum = { version = "0.6.20", features = ["multipart"] }
+reqwest = "0.11.18"
+axum_typed_multipart = { path = ".." }
+tokio = { version = "1.29.1" }

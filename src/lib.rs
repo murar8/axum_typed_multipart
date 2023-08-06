@@ -27,11 +27,11 @@
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
 //!
-//! ```rust
+//! ```no_run
 //! use axum::http::StatusCode;
 //! use axum::routing::post;
 //! use axum::Router;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipart};
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 //! use std::net::SocketAddr;
 //!
 //! #[derive(TryFromMultipart)]
@@ -49,9 +49,10 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let router = Router::new().route("/", post(handler));
-//!     let address = SocketAddr::from(([127, 0, 0, 1], 3000));
-//!     axum::Server::bind(&address).serve(router.into_make_service()).await.unwrap();
+//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
+//!         .serve(Router::new().route("/", post(handler)).into_make_service())
+//!         .await
+//!         .unwrap();
 //! }
 //! ```
 //!
@@ -61,8 +62,7 @@
 //! the field is missing from the request body.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -76,8 +76,7 @@
 //! the `field_name` parameter of the `form_data` attribute.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -93,8 +92,7 @@
 //! is not supplied in the request.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -144,11 +142,15 @@
 //! middleware, while the field size limit can be increased using the `limit`
 //! parameter of the `form_data` attribute.
 //!
-//! ```rust
+//! ```no_run
+//! use axum::extract::DefaultBodyLimit;
 //! use axum::http::StatusCode;
+//! use axum::routing::post;
+//! use axum::Router;
 //! use axum_typed_multipart::{
 //!     FieldData, TempFile, TryFromMultipart, TypedMultipart, TypedMultipartError,
 //! };
+//! use std::net::SocketAddr;
 //! use std::path::Path;
 //!
 //! #[derive(TryFromMultipart)]
@@ -172,14 +174,15 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
+//!     // The default body size limit is 1MiB, so we increase it to 1GiB.
 //!     let router = Router::new()
 //!         .route("/", post(handler))
-//!         // The default body size limit is 1MiB, so we increase it to 1GiB.
 //!         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
 //!
-//!     let address = SocketAddr::from(([127, 0, 0, 1], 3000));
-//!
-//!     axum::Server::bind(&address).serve(router.into_make_service()).await.unwrap();
+//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
+//!         .serve(router.into_make_service())
+//!         .await
+//!         .unwrap();
 //! }
 //! ```
 //!
@@ -215,8 +218,7 @@
 //! contains unknown fields.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! #[try_from_multipart(strict)]
