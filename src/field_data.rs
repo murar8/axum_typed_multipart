@@ -76,10 +76,10 @@ impl From<&Field<'_>> for FieldMetadata {
 /// async fn handler(
 ///     TypedMultipart(FileUpload { input_file }): TypedMultipart<FileUpload>,
 /// ) -> StatusCode {
-///     println!("Field name: {}", input_file.metadata.name.unwrap());
-///     println!("File name: {}", input_file.metadata.file_name.unwrap());
-///     println!("Content type: {}", input_file.metadata.content_type.unwrap());
-///     println!("Body: {}", input_file.contents);
+///     println!("field name: {}", input_file.metadata.name.unwrap());
+///     println!("file name: {}", input_file.metadata.file_name.unwrap());
+///     println!("content type: {}", input_file.metadata.content_type.unwrap());
+///     println!("body: {}", input_file.contents);
 ///     StatusCode::OK
 /// }
 /// ```
@@ -110,23 +110,24 @@ mod tests {
     use axum_test_helper::TestClient;
     use reqwest::multipart::{Form, Part};
 
-    async fn handler(mut multipart: Multipart) -> Result<(), TypedMultipartError> {
-        let field = multipart.next_field().await?.unwrap();
-        let field_data = FieldData::<String>::try_from_field(field, None).await?;
-
-        assert_eq!(field_data.metadata.name.unwrap(), "input_file");
-        assert_eq!(field_data.metadata.file_name.unwrap(), "test.txt");
-        assert_eq!(field_data.metadata.content_type.unwrap(), "text/plain");
-        assert_eq!(field_data.contents, "test");
-
-        Ok(())
-    }
-
     #[tokio::test]
     async fn test_field_data() {
+        async fn handler(mut multipart: Multipart) {
+            let field = multipart.next_field().await.unwrap().unwrap();
+            let field_data = FieldData::<String>::try_from_field(field, None).await.unwrap();
+
+            assert_eq!(field_data.metadata.name.unwrap(), "input_file");
+            assert_eq!(field_data.metadata.file_name.unwrap(), "test.txt");
+            assert_eq!(field_data.metadata.content_type.unwrap(), "text/plain");
+            assert_eq!(field_data.contents, "test");
+        }
+
         let part = Part::text("test").file_name("test.txt").mime_str("text/plain").unwrap();
-        let form = { Form::new().part("input_file", part) };
-        let client = TestClient::new(Router::new().route("/", post(handler)));
-        client.post("/").multipart(form).send().await;
+
+        TestClient::new(Router::new().route("/", post(handler)))
+            .post("/")
+            .multipart(Form::new().part("input_file", part))
+            .send()
+            .await;
     }
 }
