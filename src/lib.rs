@@ -21,15 +21,18 @@
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
 //! every field in the struct must implement the
 //! [TryFromField](crate::TryFromField) trait. The trait is implemented by
-//! default for all primitive types, [String], and [Bytes](axum::body::Bytes),
-//! in case you want to access the raw data.
+//! default for all primitive types, [String], [Bytes](axum::body::Bytes), and
+//! [TempFile](crate::TempFile).
 //!
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
 //!
 //! ```rust
 //! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum::routing::post;
+//! use axum::Router;
+//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipart};
+//! use std::net::SocketAddr;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -40,8 +43,15 @@
 //! async fn handler(
 //!     TypedMultipart(RequestData { first_name, last_name }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
-//!     println!("full name = '{}' '{}'", first_name, last_name);
+//!     println!("full name = '{} {}'", first_name, last_name);
 //!     StatusCode::OK
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let router = Router::new().route("/", post(handler));
+//!     let address = SocketAddr::from(([127, 0, 0, 1], 3000));
+//!     axum::Server::bind(&address).serve(router.into_make_service()).await.unwrap();
 //! }
 //! ```
 //!
@@ -111,13 +121,9 @@
 //! async fn handler(
 //!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
-//!     println!(
-//!         "file name = '{}', content type = '{}', size = '{}'",
-//!         image.metadata.file_name.unwrap_or(String::new()),
-//!         image.metadata.content_type.unwrap_or(String::from("text/plain")),
-//!         image.contents.len()
-//!     );
-//!
+//!     println!("file name = '{}'", image.metadata.file_name.unwrap());
+//!     println!("content type = '{}'", image.metadata.content_type.unwrap());
+//!     println!("size = {}b", image.contents.len());
 //!     StatusCode::OK
 //! }
 //! ```
@@ -136,8 +142,7 @@
 //! size limit and the field size limit. The request body size limit can be
 //! increased using the [DefaultBodyLimit](axum::extract::DefaultBodyLimit)
 //! middleware, while the field size limit can be increased using the `limit`
-//! parameter of the `form_data` attribute. For more information see
-//! `examples/upload.rs`.
+//! parameter of the `form_data` attribute.
 //!
 //! ```rust
 //! use axum::http::StatusCode;
@@ -148,9 +153,9 @@
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
-//!     #[form_data(limit = "16MiB")]
-//!     image: FieldData<TempFile>,
-//!     author: String,
+//!     #[form_data(limit = "unlimited")]
+//!     image: FieldData<TempFile>, // This field will be limited to the size of the request body.
+//!     author: String, // This field will be limited to the default size of 1MiB.
 //! }
 //!
 //! async fn handler(
@@ -163,6 +168,18 @@
 //!         Ok(_) => StatusCode::OK,
 //!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
 //!     }
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let router = Router::new()
+//!         .route("/", post(handler))
+//!         // The default body size limit is 1MiB, so we increase it to 1GiB.
+//!         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
+//!
+//!     let address = SocketAddr::from(([127, 0, 0, 1], 3000));
+//!
+//!     axum::Server::bind(&address).serve(router.into_make_service()).await.unwrap();
 //! }
 //! ```
 //!
@@ -208,6 +225,8 @@
 //! }
 //! ```
 
+pub use axum_typed_multipart_macros::TryFromMultipart;
+
 mod field_data;
 mod temp_file;
 mod try_from_field;
@@ -221,4 +240,3 @@ pub use crate::try_from_field::TryFromField;
 pub use crate::try_from_multipart::TryFromMultipart;
 pub use crate::typed_multipart::TypedMultipart;
 pub use crate::typed_multipart_error::TypedMultipartError;
-pub use axum_typed_multipart_macros::TryFromMultipart;
