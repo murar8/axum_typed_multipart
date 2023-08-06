@@ -64,8 +64,6 @@ impl From<&Field<'_>> for FieldMetadata {
 ///
 /// ```rust
 /// use axum::http::StatusCode;
-/// use axum::routing::post;
-/// use axum::Router;
 /// use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 ///
 /// #[derive(TryFromMultipart)]

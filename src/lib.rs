@@ -135,6 +135,11 @@
 //! contents to a location of your choice using the
 //! [persist](crate::TempFile::persist) method.
 //!
+//! #### **Warning**
+//! Field size limits for [Vec] fields are applied to **each** occurrence of the
+//! field. This means that if you have a 1GiB limit and the field contains 2
+//! items, the total size of the request body will be 2GiB.
+//!
 //! #### **Note**
 //! When handling large uploads you will need to increase both the request body
 //! size limit and the field size limit. The request body size limit can be
@@ -147,9 +152,7 @@
 //! use axum::http::StatusCode;
 //! use axum::routing::post;
 //! use axum::Router;
-//! use axum_typed_multipart::{
-//!     FieldData, TempFile, TryFromMultipart, TypedMultipart, TypedMultipartError,
-//! };
+//! use axum_typed_multipart::{FieldData, TempFile, TryFromMultipart, TypedMultipart};
 //! use std::net::SocketAddr;
 //! use std::path::Path;
 //!
