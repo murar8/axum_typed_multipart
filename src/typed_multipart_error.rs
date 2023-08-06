@@ -61,7 +61,6 @@ impl IntoResponse for TypedMultipartError {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
     use super::*;
     use axum::body::HttpBody;
     use axum::extract::{FromRequest, Multipart};
@@ -70,8 +69,7 @@ mod tests {
     use axum::{async_trait, BoxError, Router};
     use axum_test_helper::TestClient;
     use bytes::Bytes;
-    use lazy_static::lazy_static;
-    use reqwest::multipart::Form;
+    use reqwest::header;
 
     struct Foo();
 
@@ -92,23 +90,27 @@ mod tests {
         }
     }
 
-    lazy_static! {
-        static ref CLIENT: TestClient = {
-            let handler = |_: Foo| async { panic!("should never be called") };
-            TestClient::new(Router::new().route("/", post(handler)))
-        };
+    fn create_client() -> TestClient {
+        let handler = |_: Foo| async { panic!("should never be called") };
+        TestClient::new(Router::new().route("/", post(handler)))
     }
 
     #[tokio::test]
     async fn test_invalid_request() {
-        let res = CLIENT.post("/").json(&"{}").send().await;
+        let res = create_client().post("/").json(&"{}").send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
         assert!(res.text().await.contains("request is malformed"));
     }
 
     #[tokio::test]
     async fn test_invalid_request_body() {
-        let res = CLIENT.post("/").multipart(Form::new()).send().await;
+        let res = create_client()
+            .post("/")
+            .header(header::CONTENT_TYPE, "multipart/form-data; boundary=BOUNDARY")
+            .body("BOUNDARY\r\n\r\nBOUNDARY--\r\n")
+            .send()
+            .await;
+
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
         assert!(res.text().await.contains("request body is malformed"));
     }
