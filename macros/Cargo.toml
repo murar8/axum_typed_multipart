@@ -16,4 +16,4 @@ proc_macro = true
 darling = "0.20.3"
 proc-macro-error = "1.0.4"
 quote = "1.0.28"
-syn = "2.0.27"
+syn = "2.0.28"
