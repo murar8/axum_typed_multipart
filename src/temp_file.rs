@@ -63,3 +63,35 @@ impl TryFromField for TempFile {
         Ok(TempFile(temp_file))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::Multipart;
+    use axum::routing::post;
+    use axum::Router;
+    use axum_test_helper::TestClient;
+    use reqwest::multipart::{Form, Part};
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[tokio::test]
+    async fn test_temp_file() {
+        async fn handler(mut multipart: Multipart) {
+            let field = multipart.next_field().await.unwrap().unwrap();
+            let file = TempFile::try_from_field(field).await.unwrap();
+            let path = TempDir::new().unwrap().into_path().join("potato.txt");
+            file.persist(&path, true).unwrap();
+            let contents = fs::read_to_string(path).unwrap();
+            assert_eq!(contents, "test");
+        }
+
+        let part = Part::text("test").file_name("test.txt").mime_str("text/plain").unwrap();
+
+        TestClient::new(Router::new().route("/", post(handler)))
+            .post("/")
+            .multipart(Form::new().part("input_file", part))
+            .send()
+            .await;
+    }
+}
