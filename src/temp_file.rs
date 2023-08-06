@@ -13,7 +13,7 @@ use tokio::io::AsyncWriteExt;
 /// the `persist` method.
 ///
 /// This is especially useful for large file uploads where you might not be able
-/// to store all the file contents into memory.
+/// to fit all the file contents in RAM.
 ///
 /// If the program exits before the destructor is run, the temporary file will
 /// not be deleted. For more details about this check the [NamedTempFile]

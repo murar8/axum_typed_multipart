@@ -21,15 +21,18 @@
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
 //! every field in the struct must implement the
 //! [TryFromField](crate::TryFromField) trait. The trait is implemented by
-//! default for all primitive types, [String], and [Bytes](axum::body::Bytes),
-//! in case you want to access the raw data.
+//! default for all primitive types, [String], [Bytes](axum::body::Bytes), and
+//! [TempFile](crate::TempFile).
 //!
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
 //!
-//! ```rust
+//! ```no_run
 //! use axum::http::StatusCode;
+//! use axum::routing::post;
+//! use axum::Router;
 //! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use std::net::SocketAddr;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -40,8 +43,16 @@
 //! async fn handler(
 //!     TypedMultipart(RequestData { first_name, last_name }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
-//!     println!("full name = '{}' '{}'", first_name, last_name);
+//!     println!("full name = '{} {}'", first_name, last_name);
 //!     StatusCode::OK
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
+//!         .serve(Router::new().route("/", post(handler)).into_make_service())
+//!         .await
+//!         .unwrap();
 //! }
 //! ```
 //!
@@ -51,8 +62,7 @@
 //! the field is missing from the request body.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -66,8 +76,7 @@
 //! the `field_name` parameter of the `form_data` attribute.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -83,8 +92,7 @@
 //! is not supplied in the request.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -111,13 +119,9 @@
 //! async fn handler(
 //!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
-//!     println!(
-//!         "file name = '{}', content type = '{}', size = '{}'",
-//!         image.metadata.file_name.unwrap_or(String::new()),
-//!         image.metadata.content_type.unwrap_or(String::from("text/plain")),
-//!         image.contents.len()
-//!     );
-//!
+//!     println!("file name = '{}'", image.metadata.file_name.unwrap());
+//!     println!("content type = '{}'", image.metadata.content_type.unwrap());
+//!     println!("size = {}b", image.contents.len());
 //!     StatusCode::OK
 //! }
 //! ```
@@ -188,8 +192,7 @@
 //! contains unknown fields.
 //!
 //! ```rust
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
 //! #[try_from_multipart(strict)]
@@ -198,19 +201,18 @@
 //! }
 //! ```
 
+pub use axum_typed_multipart_macros::TryFromMultipart;
+
 mod field_data;
-mod field_metadata;
 mod temp_file;
 mod try_from_field;
 mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
-pub use crate::field_data::FieldData;
-pub use crate::field_metadata::FieldMetadata;
+pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::temp_file::TempFile;
 pub use crate::try_from_field::TryFromField;
 pub use crate::try_from_multipart::TryFromMultipart;
 pub use crate::typed_multipart::TypedMultipart;
 pub use crate::typed_multipart_error::TypedMultipartError;
-pub use axum_typed_multipart_macros::TryFromMultipart;
