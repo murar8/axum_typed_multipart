@@ -18,7 +18,7 @@ members = ["macros"]
 anyhow = "1.0.72"
 axum = { version = "0.6.19", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.5.2", path = "macros" }
-tempfile = "3.5.0"
+tempfile = "3.7.1"
 thiserror = "1.0.40"
 
 [dependencies.tokio]
@@ -30,4 +30,4 @@ features = ["macros", "rt-multi-thread", "fs", "io-util"]
 common-multipart-rfc7578 = "0.6.0"
 futures-util = "0.3.28"
 mime = "0.3.17"
-tempfile = "3.5.0"
+tempfile = "3.7.1"
