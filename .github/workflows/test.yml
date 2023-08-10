@@ -6,8 +6,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - toolchain: stable
-            os: ubuntu-latest
           - toolchain: beta
             os: ubuntu-latest
           - toolchain: nightly
@@ -34,3 +32,51 @@ jobs:
         with:
           command: test
           args: --workspace --all-features --all-targets
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --all-features --all-targets
+        env:
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "-Cinstrument-coverage -Cdebug-assertions=no"
+          LLVM_PROFILE_FILE: "target/debug/coverage/coverage-%p-%m.profraw"
+
+      - run: wget -qO- $GRCOV_URL | tar xvj -C "/usr/local/bin"
+        env:
+          GRCOV_URL: https://github.com/mozilla/grcov/releases/download/v0.8.18/grcov-x86_64-unknown-linux-gnu.tar.bz2
+
+        # grcov is still a bit rough around the edges, so we need to explicitly
+        # exclude some of the code from the coverage report.
+        # See https://github.com/mozilla/grcov/issues/476
+      - run: >
+          grcov target/debug/coverage
+          --source-dir .
+          --binary-path target/debug/deps
+          --output-type lcov
+          --output-path target/debug/coverage/coverage.lcov
+          --branch
+          --llvm
+          --ignore-not-existing
+          --ignore '**/tests/**'
+          --excl-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
+          --excl-start '^mod tests \{$'
+          --excl-stop '^\}$'
+
+      - uses: codecov/codecov-action@v3
+        with:
+          files: target/debug/coverage/coverage.lcov
+          fail_ci_if_error: true
