@@ -71,10 +71,10 @@ mod tests {
     use bytes::Bytes;
     use reqwest::header;
 
-    struct Foo();
+    struct Data();
 
     #[async_trait]
-    impl<S, B> FromRequest<S, B> for Foo
+    impl<S, B> FromRequest<S, B> for Data
     where
         B: HttpBody + Send + 'static,
         B::Data: Into<Bytes>,
@@ -91,7 +91,7 @@ mod tests {
     }
 
     fn create_client() -> TestClient {
-        let handler = |_: Foo| async { panic!("should never be called") };
+        let handler = |_: Data| async { panic!("should never be called") };
         TestClient::new(Router::new().route("/", post(handler)))
     }
 
@@ -117,51 +117,51 @@ mod tests {
 
     #[tokio::test]
     async fn test_missing_field() {
-        let field_name = "foo".to_string();
+        let field_name = "data".to_string();
         let error = TypedMultipartError::MissingField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
-        assert_eq!(error.to_string(), "field 'foo' is required");
+        assert_eq!(error.to_string(), "field 'data' is required");
     }
 
     #[tokio::test]
     async fn test_wrong_field_type() {
-        let field_name = "foo".to_string();
+        let field_name = "data".to_string();
         let wanted_type = "bar".to_string();
         let error = TypedMultipartError::WrongFieldType { field_name, wanted_type };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
-        assert_eq!(error.to_string(), "field 'foo' must be of type 'bar'");
+        assert_eq!(error.to_string(), "field 'data' must be of type 'bar'");
     }
 
     #[tokio::test]
     async fn test_duplicate_field() {
-        let field_name = "foo".to_string();
+        let field_name = "data".to_string();
         let error = TypedMultipartError::DuplicateField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
-        assert_eq!(error.to_string(), "field 'foo' is already present");
+        assert_eq!(error.to_string(), "field 'data' is already present");
     }
 
     #[tokio::test]
     async fn test_unknown_field() {
-        let field_name = "foo".to_string();
+        let field_name = "data".to_string();
         let error = TypedMultipartError::UnknownField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
-        assert_eq!(error.to_string(), "field 'foo' is not expected");
+        assert_eq!(error.to_string(), "field 'data' is not expected");
     }
 
     #[tokio::test]
     async fn test_field_too_large() {
-        let field_name = "foo".to_string();
+        let field_name = "data".to_string();
         let limit_bytes = 42;
         let error = TypedMultipartError::FieldTooLarge { field_name, limit_bytes };
         assert_eq!(error.get_status(), StatusCode::PAYLOAD_TOO_LARGE);
-        assert_eq!(error.to_string(), "field 'foo' is larger than 42 bytes");
+        assert_eq!(error.to_string(), "field 'data' is larger than 42 bytes");
     }
 
     #[tokio::test]
     async fn test_other() {
-        let source = anyhow::anyhow!("foo");
+        let source = anyhow::anyhow!("data");
         let error = TypedMultipartError::Other { source };
         assert_eq!(error.get_status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(error.to_string(), "foo");
+        assert_eq!(error.to_string(), "data");
     }
 }

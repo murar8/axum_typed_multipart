@@ -6,21 +6,21 @@ use reqwest::multipart::Form;
 use reqwest::StatusCode;
 
 #[derive(TryFromMultipart)]
-struct Foo {
+struct Data {
     field: String,
 }
 
 #[tokio::test]
 async fn test_field_order() {
-    let handler = |TypedMultipart(foo): TypedMultipart<Foo>| async move {
-        assert_eq!(foo.field, "baz");
+    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+        assert_eq!(data.field, "baz");
     };
 
     let form = Form::new()
-        .text("field", "foo")
+        .text("field", "data")
         .text("field", "bar")
         .text("field", "baz")
-        .text("unknown_field", "foo");
+        .text("unknown_field", "data");
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
@@ -33,11 +33,11 @@ async fn test_field_order() {
 
 #[tokio::test]
 async fn test_missing_field() {
-    let handler = |_: TypedMultipart<Foo>| async { panic!("should not be called") };
+    let handler = |_: TypedMultipart<Data>| async { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(Form::new().text("unknown_field", "foo"))
+        .multipart(Form::new().text("unknown_field", "data"))
         .send()
         .await;
 

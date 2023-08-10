@@ -8,7 +8,7 @@ use reqwest::StatusCode;
 
 #[allow(dead_code)]
 #[derive(TryFromMultipart)]
-struct Foo {
+struct Data {
     default_limit_field: Option<Bytes>,
 
     #[form_data(limit = "16KiB")]
@@ -62,7 +62,7 @@ async fn test_limit() {
 
     for Test { field, size, status, error } in tests.into_iter() {
         let res =
-            TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Foo>| async {})))
+            TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async {})))
                 .post("/")
                 .multipart(Form::new().text(field, "x".repeat(size)))
                 .send()

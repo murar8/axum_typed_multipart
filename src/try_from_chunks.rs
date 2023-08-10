@@ -23,16 +23,16 @@ use tokio::io::AsyncWriteExt;
 /// use axum_typed_multipart::{FieldMetadata, TryFromChunks, TypedMultipartError};
 /// use futures_util::stream::Stream;
 ///
-/// struct Foo(String);
+/// struct Data(String);
 ///
 /// #[async_trait]
-/// impl TryFromChunks for Foo {
+/// impl TryFromChunks for Data {
 ///     async fn try_from_chunks(
 ///         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
 ///         metadata: FieldMetadata,
 ///     ) -> Result<Self, TypedMultipartError> {
 ///         let string = String::try_from_chunks(chunks, metadata).await?;
-///         Ok(Foo(string))
+///         Ok(Data(string))
 ///     }
 /// }
 /// ```

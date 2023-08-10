@@ -6,7 +6,7 @@ use reqwest::multipart::Form;
 use reqwest::StatusCode;
 
 #[derive(TryFromMultipart)]
-struct Foo {
+struct Data {
     standard_field: String,
 
     r#raw_field: String,
@@ -17,14 +17,14 @@ struct Foo {
 
 #[tokio::test]
 async fn test_identifiers() {
-    let handler = |TypedMultipart(foo): TypedMultipart<Foo>| async move {
-        assert_eq!(foo.standard_field, "foo");
-        assert_eq!(foo.r#raw_field, "bar");
-        assert_eq!(foo.renamed_field, "baz");
+    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+        assert_eq!(data.standard_field, "data");
+        assert_eq!(data.r#raw_field, "bar");
+        assert_eq!(data.renamed_field, "baz");
     };
 
     let form = Form::new()
-        .text("standard_field", "foo")
+        .text("standard_field", "data")
         .text("raw_field", "bar")
         .text("source_field", "baz");
 

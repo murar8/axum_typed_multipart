@@ -8,7 +8,7 @@ use reqwest::StatusCode;
 /// The fields are declared this way to make sure the derive macro supports all
 /// [Option] signatures.
 #[derive(TryFromMultipart)]
-struct Foo {
+struct Data {
     option_field: Option<String>,
     std_option_field: std::option::Option<String>,
     core_option_field: core::option::Option<String>,
@@ -16,10 +16,10 @@ struct Foo {
 
 #[tokio::test]
 async fn test_option() {
-    let handler = |TypedMultipart(foo): TypedMultipart<Foo>| async move {
-        assert_eq!(foo.option_field, Some(String::from("John")));
-        assert_eq!(foo.std_option_field, None);
-        assert_eq!(foo.core_option_field, None);
+    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+        assert_eq!(data.option_field, Some(String::from("John")));
+        assert_eq!(data.std_option_field, None);
+        assert_eq!(data.core_option_field, None);
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))

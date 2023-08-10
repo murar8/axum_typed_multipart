@@ -70,10 +70,10 @@ mod tests {
     use futures_core::Stream;
     use reqwest::multipart::Form;
 
-    struct Foo(String);
+    struct Data(String);
 
     #[async_trait]
-    impl TryFromChunks for Foo {
+    impl TryFromChunks for Data {
         async fn try_from_chunks(
             chunks: impl Stream<Item = Result<bytes::Bytes, TypedMultipartError>> + Send + Sync,
             metadata: FieldMetadata,
@@ -87,8 +87,8 @@ mod tests {
     async fn test_try_from_field() {
         async fn handler(mut multipart: Multipart) {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let foo = Foo::try_from_field(field, None).await.unwrap();
-            assert_eq!(foo.0, "Hello, world!");
+            let data = Data::try_from_field(field, None).await.unwrap();
+            assert_eq!(data.0, "Hello, world!");
         }
 
         TestClient::new(Router::new().route("/", post(handler)))

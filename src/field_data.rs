@@ -67,11 +67,11 @@ impl From<&Field<'_>> for FieldMetadata {
 /// use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 ///
 /// #[derive(TryFromMultipart)]
-/// struct Foo {
+/// struct Data {
 ///     data: FieldData<String>,
 /// }
 ///
-/// async fn handler(TypedMultipart(Foo { data }): TypedMultipart<Foo>) -> StatusCode {
+/// async fn handler(TypedMultipart(Data { data }): TypedMultipart<Data>) -> StatusCode {
 ///     println!("name: {}", data.metadata.name.unwrap());
 ///     println!("file_name: {}", data.metadata.file_name.unwrap());
 ///     println!("content_type: {}", data.metadata.content_type.unwrap());
