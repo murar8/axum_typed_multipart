@@ -18,6 +18,11 @@ jobs:
     env:
       CARGO_REGISTRY_TOKEN: ${{secrets.CARGO_REGISTRY_TOKEN}}
 
+    permissions:
+      contents: "write"
+      packages: "write"
+      pull-requests: "read"
+
     runs-on: ubuntu-latest
 
     steps:
