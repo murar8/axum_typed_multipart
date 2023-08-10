@@ -135,28 +135,58 @@
 //! contents to a location of your choice using the
 //! [persist](crate::TempFile::persist) method.
 //!
-//! ```rust
+//! #### **Warning**
+//! Field size limits for [Vec] fields are applied to **each** occurrence of the
+//! field. This means that if you have a 1GiB field limit and the field contains
+//! 5 entries, the total size of the request body will be 5GiB.
+//!
+//! #### **Note**
+//! When handling large uploads you will need to increase both the request body
+//! size limit and the field size limit. The request body size limit can be
+//! increased using the [DefaultBodyLimit](axum::extract::DefaultBodyLimit)
+//! middleware, while the field size limit can be increased using the `limit`
+//! parameter of the `form_data` attribute.
+//!
+//! ```no_run
+//! use axum::extract::DefaultBodyLimit;
 //! use axum::http::StatusCode;
-//! use axum_typed_multipart::{
-//!     FieldData, TempFile, TryFromMultipart, TypedMultipart, TypedMultipartError,
-//! };
+//! use axum::routing::post;
+//! use axum::Router;
+//! use axum_typed_multipart::{FieldData, TempFile, TryFromMultipart, TypedMultipart};
+//! use std::net::SocketAddr;
 //! use std::path::Path;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
-//!     image: FieldData<TempFile>,
+//!     #[form_data(limit = "unlimited")]
+//!     image: FieldData<TempFile>, // This field will be limited to the size of the request body.
+//!
+//!     author: String, // This field will be limited to the default size of 1MiB.
 //! }
 //!
 //! async fn handler(
-//!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
+//!     TypedMultipart(RequestData { image, author }): TypedMultipart<RequestData>,
 //! ) -> StatusCode {
 //!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
-//!     let path = Path::new("/tmp").join(file_name);
+//!     let path = Path::new("/tmp").join(author).join(file_name);
 //!
 //!     match image.contents.persist(path, false).await {
 //!         Ok(_) => StatusCode::OK,
 //!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
 //!     }
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     // The default axum body size limit is 2MiB, so we increase it to 1GiB.
+//!     let router = Router::new()
+//!         .route("/", post(handler))
+//!         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
+//!
+//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
+//!         .serve(router.into_make_service())
+//!         .await
+//!         .unwrap();
 //! }
 //! ```
 //!
@@ -200,11 +230,23 @@
 //!     name: String,
 //! }
 //! ```
+//!
+//! ### Custom types
+//!
+//! If you would like to use a custom type for a field you need to implement the
+//! [TryFromField](crate::TryFromField) trait for your type. This will allow the
+//! derive macro to generate the [TryFromMultipart](crate::TryFromMultipart)
+//! implementation automatically. Instead of implementing the trait directly, it
+//! is recommended to implement the [TryFromChunks](crate::TryFromChunks) trait
+//! and the [TryFromField](crate::TryFromField) trait will be implemented
+//! automatically. This is recommended since you won't need to manually
+//! implement the size limit logic.
 
 pub use axum_typed_multipart_macros::TryFromMultipart;
 
 mod field_data;
 mod temp_file;
+mod try_from_chunks;
 mod try_from_field;
 mod try_from_multipart;
 mod typed_multipart;
@@ -212,6 +254,7 @@ mod typed_multipart_error;
 
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::temp_file::TempFile;
+pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::TryFromField;
 pub use crate::try_from_multipart::TryFromMultipart;
 pub use crate::typed_multipart::TypedMultipart;

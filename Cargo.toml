@@ -18,6 +18,9 @@ members = ["macros"]
 anyhow = "1.0.72"
 axum = { version = "0.6.19", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.5.2", path = "macros" }
+bytes = "1.4.0"
+futures-core = "0.3.28"
+futures-util = "0.3.28"
 tempfile = "3.5.0"
 thiserror = "1.0.40"
 
