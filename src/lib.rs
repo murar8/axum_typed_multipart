@@ -249,8 +249,8 @@
 //! automatically. This is recommended since you won't need to manually
 //! implement the size limit logic.
 //!
-//! If you implement the trait for a common type, feel free to open a PR to add
-//! it to the crate!
+//! If you implement the trait for a common type for some external crate, feel
+//! free to submit a PR to add it to the crate!
 
 pub use axum_typed_multipart_macros::TryFromMultipart;
 

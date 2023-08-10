@@ -2,6 +2,7 @@ use axum::extract::multipart::{MultipartError, MultipartRejection};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+/// Error type for the [TryFromMultipart](crate::TryFromMultipart) trait.
 #[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
     #[error("request is malformed ({})", .source.body_text())]

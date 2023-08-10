@@ -12,18 +12,21 @@ use axum::{async_trait, BoxError};
 /// ## Example
 ///
 /// ```rust
+/// use axum::http::StatusCode;
 /// use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 ///
 /// #[derive(TryFromMultipart)]
 /// struct Data {
 ///     name: String,
 ///     email: Option<String>,
-///     #[form_data(field_name = "website_url")]
 ///     url: Option<String>,
 /// }
 ///
-/// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) {
-///     // ...
+/// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) -> StatusCode {
+///     println!("name: {}", data.name);
+///     println!("email: {:?}", data.email.unwrap_or_default());
+///     println!("url: {:?}", data.url.unwrap_or_default());
+///     StatusCode::OK
 /// }
 /// ```
 #[derive(Debug)]
