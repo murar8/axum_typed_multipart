@@ -11,9 +11,9 @@ use tokio::io::AsyncWriteExt;
 
 /// Types that can be created from a [Stream] of [Bytes].
 ///
-/// All fields for a given struct must implement this trait to be able to derive
-/// the [TryFromMultipart](crate::TryFromMultipart) trait.
-///
+/// All fields for a given struct must implement either this trait or the
+/// [TryFromField](crate::TryFromField) trait directly to be able to derive the
+/// [TryFromMultipart](crate::TryFromMultipart) trait.
 ///
 /// ## Example
 ///
@@ -79,7 +79,7 @@ impl TryFromChunks for String {
 }
 
 /// Generate a [TryFromChunks] implementation for the supplied data type using
-/// the `str::parse` method on the text representation of the field data.
+/// the `str::parse` method on the textual representation of the field data.
 macro_rules! gen_try_from_field_impl {
     ( $type: ty ) => {
         #[async_trait]
