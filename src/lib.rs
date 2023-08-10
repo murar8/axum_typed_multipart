@@ -179,9 +179,10 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     // The default axum body size limit is 2MiB, so we increase it to 1GiB.
 //!     let router = Router::new()
 //!         .route("/", post(handler))
+//!         // The default axum body size limit is 2MiB, so we need to increase
+//!         // it to 1GiB.
 //!         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
 //!
 //!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
@@ -196,6 +197,11 @@
 //! If the incoming request will include multiple fields that share the same
 //! name (AKA lists) the field can be declared as a [Vec], allowing for all
 //! occurrences of the field to be stored.
+//!
+//! #### **Warning**
+//! Field size limits for [Vec] fields are applied to **each** occurrence of the
+//! field. This means that if you have a 1GiB field limit and the field contains
+//! 5 entries, the total size of the request body will be 5GiB.
 //!
 //! ```rust
 //! use axum::http::StatusCode;
