@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
 [![](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
-[![](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/murar8/axum_typed_multipart/actions/workflows/ci.yml)
+[![.github/workflows/publish.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/publish.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/publish.yml)
 
 Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum),
 this crate simplifies the process of handling `multipart/form-data` requests
@@ -22,10 +22,6 @@ When a [SemVer](https://semver.org/) compatible git tag is pushed to the repo a 
 Direct push to the `main` branch is not allowed, any updates require a pull request to be opened. After all status checks pass the PR will be eligible for review and merge.
 
 Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification.
-
-## Improvements
-
-- Allow for setting an arbitrary default value for optional fields.
 
 ## License
 
