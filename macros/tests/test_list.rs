@@ -8,16 +8,16 @@ use reqwest::StatusCode;
 /// The fields are declared this way to make sure the derive macro supports all
 /// [Vec] signatures.
 #[derive(TryFromMultipart)]
-struct Foo {
+struct Data {
     vec_field: Vec<String>,
     std_vec_field: std::vec::Vec<String>,
 }
 
 #[tokio::test]
 async fn test_list() {
-    let handler = |TypedMultipart(foo): TypedMultipart<Foo>| async move {
-        assert_eq!(foo.vec_field, vec!["Apple", "Orange"]);
-        assert_eq!(foo.std_vec_field, Vec::<String>::new());
+    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+        assert_eq!(data.vec_field, vec!["Apple", "Orange"]);
+        assert_eq!(data.std_vec_field, Vec::<String>::new());
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))

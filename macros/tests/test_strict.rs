@@ -7,19 +7,19 @@ use reqwest::StatusCode;
 
 #[derive(TryFromMultipart)]
 #[try_from_multipart(strict)]
-struct Foo {
+struct Data {
     name: String,
     items: Vec<String>,
 }
 
 #[tokio::test]
 async fn test_strict() {
-    async fn handler(TypedMultipart(foo): TypedMultipart<Foo>) {
-        assert_eq!(foo.name, "foo");
-        assert_eq!(foo.items, vec!["bread", "cheese"]);
+    async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
+        assert_eq!(data.name, "data");
+        assert_eq!(data.items, vec!["bread", "cheese"]);
     }
 
-    let form = Form::new().text("name", "foo").text("items", "bread").text("items", "cheese");
+    let form = Form::new().text("name", "data").text("items", "bread").text("items", "cheese");
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(form)
@@ -31,11 +31,11 @@ async fn test_strict() {
 
 #[tokio::test]
 async fn test_strict_unknown_field() {
-    let handler = |_: TypedMultipart<Foo>| async move { panic!("should not be called") };
+    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(Form::new().text("unknown_field", "foo"))
+        .multipart(Form::new().text("unknown_field", "data"))
         .send()
         .await;
 
@@ -45,11 +45,11 @@ async fn test_strict_unknown_field() {
 
 #[tokio::test]
 async fn test_strict_deplicate_field() {
-    let handler = |_: TypedMultipart<Foo>| async move { panic!("should not be called") };
+    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(Form::new().text("name", "foo").text("name", "bar"))
+        .multipart(Form::new().text("name", "data").text("name", "bar"))
         .send()
         .await;
 

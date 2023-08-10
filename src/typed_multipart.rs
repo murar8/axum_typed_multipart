@@ -15,14 +15,14 @@ use axum::{async_trait, BoxError};
 /// use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 ///
 /// #[derive(TryFromMultipart)]
-/// struct Foo {
+/// struct Data {
 ///     name: String,
 ///     email: Option<String>,
 ///     #[form_data(field_name = "website_url")]
 ///     url: Option<String>,
 /// }
 ///
-/// async fn handle_foo(TypedMultipart(foo): TypedMultipart<Foo>) {
+/// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) {
 ///     // ...
 /// }
 /// ```
@@ -56,19 +56,19 @@ mod tests {
     use axum_test_helper::TestClient;
     use reqwest::multipart::Form;
 
-    struct Foo(String);
+    struct Data(String);
 
     #[async_trait]
-    impl TryFromMultipart for Foo {
+    impl TryFromMultipart for Data {
         async fn try_from_multipart(_: &mut Multipart) -> Result<Self, TypedMultipartError> {
-            Ok(Self(String::from("foo")))
+            Ok(Self(String::from("data")))
         }
     }
 
     #[tokio::test]
     async fn test_typed_multipart() {
-        async fn handler(TypedMultipart(foo): TypedMultipart<Foo>) {
-            assert_eq!(foo.0, "foo");
+        async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
+            assert_eq!(data.0, "data");
         }
 
         TestClient::new(Router::new().route("/", post(handler)))

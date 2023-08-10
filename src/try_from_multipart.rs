@@ -56,7 +56,7 @@ use axum::extract::Multipart;
 /// use axum_typed_multipart::TryFromMultipart;
 ///
 /// #[derive(TryFromMultipart)]
-/// struct Foo {
+/// struct Data {
 ///     name: String,
 /// }
 /// ```
