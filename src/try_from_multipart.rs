@@ -45,6 +45,11 @@ use axum::extract::Multipart;
 /// - `default` => Populate the field using the type's [Default] implementation
 /// when the field is not supplied in the request.
 ///
+/// - `limit` => Limit the size of the field. If the field is larger than the
+/// supplied limit an error will be returned. The value must be a valid byte
+/// unit, for example `1KiB` or `5MiB` or the special value `unlimited` to
+/// disable the limit. If the limit is not supplied the default value is `1MiB`.
+///
 /// ## Example
 ///
 /// ```rust

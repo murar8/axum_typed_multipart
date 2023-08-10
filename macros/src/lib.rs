@@ -4,14 +4,23 @@ use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::quote;
+use ubyte::ByteUnit;
 use util::{matches_option_signature, matches_vec_signature};
+
+const DEFAULT_FIELD_SIZE_LIMIT_BYTES: usize = 1024 * 1024; // 1MiB
 
 #[derive(Debug, FromField)]
 #[darling(attributes(form_data))]
 struct FieldData {
     ident: Option<syn::Ident>,
+
     ty: syn::Type,
+
     field_name: Option<String>,
+
+    #[darling(default)]
+    limit: Option<String>,
+
     #[darling(default)]
     default: bool,
 }
@@ -34,13 +43,27 @@ impl FieldData {
             ident
         }
     }
+
+    /// Parse the supplied human readable size limit into a byte limit.
+    fn limit_bytes(&self) -> Option<usize> {
+        match self.limit.as_deref() {
+            None => Some(DEFAULT_FIELD_SIZE_LIMIT_BYTES),
+            Some("unlimited") => None,
+            Some(limit) => match limit.parse::<ByteUnit>() {
+                Ok(limit) => Some(limit.as_u64() as usize),
+                Err(_) => abort!(self.ident.as_ref().unwrap(), "limit must be a valid byte unit"),
+            },
+        }
+    }
 }
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
 struct InputData {
     ident: syn::Ident,
+
     data: darling::ast::Data<(), FieldData>,
+
     #[darling(default)]
     strict: bool,
 }
@@ -74,9 +97,10 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
         .iter()
         .map(|field @ FieldData { ident, ty, .. }| {
             let name = field.name();
-
+            let limit_bytes =
+                field.limit_bytes().map(|limit| quote! { Some(#limit) }).unwrap_or(quote! { None });
             let value = quote! {
-                axum_typed_multipart::TryFromField::try_from_field(__field__).await?
+                axum_typed_multipart::TryFromField::try_from_field(__field__, #limit_bytes).await?
             };
 
             let assignment = if matches_vec_signature(ty) {

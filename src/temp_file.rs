@@ -25,6 +25,7 @@ use tokio::io::AsyncWriteExt;
 ///
 /// #[derive(TryFromMultipart)]
 /// struct FileUpload {
+///     #[form_data(limit = "1MiB")]
 ///     file: TempFile,
 /// }
 /// ```
@@ -49,13 +50,24 @@ impl TempFile {
 
 #[async_trait]
 impl TryFromField for TempFile {
-    async fn try_from_field(mut field: Field<'_>) -> Result<Self, TypedMultipartError> {
+    async fn try_from_field(
+        mut field: Field<'_>,
+        limit_bytes: Option<usize>,
+    ) -> Result<Self, TypedMultipartError> {
         let temp_file = NamedTempFile::new().map_err(anyhow::Error::new)?;
         let std_file = temp_file.reopen().map_err(anyhow::Error::new)?;
         let mut async_file = AsyncFile::from_std(std_file);
+        let mut size_bytes = 0;
 
         while let Some(chunk) = field.chunk().await? {
+            if let Some(limit_bytes) = limit_bytes {
+                if size_bytes + chunk.len() > limit_bytes {
+                    let field_name = field.name().unwrap().to_string();
+                    return Err(TypedMultipartError::FieldTooLarge { field_name, limit_bytes });
+                }
+            }
             async_file.write_all(&chunk).await.map_err(anyhow::Error::new)?;
+            size_bytes += chunk.len();
         }
 
         async_file.flush().await.map_err(anyhow::Error::new)?;
@@ -79,9 +91,9 @@ mod tests {
     async fn test_temp_file() {
         async fn handler(mut multipart: Multipart) {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let file = TempFile::try_from_field(field).await.unwrap();
+            let file = TempFile::try_from_field(field, None).await.unwrap();
             let path = TempDir::new().unwrap().into_path().join("potato.txt");
-            file.persist(&path, true).unwrap();
+            file.persist(&path, true).await.unwrap();
             let contents = fs::read_to_string(path).unwrap();
             assert_eq!(contents, "test");
         }

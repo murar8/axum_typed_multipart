@@ -28,6 +28,9 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' is not expected")]
     UnknownField { field_name: String },
 
+    #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
+    FieldTooLarge { field_name: String, limit_bytes: usize },
+
     #[error(transparent)]
     Other {
         #[from]
@@ -42,6 +45,7 @@ impl TypedMultipartError {
             | Self::WrongFieldType { .. }
             | Self::DuplicateField { .. }
             | Self::UnknownField { .. } => StatusCode::BAD_REQUEST,
+            | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),
             | Self::Other { .. } => StatusCode::INTERNAL_SERVER_ERROR,
@@ -58,12 +62,13 @@ impl IntoResponse for TypedMultipartError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::body::{Bytes, HttpBody};
+    use axum::body::HttpBody;
     use axum::extract::{FromRequest, Multipart};
     use axum::http::{Request, StatusCode};
     use axum::routing::post;
     use axum::{async_trait, BoxError, Router};
     use axum_test_helper::TestClient;
+    use bytes::Bytes;
     use reqwest::header;
 
     struct Foo();
@@ -141,6 +146,15 @@ mod tests {
         let error = TypedMultipartError::UnknownField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field 'foo' is not expected");
+    }
+
+    #[tokio::test]
+    async fn test_field_too_large() {
+        let field_name = "foo".to_string();
+        let limit_bytes = 42;
+        let error = TypedMultipartError::FieldTooLarge { field_name, limit_bytes };
+        assert_eq!(error.get_status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(error.to_string(), "field 'foo' is larger than 42 bytes");
     }
 
     #[tokio::test]

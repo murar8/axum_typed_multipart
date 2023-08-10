@@ -4,7 +4,7 @@ use axum::extract::multipart::Field;
 use axum::http::HeaderMap;
 
 /// Additional information about the file supplied by the client in the request.
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 pub struct FieldMetadata {
     /// Name of the HTML field in the form.
     ///
@@ -87,15 +87,20 @@ pub struct FieldData<T> {
 
 #[async_trait]
 impl<T: TryFromField> TryFromField for FieldData<T> {
-    async fn try_from_field(field: Field<'_>) -> Result<Self, TypedMultipartError> {
+    async fn try_from_field(
+        field: Field<'_>,
+        limit_bytes: Option<usize>,
+    ) -> Result<Self, TypedMultipartError> {
         let metadata = FieldMetadata::from(&field);
-        let contents = T::try_from_field(field).await?;
+        let contents = T::try_from_field(field, limit_bytes).await?;
         Ok(Self { metadata, contents })
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::TryFromField;
     use axum::extract::Multipart;
     use axum::routing::post;
     use axum::Router;
@@ -107,7 +112,7 @@ mod tests {
     async fn test_field_data() {
         let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let field_data = FieldData::<String>::try_from_field(field).await.unwrap();
+            let field_data = FieldData::<String>::try_from_field(field, None).await.unwrap();
 
             assert_eq!(field_data.metadata.name.unwrap(), "input_file");
             assert_eq!(field_data.metadata.file_name.unwrap(), "test.txt");
