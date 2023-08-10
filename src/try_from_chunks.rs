@@ -5,6 +5,9 @@ use bytes::BytesMut;
 use futures_core::stream::Stream;
 use futures_util::stream::StreamExt;
 use std::any::type_name;
+use tempfile::NamedTempFile;
+use tokio::fs::File as AsyncFile;
+use tokio::io::AsyncWriteExt;
 
 /// Types that can be created from a [Stream] of [Bytes].
 ///
@@ -114,12 +117,35 @@ gen_try_from_field_impl!(f64);
 gen_try_from_field_impl!(bool); // TODO?: Consider accepting any thruthy value.
 gen_try_from_field_impl!(char);
 
+#[async_trait]
+impl TryFromChunks for NamedTempFile {
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+        _: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let mut chunks = chunks.boxed();
+        let temp_file = NamedTempFile::new().map_err(anyhow::Error::new)?;
+        let std_file = temp_file.reopen().map_err(anyhow::Error::new)?;
+        let mut async_file = AsyncFile::from_std(std_file);
+
+        while let Some(chunk) = chunks.next().await {
+            let chunk = chunk?;
+            async_file.write_all(&chunk).await.map_err(anyhow::Error::new)?;
+        }
+
+        async_file.flush().await.map_err(anyhow::Error::new)?;
+
+        Ok(temp_file)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use bytes::Bytes;
     use futures_util::stream;
     use std::fmt::Debug;
+    use std::io::Read;
 
     fn create_chunks(
         value: impl Into<Bytes>,
@@ -234,5 +260,17 @@ mod tests {
     async fn test_try_from_chunks_char() {
         test_try_from_chunks_valid::<char>("a", 'a').await;
         test_try_from_chunks_invalid::<char>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_named_temp_file() {
+        let chunks = create_chunks("Hello, dear world!");
+        let metadata = FieldMetadata { name: Some("test".into()), ..Default::default() };
+        let file = NamedTempFile::try_from_chunks(chunks, metadata).await.unwrap();
+
+        let mut buffer = String::new();
+        file.reopen().unwrap().read_to_string(&mut buffer).unwrap();
+
+        assert_eq!(buffer, "Hello, dear world!");
     }
 }

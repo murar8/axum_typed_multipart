@@ -22,7 +22,7 @@
 //! every field in the struct must implement the
 //! [TryFromField](crate::TryFromField) trait. The trait is implemented by
 //! default for all primitive types, [String], [Bytes](axum::body::Bytes), and
-//! [TempFile](crate::TempFile).
+//! [NamedTempFile](tempfile::NamedTempFile).
 //!
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
@@ -128,12 +128,12 @@
 //!
 //! ### Large uploads
 //!
-//! For large file uploads you can save the contents of the file to the file
-//! system using the [TempFile](crate::TempFile) helper. This will efficiently
-//! stream the field data directly to the file system, without needing to fit
-//! all the data in memory. Once the upload is complete, you can then save the
-//! contents to a location of your choice using the
-//! [persist](crate::TempFile::persist) method.
+//! For large uploads you can save the contents of the field to the file system
+//! using the [NamedTempFile](tempfile::NamedTempFile) crate. This will
+//! efficiently stream the field data directly to the file system, without
+//! needing to fit all the data in memory. Once the upload is complete, you can
+//! then save the contents to a location of your choice. For more information
+//! check out the [NamedTempFile](tempfile::NamedTempFile) documentation.
 //!
 //! #### **Warning**
 //! Field size limits for [Vec] fields are applied to **each** occurrence of the
@@ -152,14 +152,15 @@
 //! use axum::http::StatusCode;
 //! use axum::routing::post;
 //! use axum::Router;
-//! use axum_typed_multipart::{FieldData, TempFile, TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 //! use std::net::SocketAddr;
 //! use std::path::Path;
+//! use tempfile::NamedTempFile;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
 //!     #[form_data(limit = "unlimited")]
-//!     image: FieldData<TempFile>, // This field will be limited to the size of the request body.
+//!     image: FieldData<NamedTempFile>, // This field will be limited to the size of the request body.
 //!
 //!     author: String, // This field will be limited to the default size of 1MiB.
 //! }
@@ -170,7 +171,7 @@
 //!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
 //!     let path = Path::new("/tmp").join(author).join(file_name);
 //!
-//!     match image.contents.persist(path, false).await {
+//!     match image.contents.persist(path) {
 //!         Ok(_) => StatusCode::OK,
 //!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
 //!     }
@@ -241,11 +242,13 @@
 //! and the [TryFromField](crate::TryFromField) trait will be implemented
 //! automatically. This is recommended since you won't need to manually
 //! implement the size limit logic.
+//!
+//! If you implement the trait for a common type, feel free to open a PR to add
+//! it to the crate!
 
 pub use axum_typed_multipart_macros::TryFromMultipart;
 
 mod field_data;
-mod temp_file;
 mod try_from_chunks;
 mod try_from_field;
 mod try_from_multipart;
@@ -253,7 +256,6 @@ mod typed_multipart;
 mod typed_multipart_error;
 
 pub use crate::field_data::{FieldData, FieldMetadata};
-pub use crate::temp_file::TempFile;
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::TryFromField;
 pub use crate::try_from_multipart::TryFromMultipart;
