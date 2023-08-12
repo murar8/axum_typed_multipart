@@ -119,10 +119,9 @@ gen_try_from_field_impl!(char);
 #[async_trait]
 impl TryFromChunks for NamedTempFile {
     async fn try_from_chunks(
-        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        mut chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         _: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let mut chunks = chunks.boxed();
         let temp_file = NamedTempFile::new().map_err(anyhow::Error::new)?;
         let std_file = temp_file.reopen().map_err(anyhow::Error::new)?;
         let mut async_file = AsyncFile::from_std(std_file);
