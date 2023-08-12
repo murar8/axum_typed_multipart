@@ -73,7 +73,7 @@ impl TryFromChunks for String {
 
         String::from_utf8(bytes.into()).map_err(|_| TypedMultipartError::WrongFieldType {
             field_name,
-            wanted_type: type_name::<u128>().to_string(),
+            wanted_type: type_name::<String>().to_string(),
         })
     }
 }
