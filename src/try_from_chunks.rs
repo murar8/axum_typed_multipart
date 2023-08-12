@@ -38,6 +38,9 @@ use tokio::io::AsyncWriteExt;
 /// ```
 #[async_trait]
 pub trait TryFromChunks: Sized {
+    /// Consume the input [Stream] of [Bytes] to create the supplied type.
+    ///
+    /// The `metadata` parameter contains information about the field.
     async fn try_from_chunks(
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,

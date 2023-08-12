@@ -1,3 +1,5 @@
+//! Macros for axum-typed-multipart.
+
 mod util;
 
 use darling::{FromDeriveInput, FromField};

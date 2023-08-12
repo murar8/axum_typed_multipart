@@ -27,40 +27,14 @@
 //! If the request body is malformed or it does not contain the required data
 //! the request will be aborted with an error.
 //!
-//! ```no_run
-//! use axum::http::StatusCode;
-//! use axum::routing::post;
-//! use axum::Router;
-//! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
-//! use std::net::SocketAddr;
-//!
-//! #[derive(TryFromMultipart)]
-//! struct RequestData {
-//!     first_name: String,
-//!     last_name: String,
-//! }
-//!
-//! async fn handler(
-//!     TypedMultipart(RequestData { first_name, last_name }): TypedMultipart<RequestData>,
-//! ) -> StatusCode {
-//!     println!("full name = '{} {}'", first_name, last_name);
-//!     StatusCode::OK
-//! }
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-//!         .serve(Router::new().route("/", post(handler)).into_make_service())
-//!         .await
-//!         .unwrap();
-//! }
+//! ```rust,no_run
+#![doc = include_str!("../examples/basic.rs")]
 //! ```
 //!
 //! ### Optional fields
 //!
 //! If a field is declared as an [Option] the value will default to [None] when
 //! the field is missing from the request body.
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -74,7 +48,6 @@
 //!
 //! If you would like to assign a custom name for the source field you can use
 //! the `field_name` parameter of the `form_data` attribute.
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -90,7 +63,6 @@
 //! If the `default` parameter in the `form_data` attribute is present the value
 //! will be populated using the type's [Default] implementation when the field
 //! is not supplied in the request.
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -103,26 +75,15 @@
 //!
 //! ### Field metadata
 //!
-//! If you need access to the field metadata (e.g. the request headers) you can
-//! use the [FieldData](crate::FieldData) struct to wrap your field.
-//!
+//! If you need access to the field metadata (e.g. the field headers like file
+//! name or content type) you can use the [FieldData](crate::FieldData) struct
+//! to wrap your field.
 //! ```rust
-//! use axum::body::Bytes;
-//! use axum::http::StatusCode;
-//! use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
+//! use axum_typed_multipart::{FieldData, TryFromMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
 //!     image: FieldData<Bytes>,
-//! }
-//!
-//! async fn handler(
-//!     TypedMultipart(RequestData { image }): TypedMultipart<RequestData>,
-//! ) -> StatusCode {
-//!     println!("file name = '{}'", image.metadata.file_name.unwrap());
-//!     println!("content type = '{}'", image.metadata.content_type.unwrap());
-//!     println!("size = {}b", image.contents.len());
-//!     StatusCode::OK
 //! }
 //! ```
 //!
@@ -146,50 +107,8 @@
 //! increased using the [DefaultBodyLimit](axum::extract::DefaultBodyLimit)
 //! middleware, while the field size limit can be increased using the `limit`
 //! parameter of the `form_data` attribute.
-//!
-//! ```no_run
-//! use axum::extract::DefaultBodyLimit;
-//! use axum::http::StatusCode;
-//! use axum::routing::post;
-//! use axum::Router;
-//! use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
-//! use std::net::SocketAddr;
-//! use std::path::Path;
-//! use tempfile::NamedTempFile;
-//!
-//! #[derive(TryFromMultipart)]
-//! struct RequestData {
-//!     #[form_data(limit = "unlimited")]
-//!     image: FieldData<NamedTempFile>, // This field will be limited to the size of the request body.
-//!
-//!     author: String, // This field will be limited to the default size of 1MiB.
-//! }
-//!
-//! async fn handler(
-//!     TypedMultipart(RequestData { image, author }): TypedMultipart<RequestData>,
-//! ) -> StatusCode {
-//!     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
-//!     let path = Path::new("/tmp").join(author).join(file_name);
-//!
-//!     match image.contents.persist(path) {
-//!         Ok(_) => StatusCode::OK,
-//!         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-//!     }
-//! }
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let router = Router::new()
-//!         .route("/", post(handler))
-//!         // The default axum body size limit is 2MiB, so we need to increase
-//!         // it to 1GiB.
-//!         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
-//!
-//!     axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-//!         .serve(router.into_make_service())
-//!         .await
-//!         .unwrap();
-//! }
+//! ```rust,no_run
+#![doc = include_str!("../examples/upload.rs")]
 //! ```
 //!
 //! ### Lists
@@ -202,7 +121,6 @@
 //! Field size limits for [Vec] fields are applied to **each** occurrence of the
 //! field. This means that if you have a 1GiB field limit and the field contains
 //! 5 entries, the total size of the request body will be 5GiB.
-//!
 //! ```rust
 //! use axum::http::StatusCode;
 //! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
@@ -210,13 +128,6 @@
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
 //!     names: Vec<String>,
-//! }
-//!
-//! async fn handler(
-//!     TypedMultipart(RequestData { names }): TypedMultipart<RequestData>,
-//! ) -> StatusCode {
-//!     println!("first name = '{}'", names[0]);
-//!     StatusCode::OK
 //! }
 //! ```
 //!
@@ -227,7 +138,6 @@
 //! `strict` parameter in the derive macro. This will make the macro throw an
 //! error if the request contains multiple fields with the same name or if it
 //! contains unknown fields.
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!

@@ -63,20 +63,11 @@ impl From<&Field<'_>> for FieldMetadata {
 /// ## Example
 ///
 /// ```rust
-/// use axum::http::StatusCode;
-/// use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
+/// use axum_typed_multipart::{FieldData, TryFromMultipart};
 ///
 /// #[derive(TryFromMultipart)]
 /// struct Data {
 ///     data: FieldData<String>,
-/// }
-///
-/// async fn handler(TypedMultipart(Data { data }): TypedMultipart<Data>) -> StatusCode {
-///     println!("name: {}", data.metadata.name.unwrap());
-///     println!("file_name: {}", data.metadata.file_name.unwrap());
-///     println!("content_type: {}", data.metadata.content_type.unwrap());
-///     println!("contents: {}", data.contents);
-///     StatusCode::OK
 /// }
 /// ```
 #[derive(Debug)]

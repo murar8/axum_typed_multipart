@@ -4,7 +4,7 @@ use axum::extract::{FromRequest, Multipart};
 use axum::http::Request;
 use axum::{async_trait, BoxError};
 
-/// Used as as an argument for [axum handlers](axum::handler::Handler).
+/// Used as as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
 /// [TryFromMultipart] trait.
@@ -24,8 +24,8 @@ use axum::{async_trait, BoxError};
 ///
 /// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) -> StatusCode {
 ///     println!("name: {}", data.name);
-///     println!("email: {:?}", data.email.unwrap_or_default());
-///     println!("url: {:?}", data.url.unwrap_or_default());
+///     println!("email: {}", data.email.unwrap_or_default());
+///     println!("url: {}", data.url.unwrap_or_default());
 ///     StatusCode::OK
 /// }
 /// ```
