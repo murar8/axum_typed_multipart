@@ -53,7 +53,7 @@ jobs:
         env:
           CARGO_INCREMENTAL: "0"
           RUSTFLAGS: "-Cinstrument-coverage -Cdebug-assertions=no"
-          LLVM_PROFILE_FILE: "target/debug/coverage/coverage-%p-%m.profraw"
+          LLVM_PROFILE_FILE: "target/coverage/coverage-%p-%m.profraw"
 
       - run: wget -qO- $GRCOV_URL | tar xvj -C "/usr/local/bin"
         env:
@@ -63,20 +63,24 @@ jobs:
         # exclude some of the code from the coverage report.
         # See https://github.com/mozilla/grcov/issues/476
       - run: >
-          grcov target/debug/coverage
+          grcov target/coverage
           --source-dir .
-          --binary-path target/debug/deps
+          --binary-path target/debug
           --output-type lcov
-          --output-path target/debug/coverage/coverage.lcov
+          --output-path target/coverage/coverage.lcov
           --branch
           --llvm
           --ignore-not-existing
           --ignore '**/tests/**'
+          --ignore '/*'
           --excl-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
+          --excl-br-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
           --excl-start '^mod tests \{$'
+          --excl-br-start '^mod tests \{$'
           --excl-stop '^\}$'
+          --excl-br-stop '^\}$'
 
       - uses: codecov/codecov-action@v3
         with:
-          files: target/debug/coverage/coverage.lcov
+          files: target/coverage/coverage.lcov
           fail_ci_if_error: true
