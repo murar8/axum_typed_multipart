@@ -62,8 +62,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-
     use super::*;
     use axum::extract::Multipart;
     use axum::routing::post;
@@ -71,6 +69,7 @@ mod tests {
     use axum_test_helper::TestClient;
     use futures_core::Stream;
     use reqwest::multipart::Form;
+    use std::borrow::Cow;
 
     #[derive(Debug)]
     struct Data(String);
