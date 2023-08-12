@@ -79,7 +79,7 @@ impl TryFromChunks for String {
 
 /// Generate a [TryFromChunks] implementation for the supplied data type using
 /// the `str::parse` method on the textual representation of the field data.
-macro_rules! gen_try_from_field_impl {
+macro_rules! gen_try_from_chunks_impl {
     ( $type: ty ) => {
         #[async_trait]
         impl TryFromChunks for $type {
@@ -99,22 +99,22 @@ macro_rules! gen_try_from_field_impl {
     };
 }
 
-gen_try_from_field_impl!(i8);
-gen_try_from_field_impl!(i16);
-gen_try_from_field_impl!(i32);
-gen_try_from_field_impl!(i64);
-gen_try_from_field_impl!(i128);
-gen_try_from_field_impl!(isize);
-gen_try_from_field_impl!(u8);
-gen_try_from_field_impl!(u16);
-gen_try_from_field_impl!(u32);
-gen_try_from_field_impl!(u64);
-gen_try_from_field_impl!(u128);
-gen_try_from_field_impl!(usize);
-gen_try_from_field_impl!(f32);
-gen_try_from_field_impl!(f64);
-gen_try_from_field_impl!(bool); // TODO?: Consider accepting any thruthy value.
-gen_try_from_field_impl!(char);
+gen_try_from_chunks_impl!(i8);
+gen_try_from_chunks_impl!(i16);
+gen_try_from_chunks_impl!(i32);
+gen_try_from_chunks_impl!(i64);
+gen_try_from_chunks_impl!(i128);
+gen_try_from_chunks_impl!(isize);
+gen_try_from_chunks_impl!(u8);
+gen_try_from_chunks_impl!(u16);
+gen_try_from_chunks_impl!(u32);
+gen_try_from_chunks_impl!(u64);
+gen_try_from_chunks_impl!(u128);
+gen_try_from_chunks_impl!(usize);
+gen_try_from_chunks_impl!(f32);
+gen_try_from_chunks_impl!(f64);
+gen_try_from_chunks_impl!(bool); // TODO?: Consider accepting any thruthy value.
+gen_try_from_chunks_impl!(char);
 
 #[async_trait]
 impl TryFromChunks for NamedTempFile {
