@@ -214,6 +214,18 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_try_from_chunks_i128() {
+        test_try_from_chunks_valid::<i128>("-42", -42).await;
+        test_try_from_chunks_invalid::<i128>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_isize() {
+        test_try_from_chunks_valid::<isize>("-42", -42isize).await;
+        test_try_from_chunks_invalid::<isize>("invalid").await;
+    }
+
+    #[tokio::test]
     async fn test_try_from_chunks_u8() {
         test_try_from_chunks_valid::<u8>("42", 42).await;
         test_try_from_chunks_invalid::<u8>("invalid").await;
@@ -235,6 +247,18 @@ mod tests {
     async fn test_try_from_chunks_u64() {
         test_try_from_chunks_valid::<u64>("42", 42u64).await;
         test_try_from_chunks_invalid::<u64>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_u128() {
+        test_try_from_chunks_valid::<u128>("42", 42u128).await;
+        test_try_from_chunks_invalid::<u128>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_usize() {
+        test_try_from_chunks_valid::<usize>("42", 42usize).await;
+        test_try_from_chunks_invalid::<usize>("invalid").await;
     }
 
     #[tokio::test]
