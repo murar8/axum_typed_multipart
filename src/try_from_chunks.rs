@@ -187,6 +187,7 @@ mod tests {
     #[tokio::test]
     async fn test_try_from_chunks_string() {
         test_try_from_chunks_valid::<String>("asd", "asd").await;
+        test_try_from_chunks_invalid::<String>(Bytes::from(vec![0x80])).await;
     }
 
     #[tokio::test]
