@@ -28,7 +28,7 @@ use tokio::io::AsyncWriteExt;
 /// #[async_trait]
 /// impl TryFromChunks for Data {
 ///     async fn try_from_chunks(
-///         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+///         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
 ///         metadata: FieldMetadata,
 ///     ) -> Result<Self, TypedMultipartError> {
 ///         let string = String::try_from_chunks(chunks, metadata).await?;
@@ -39,7 +39,7 @@ use tokio::io::AsyncWriteExt;
 #[async_trait]
 pub trait TryFromChunks: Sized {
     async fn try_from_chunks(
-        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError>;
 }
@@ -47,10 +47,9 @@ pub trait TryFromChunks: Sized {
 #[async_trait]
 impl TryFromChunks for Bytes {
     async fn try_from_chunks(
-        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+        mut chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         _: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let mut chunks = chunks.boxed();
         let mut bytes = BytesMut::new();
 
         while let Some(chunk) = chunks.next().await {
@@ -65,7 +64,7 @@ impl TryFromChunks for Bytes {
 #[async_trait]
 impl TryFromChunks for String {
     async fn try_from_chunks(
-        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
         let field_name = metadata.name.clone().unwrap().to_string();
@@ -85,7 +84,7 @@ macro_rules! gen_try_from_field_impl {
         #[async_trait]
         impl TryFromChunks for $type {
             async fn try_from_chunks(
-                chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+                chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync+ Unpin,
                 metadata: FieldMetadata,
             ) -> Result<Self, TypedMultipartError> {
                 let field_name = metadata.name.clone().unwrap().to_string();
@@ -120,7 +119,7 @@ gen_try_from_field_impl!(char);
 #[async_trait]
 impl TryFromChunks for NamedTempFile {
     async fn try_from_chunks(
-        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync,
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         _: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
         let mut chunks = chunks.boxed();
@@ -149,7 +148,7 @@ mod tests {
 
     fn create_chunks(
         value: impl Into<Bytes>,
-    ) -> impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync {
+    ) -> impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin {
         let mut chunks = Vec::<Result<Bytes, TypedMultipartError>>::new();
 
         for chunk in value.into().chunks(3) {
@@ -161,7 +160,7 @@ mod tests {
 
     async fn test_try_from_chunks_valid<T>(input: impl Into<Bytes>, expected: impl Into<T>)
     where
-        T: TryFromChunks + PartialEq + Debug + Send + Sync,
+        T: TryFromChunks + PartialEq + Debug + Send + Sync + Unpin,
     {
         let chunks = create_chunks(input);
         let metadata = FieldMetadata { name: Some("test".into()), ..Default::default() };
@@ -171,7 +170,7 @@ mod tests {
 
     async fn test_try_from_chunks_invalid<T>(input: impl Into<Bytes>)
     where
-        T: TryFromChunks + PartialEq + Debug + Send + Sync,
+        T: TryFromChunks + PartialEq + Debug + Send + Sync + Unpin,
     {
         let chunks = create_chunks(input);
         let metadata = FieldMetadata { name: Some("test".into()), ..Default::default() };
