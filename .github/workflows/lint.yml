@@ -3,6 +3,7 @@ on:
 
 env:
   RUSTFLAGS: -Dwarnings # Make sure CI fails on all warnings.
+  RUSTDOCFLAGS: -Dwarnings -Drustdoc::all
 
 jobs:
   lint:
