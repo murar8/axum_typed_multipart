@@ -77,7 +77,7 @@ mod tests {
     #[async_trait]
     impl TryFromChunks for Data {
         async fn try_from_chunks(
-            chunks: impl Stream<Item = Result<bytes::Bytes, TypedMultipartError>> + Send + Sync,
+            chunks: impl Stream<Item = Result<bytes::Bytes, TypedMultipartError>> + Send + Sync + Unpin,
             metadata: FieldMetadata,
         ) -> Result<Self, TypedMultipartError> {
             let data = String::try_from_chunks(chunks, metadata).await?;
