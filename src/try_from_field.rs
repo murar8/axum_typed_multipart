@@ -62,6 +62,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::*;
     use axum::extract::Multipart;
     use axum::routing::post;
@@ -70,6 +72,7 @@ mod tests {
     use futures_core::Stream;
     use reqwest::multipart::Form;
 
+    #[derive(Debug)]
     struct Data(String);
 
     #[async_trait]
@@ -83,18 +86,37 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn test_try_from_field() {
-        async fn handler(mut multipart: Multipart) {
+    async fn test_try_from_field<T, F>(input: T, validator: F)
+    where
+        T: Into<Cow<'static, str>>,
+        F: FnOnce(Result<Data, TypedMultipartError>) + Clone + Send + Sync + 'static,
+    {
+        let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let data = Data::try_from_field(field, None).await.unwrap();
-            assert_eq!(data.0, "Hello, world!");
-        }
+            let res = Data::try_from_field(field, Some(512)).await;
+            validator(res);
+        };
 
         TestClient::new(Router::new().route("/", post(handler)))
             .post("/")
-            .multipart(Form::new().text("data", "Hello, world!"))
+            .multipart(Form::new().text("data", input))
             .send()
             .await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_valid() {
+        let validator = |res: Result<Data, TypedMultipartError>| {
+            assert_eq!(res.unwrap().0, "Hello, world!");
+        };
+        test_try_from_field("Hello, world!", validator).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_too_large() {
+        let validator = |res: Result<Data, TypedMultipartError>| {
+            assert!(matches!(res, Err(TypedMultipartError::FieldTooLarge { .. })));
+        };
+        test_try_from_field("x".repeat(513), validator).await;
     }
 }
