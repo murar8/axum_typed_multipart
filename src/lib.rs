@@ -80,6 +80,7 @@
 //! to wrap your field.
 //! ```rust
 //! use axum_typed_multipart::{FieldData, TryFromMultipart};
+//! use axum::body::Bytes;
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {

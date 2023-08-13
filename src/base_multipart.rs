@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 ///
 /// ```rust
 /// use axum::http::StatusCode;
-/// use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+/// use axum_typed_multipart::{BaseMultipart, TryFromMultipart, TypedMultipartError};
 ///
 /// #[derive(TryFromMultipart)]
 /// struct Data {
