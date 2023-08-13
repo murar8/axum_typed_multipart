@@ -3,13 +3,13 @@
 //! of handling `multipart/form-data` requests in your web application by
 //! allowing you to parse the request body into a type-safe struct.
 //!
-//! ## Usage
-//!
-//! ### Installation
+//! ## Installation
 //!
 //! ```bash
 //! cargo add axum_typed_multipart
 //! ```
+//!
+//! ## Usage
 //!
 //! ### Getting started
 //!
@@ -161,9 +161,26 @@
 //!
 //! If you implement the trait for a common type for some external crate, feel
 //! free to submit a PR to add it to the crate!
+//!
+//! ### Custom error format
+//!
+//! When using [TypedMultipart](crate::TypedMultipart) as an argument for your
+//! handlers, when the request is malformed, the error will be serialized as a
+//! string. If you would like to customize the error format you can use the
+//! [BaseMultipart](crate::BaseMultipart) struct instead. This struct is used
+//! internally by [TypedMultipart](crate::TypedMultipart) and it can be used to
+//! customize the error type.
+//!
+//! To customize the error you will need to define a custom error type and
+//! implement [IntoResponse](axum::response::IntoResponse) and
+//! `From<TypedMultipartError>`.
+//! ```rust,no_run
+#![doc = include_str!("../examples/custom_error.rs")]
+//! ```
 
 pub use axum_typed_multipart_macros::TryFromMultipart;
 
+mod base_multipart;
 mod field_data;
 mod try_from_chunks;
 mod try_from_field;
@@ -171,6 +188,7 @@ mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
+pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::TryFromField;
