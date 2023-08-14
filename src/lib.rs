@@ -226,10 +226,6 @@ mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
-pub mod re_exports {
-    pub use futures_util::stream::Stream;
-}
-
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::TryFromField;
