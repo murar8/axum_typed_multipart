@@ -16,6 +16,15 @@ pub fn matches_signature(ty: &syn::Type, signatures: &[&str]) -> bool {
     signatures.contains(&signature.as_ref())
 }
 
+/// Strips leading r# from the ident. Used to convert idents to string literals.
+pub fn strip_leading_rawlit(s: &str) -> String {
+    if s.starts_with("r#") {
+        s.chars().skip(2).collect()
+    } else {
+        s.to_owned()
+    }
+}
+
 /// Check if the supplied type matches the [Option] signature.
 pub fn matches_option_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Option", "std::option::Option", "core::option::Option"])

@@ -58,6 +58,20 @@
 //! }
 //! ```
 //!
+//! Also `#[try_from_multipart(rename_all = "case")]` can be used to automatically
+//! rename each field of your struct to specific case, it works like `#[serde(rename_all = "...")]`,
+//! supported cases:
+//! - `snake_case`
+//! - `camelCase`
+//! - `PascalCase`
+//! - `kebab-case`
+//! - `UPPERCASE`
+//! - `lowercase`
+//!
+//! NOTE: if `#[form_data(field_name = "...")]` is not specified,
+//!       then `rename_all` rule would be applied to that field
+//!       falling back to the original name
+//!
 //! ### Default values
 //!
 //! If the `default` parameter in the `form_data` attribute is present the value
@@ -149,6 +163,47 @@
 //! }
 //! ```
 //!
+//! ### Loading enums
+//!
+//! `axum_typed_multipart` also supports enum parsing by deriving the [`TryFromField`] trait:
+//!
+//! ```rust
+//! use axum_typed_multipart::{TryFromField, TryFromMultipart};
+//!
+//! #[derive(TryFromField)]
+//! enum Sex {
+//!     Male,
+//!     Female,
+//! }
+//!
+//! #[derive(TryFromMultipart)]
+//! struct Person {
+//!     name: String,
+//!     sex: Sex,
+//! }
+//! ```
+//!
+//! Under the hood it loads [`String`] using its [`TryFromField`] implementation and converts
+//! it to your enum.
+//!
+//! Enum fields can be renamed in two ways:
+//!
+//! ```rust
+//! use axum_typed_multipart::TryFromField;
+//!
+//! #[derive(TryFromField)]
+//! // using the `#[try_from_field(rename_all = "...")]` renaming attribute.
+//! // It works the same as in [`TryFromMultipart`]
+//! #[try_from_field(rename_all = "snake_case")]
+//! enum AccountType {
+//!     // or the `#[field(rename = "...")]` attribute
+//!     #[field(rename = "administrator")]
+//!     Admin,
+//!     Moderator,
+//!     Plain
+//! }
+//! ```
+//!
 //! ### Custom types
 //!
 //! If you would like to use a custom type for a field you need to implement the
@@ -179,7 +234,7 @@
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
 
-pub use axum_typed_multipart_macros::TryFromMultipart;
+pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
 mod field_data;
