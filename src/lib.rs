@@ -166,7 +166,6 @@
 //! ### Loading enums
 //!
 //! `axum_typed_multipart` also supports enum parsing by deriving the [`TryFromField`] trait:
-//!
 //! ```rust
 //! use axum_typed_multipart::{TryFromField, TryFromMultipart};
 //!
@@ -187,7 +186,6 @@
 //! it to your enum.
 //!
 //! Enum fields can be renamed in two ways:
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromField;
 //!

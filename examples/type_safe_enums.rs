@@ -1,8 +1,8 @@
-use std::net::SocketAddr;
-
-use axum::{routing::post, Router};
+use axum::routing::post;
+use axum::Router;
 use axum_typed_multipart::{TryFromField, TryFromMultipart, TypedMultipart};
 use reqwest::StatusCode;
+use std::net::SocketAddr;
 
 #[derive(Debug, TryFromField)]
 pub enum Sex {

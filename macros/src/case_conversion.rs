@@ -1,9 +1,6 @@
-use std::{
-    error::Error,
-    fmt::{self, Display, Formatter},
-};
-
 use proc_macro_error::abort;
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RenameCase {
