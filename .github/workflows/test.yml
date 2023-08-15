@@ -82,7 +82,7 @@ jobs:
         # exclude some of the code from the coverage report.
         # See https://github.com/mozilla/grcov/issues/476
       - run: >
-          grcov target/coverage
+          grcov target/coverage macros/target/coverage
           --source-dir .
           --binary-path target/debug
           --output-type lcov
