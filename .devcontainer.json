@@ -3,7 +3,11 @@
   "image": "mcr.microsoft.com/devcontainers/rust:1",
   "customizations": {
     "vscode": {
-      "extensions": ["github.vscode-github-actions", "esbenp.prettier-vscode"]
+      "extensions": [
+        "github.vscode-github-actions",
+        "esbenp.prettier-vscode",
+        "editorconfig.editorconfig"
+      ]
     }
   }
 }
