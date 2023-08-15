@@ -73,6 +73,15 @@ mod tests {
     }
 
     #[test]
+    fn test_snake() {
+        test_helper(
+            RenameCase::Snake,
+            "snake_case",
+            ["snake_case", "SnakeCase", "snake-case", "snakeCase"],
+        );
+    }
+
+    #[test]
     fn test_lower() {
         test_helper(
             RenameCase::Lower,
