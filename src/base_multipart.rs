@@ -1,19 +1,22 @@
-use crate::{BaseMultipart, TryFromMultipart, TypedMultipartError};
+use crate::{TryFromMultipart, TypedMultipartError};
 use axum::body::{Bytes, HttpBody};
-use axum::extract::FromRequest;
+use axum::extract::{FromRequest, Multipart};
 use axum::http::Request;
+use axum::response::IntoResponse;
 use axum::{async_trait, BoxError};
+use std::marker::PhantomData;
 
 /// Used as as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart] trait.
+/// [TryFromMultipart] trait and the generic rejection implements the
+/// [IntoResponse] and `From<TypedMultipartError>` traits.
 ///
 /// ## Example
 ///
 /// ```rust
 /// use axum::http::StatusCode;
-/// use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+/// use axum_typed_multipart::{BaseMultipart, TryFromMultipart, TypedMultipartError};
 ///
 /// #[derive(TryFromMultipart)]
 /// struct Data {
@@ -22,30 +25,36 @@ use axum::{async_trait, BoxError};
 ///     url: Option<String>,
 /// }
 ///
-/// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) -> StatusCode {
+/// type CustomMultipart<T> = BaseMultipart<T, TypedMultipartError>;
+///
+/// async fn handle_data(CustomMultipart { data, .. }: CustomMultipart<Data>) -> StatusCode {
 ///     println!("name: {}", data.name);
 ///     println!("email: {}", data.email.unwrap_or_default());
 ///     println!("url: {}", data.url.unwrap_or_default());
 ///     StatusCode::OK
 /// }
 /// ```
-#[derive(Debug)]
-pub struct TypedMultipart<T>(pub T);
+pub struct BaseMultipart<T, R> {
+    pub data: T,
+    rejection: PhantomData<R>,
+}
 
 #[async_trait]
-impl<T, S, B> FromRequest<S, B> for TypedMultipart<T>
+impl<S, B, T, R> FromRequest<S, B> for BaseMultipart<T, R>
 where
-    T: TryFromMultipart,
+    S: Send + Sync,
     B: HttpBody + Send + 'static,
     B::Data: Into<Bytes>,
     B::Error: Into<BoxError>,
-    S: Send + Sync,
+    T: TryFromMultipart,
+    R: IntoResponse + From<TypedMultipartError>,
 {
-    type Rejection = TypedMultipartError;
+    type Rejection = R;
 
     async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
-        let base = BaseMultipart::<T, Self::Rejection>::from_request(req, state).await?;
-        Ok(Self(base.data))
+        let multipart = &mut Multipart::from_request(req, state).await.map_err(Into::into)?;
+        let data = T::try_from_multipart(multipart).await?;
+        Ok(Self { data, rejection: PhantomData })
     }
 }
 
@@ -69,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_typed_multipart() {
-        async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
+        async fn handler(BaseMultipart { data, .. }: BaseMultipart<Data, TypedMultipartError>) {
             assert_eq!(data.0, "data");
         }
 
