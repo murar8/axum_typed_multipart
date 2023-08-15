@@ -1,3 +1,8 @@
+use std::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+};
+
 use proc_macro_error::abort;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9,7 +14,17 @@ pub enum RenameCase {
     Lower,
     Upper,
 }
+
+#[derive(Debug, Clone)]
 pub struct InvalidCase;
+
+impl Display for InvalidCase {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "invalid case conversion option")
+    }
+}
+
+impl Error for InvalidCase {}
 
 impl RenameCase {
     pub fn convert_case(self, s: &str) -> String {
