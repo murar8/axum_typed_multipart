@@ -49,3 +49,62 @@ impl<'a> TryFrom<&'a str> for RenameCase {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::RenameCase;
+
+    fn test_helper<const N: usize>(case: RenameCase, should_be: &str, variants: [&str; N]) {
+        for variant in variants {
+            assert_eq!(case.convert_case(variant), should_be);
+        }
+    }
+
+    // tests for Upper/Lower is written due to lower/upper cases
+    // internally are just calls to .to_lowercase/.to_uppercase
+
+    #[test]
+    fn test_upper() {
+        test_helper(
+            RenameCase::Upper,
+            "UPPERCASE",
+            ["UpperCase", "upperCase", "uppercase", "UPPERCASE"],
+        );
+    }
+
+    #[test]
+    fn test_lower() {
+        test_helper(
+            RenameCase::Lower,
+            "lowercase",
+            ["LowerCase", "lowerCase", "lowercase", "LOWERCASE"],
+        );
+    }
+
+    #[test]
+    fn test_kebab() {
+        test_helper(
+            RenameCase::Kebab,
+            "kebab-case",
+            ["kebab-case", "KebabCase", "kebab_case", "kebabCase"],
+        );
+    }
+
+    #[test]
+    fn test_pascal() {
+        test_helper(
+            RenameCase::Pascal,
+            "PascalCase",
+            ["PascalCase", "pascal_case", "pascal-case", "pascalCase"],
+        );
+    }
+
+    #[test]
+    fn test_camel() {
+        test_helper(
+            RenameCase::Camel,
+            "camelCase",
+            ["camelCase", "camel_case", "camel-case", "CamelCase"],
+        );
+    }
+}
