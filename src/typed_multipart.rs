@@ -7,7 +7,8 @@ use axum::{async_trait, BoxError};
 /// Used as as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart] trait.
+/// [TryFromMultipart] trait. If you need to `extract` the TypedMultipart data inside a FromRequest
+/// query, you need to provide additional trait bounds, as you can see in `examples/from_request.rs`.
 ///
 /// ## Example
 ///
