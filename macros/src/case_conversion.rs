@@ -66,18 +66,15 @@ impl<'a> TryFrom<&'a str> for RenameCase {
 mod tests {
     use super::*;
 
-    fn test_helper<const N: usize>(case: RenameCase, should_be: &str, variants: [&str; N]) {
+    fn test_convert_case<const N: usize>(case: RenameCase, should_be: &str, variants: [&str; N]) {
         for variant in variants {
             assert_eq!(case.convert_case(variant), should_be);
         }
     }
 
-    // tests for Upper/Lower is written due to lower/upper cases
-    // internally are just calls to .to_lowercase/.to_uppercase
-
     #[test]
-    fn test_upper() {
-        test_helper(
+    fn test_convert_case_upper() {
+        test_convert_case(
             RenameCase::Upper,
             "UPPERCASE",
             ["UpperCase", "upperCase", "uppercase", "UPPERCASE"],
@@ -85,8 +82,8 @@ mod tests {
     }
 
     #[test]
-    fn test_snake() {
-        test_helper(
+    fn test_convert_case_snake() {
+        test_convert_case(
             RenameCase::Snake,
             "snake_case",
             ["snake_case", "SnakeCase", "snake-case", "snakeCase"],
@@ -94,8 +91,8 @@ mod tests {
     }
 
     #[test]
-    fn test_lower() {
-        test_helper(
+    fn test_convert_case_lower() {
+        test_convert_case(
             RenameCase::Lower,
             "lowercase",
             ["LowerCase", "lowerCase", "lowercase", "LOWERCASE"],
@@ -103,8 +100,8 @@ mod tests {
     }
 
     #[test]
-    fn test_kebab() {
-        test_helper(
+    fn test_convert_case_kebab() {
+        test_convert_case(
             RenameCase::Kebab,
             "kebab-case",
             ["kebab-case", "KebabCase", "kebab_case", "kebabCase"],
@@ -112,8 +109,8 @@ mod tests {
     }
 
     #[test]
-    fn test_pascal() {
-        test_helper(
+    fn test_convert_case_pascal() {
+        test_convert_case(
             RenameCase::Pascal,
             "PascalCase",
             ["PascalCase", "pascal_case", "pascal-case", "pascalCase"],
@@ -121,8 +118,8 @@ mod tests {
     }
 
     #[test]
-    fn test_camel() {
-        test_helper(
+    fn test_convert_case_camel() {
+        test_convert_case(
             RenameCase::Camel,
             "camelCase",
             ["camelCase", "camel_case", "camel-case", "CamelCase"],

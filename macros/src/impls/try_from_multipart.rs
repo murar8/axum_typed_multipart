@@ -69,6 +69,7 @@ impl FieldData {
     }
 }
 
+/// Derive the `TryFromMultipart` trait for arbitrary named structs.
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
