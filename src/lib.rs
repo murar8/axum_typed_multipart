@@ -58,9 +58,11 @@
 //! }
 //! ```
 //!
-//! Also `#[try_from_multipart(rename_all = "case")]` can be used to automatically
-//! rename each field of your struct to specific case, it works like `#[serde(rename_all = "...")]`,
-//! supported cases:
+//! The `rename_all` parameter from the `try_from_multipart` attribute can be
+//! used to automatically rename each field of your struct to specific case, it
+//! works the same way as `#[serde(rename_all = "...")]`.
+//!
+//! Supported cases:
 //! - `snake_case`
 //! - `camelCase`
 //! - `PascalCase`
@@ -68,9 +70,19 @@
 //! - `UPPERCASE`
 //! - `lowercase`
 //!
-//! NOTE: if `#[form_data(field_name = "...")]` is not specified,
-//!       then `rename_all` rule would be applied to that field
-//!       falling back to the original name
+//!  ```rust
+//! use axum_typed_multipart::TryFromMultipart;
+//!
+//! #[derive(TryFromMultipart)]
+//! #[try_from_multipart(rename_all = "UPPERCASE")]
+//! struct RequestData {
+//!     name: Option<String>, // Will be renamed to `NAME` in the request.
+//! }
+//! ```
+//!
+//! NOTE: if `#[form_data(field_name = "...")]` is not specified, then
+//!       `rename_all` rule will be applied to that field falling back to the
+//!       original name
 //!
 //! ### Default values
 //!
@@ -93,8 +105,8 @@
 //! name or content type) you can use the [FieldData](crate::FieldData) struct
 //! to wrap your field.
 //! ```rust
-//! use axum_typed_multipart::{FieldData, TryFromMultipart};
 //! use axum::body::Bytes;
+//! use axum_typed_multipart::{FieldData, TryFromMultipart};
 //!
 //! #[derive(TryFromMultipart)]
 //! struct RequestData {
@@ -163,9 +175,10 @@
 //! }
 //! ```
 //!
-//! ### Loading enums
+//! ### Enums
 //!
-//! `axum_typed_multipart` also supports enum parsing by deriving the [`TryFromField`] trait:
+//! `axum_typed_multipart` also supports enum parsing by deriving the
+//! [`TryFromField`] trait:
 //! ```rust
 //! use axum_typed_multipart::{TryFromField, TryFromMultipart};
 //!
@@ -181,9 +194,6 @@
 //!     sex: Sex,
 //! }
 //! ```
-//!
-//! Under the hood it loads [`String`] using its [`TryFromField`] implementation and converts
-//! it to your enum.
 //!
 //! Enum fields can be renamed in two ways:
 //! ```rust
@@ -213,8 +223,9 @@
 //! automatically. This is recommended since you won't need to manually
 //! implement the size limit logic.
 //!
-//! If you implement the trait for a common type for some external crate, feel
-//! free to submit a PR to add it to the crate!
+//! To implement the [TryFromChunks](crate::TryFromChunks) trait for external
+//! types you will need to create a newtype wrapper and implement the trait for
+//! the wrapper.
 //!
 //! ### Custom error format
 //!

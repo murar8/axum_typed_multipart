@@ -33,6 +33,10 @@ use axum::extract::Multipart;
 /// supplied multiple times in the request body or if an unknown field is
 /// supplied.
 ///
+/// - `rename_all` => Can be used to automatically rename each field of the
+/// struct to a specific case. It works the same way as `#[serde(rename_all =
+/// "...")]`.
+///
 /// ### `form_data` attribute
 ///
 /// Can be applied to the struct fields to configure the parser behaviour.
