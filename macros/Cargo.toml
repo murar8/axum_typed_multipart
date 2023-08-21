@@ -5,7 +5,7 @@ license = "MIT"
 repository = "https://github.com/murar8/axum_typed_multipart"
 authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
 edition = "2021"
-version = "0.8.0"
+version = "0.8.1"
 
 
 [lib]

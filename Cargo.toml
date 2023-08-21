@@ -5,7 +5,7 @@ license = "MIT"
 repository = "https://github.com/murar8/axum_typed_multipart"
 authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
 edition = "2021"
-version = "0.8.0"
+version = "0.8.1"
 categories = ["web-programming"]
 keywords = ["axum", "multipart", "form"]
 
@@ -17,7 +17,7 @@ members = ["macros"]
 [dependencies]
 anyhow = "1.0.72"
 axum = { version = "0.6.20", features = ["multipart"] }
-axum_typed_multipart_macros = { version = "0.8.0", path = "macros" }
+axum_typed_multipart_macros = { version = "0.8.1", path = "macros" }
 bytes = "1.4.0"
 futures-core = "0.3.28"
 futures-util = "0.3.28"
