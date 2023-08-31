@@ -29,7 +29,7 @@ pub trait TryFromField: Sized {
 #[async_trait]
 impl<T> TryFromField for T
 where
-    T: TryFromChunks + Send + Sync + 'static,
+    T: TryFromChunks + Send + Sync,
 {
     async fn try_from_field(
         field: Field<'_>,
