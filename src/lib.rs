@@ -21,11 +21,14 @@
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
 //! every field in the struct must implement the
 //! [TryFromField](crate::TryFromField) trait. The trait is implemented by
-//! default for all primitive types, [String], [Bytes](axum::body::Bytes), and
-//! [NamedTempFile](tempfile::NamedTempFile).
+//! default for all primitive types, [String], [axum::body::Bytes], and
+//! [tempfile::NamedTempFile].
 //!
-//! If the request body is malformed or it does not contain the required data
-//! the request will be aborted with an error.
+//! If the request body is malformed the request will be aborted with an error.
+//!
+//! An error will be returned if at least one field is missing, with the
+//! exception of [Option] and [Vec] types, which will be set respectively as
+//! [Option::None] and `[]`.
 //!
 //! ```rust,no_run
 #![doc = include_str!("../examples/basic.rs")]
@@ -59,8 +62,8 @@
 //! ```
 //!
 //! The `rename_all` parameter from the `try_from_multipart` attribute can be
-//! used to automatically rename each field of your struct to specific case, it
-//! works the same way as `#[serde(rename_all = "...")]`.
+//! used to automatically rename each field of your struct to a specific case.
+//! It works the same way as `#[serde(rename_all = "...")]`.
 //!
 //! Supported cases:
 //! - `snake_case`
@@ -80,9 +83,8 @@
 //! }
 //! ```
 //!
-//! NOTE: if `#[form_data(field_name = "...")]` is not specified, then
-//!       `rename_all` rule will be applied to that field falling back to the
-//!       original name
+//! NOTE: If the `#[form_data(field_name = "...")]` attribute is specified, the
+//! `rename_all` rule will not be applied.
 //!
 //! ### Default values
 //!
@@ -117,11 +119,11 @@
 //! ### Large uploads
 //!
 //! For large uploads you can save the contents of the field to the file system
-//! using the [NamedTempFile](tempfile::NamedTempFile) crate. This will
-//! efficiently stream the field data directly to the file system, without
-//! needing to fit all the data in memory. Once the upload is complete, you can
-//! then save the contents to a location of your choice. For more information
-//! check out the [NamedTempFile](tempfile::NamedTempFile) documentation.
+//! using [tempfile::NamedTempFile]. This will efficiently stream the field data
+//! directly to the file system, without needing to fit all the data in memory.
+//! Once the upload is complete, you can then save the contents to a location of
+//! your choice. For more information check out the
+//! [NamedTempFile](tempfile::NamedTempFile) documentation.
 //!
 //! #### **Warning**
 //! Field size limits for [Vec] fields are applied to **each** occurrence of the
@@ -177,7 +179,7 @@
 //!
 //! ### Enums
 //!
-//! `axum_typed_multipart` also supports enum parsing by deriving the
+//! `axum_typed_multipart` also supports custom enum parsing by deriving the
 //! [`TryFromField`] trait:
 //! ```rust
 //! use axum_typed_multipart::{TryFromField, TryFromMultipart};
@@ -200,11 +202,11 @@
 //! use axum_typed_multipart::TryFromField;
 //!
 //! #[derive(TryFromField)]
-//! // using the `#[try_from_field(rename_all = "...")]` renaming attribute.
-//! // It works the same as in [`TryFromMultipart`]
+//! // Using the `#[try_from_field(rename_all = "...")]` renaming attribute.
+//! // It works the same as way as the `TryFromMultipart` implementation.
 //! #[try_from_field(rename_all = "snake_case")]
 //! enum AccountType {
-//!     // or the `#[field(rename = "...")]` attribute
+//!     // Or using the `#[field(rename = "...")]` attribute.
 //!     #[field(rename = "administrator")]
 //!     Admin,
 //!     Moderator,

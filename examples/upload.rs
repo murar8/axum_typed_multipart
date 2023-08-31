@@ -9,7 +9,10 @@ use tempfile::NamedTempFile;
 
 #[derive(TryFromMultipart)]
 struct UploadAssetRequest {
-    // This field will be limited to the total size of the request body.
+    // The `unlimited arguments` means that this field will be limited to the
+    // total size of the request body. If you want to limit the size of this
+    // field to a specific value you can also specify a limit in bytes, like
+    // '5MiB' or '1GiB'.
     #[form_data(limit = "unlimited")]
     image: FieldData<NamedTempFile>,
 
