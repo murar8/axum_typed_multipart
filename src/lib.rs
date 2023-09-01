@@ -20,9 +20,19 @@
 //!
 //! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
 //! every field in the struct must implement the
-//! [TryFromField](crate::TryFromField) trait. The trait is implemented by
-//! default for all primitive types, [String], [axum::body::Bytes], and
-//! [tempfile::NamedTempFile].
+//! [TryFromField](crate::TryFromField) trait.
+//!
+//! The [TryFromField](crate::TryFromField) trait is implemented by default for
+//! the following types:
+//! - [i8], [i16], [i32], [i64], [i128], [isize]
+//! - [u8], [u16], [u32], [u64], [u128], [usize]
+//! - [f32], [f64]
+//! - [bool]
+//! - [char]
+//! - [String]
+//! - [axum::body::Bytes]
+//! - [tempfile::NamedTempFile]
+//! - [uuid::Uuid] (v1)
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
