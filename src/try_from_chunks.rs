@@ -8,6 +8,7 @@ use std::any::type_name;
 use tempfile::NamedTempFile;
 use tokio::fs::File as AsyncFile;
 use tokio::io::AsyncWriteExt;
+use uuid::Uuid;
 
 /// Types that can be created from a [Stream] of [Bytes].
 ///
@@ -70,7 +71,7 @@ impl TryFromChunks for String {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = metadata.name.clone().unwrap().to_string();
+        let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
 
         String::from_utf8(bytes.into()).map_err(|_| TypedMultipartError::WrongFieldType {
@@ -90,7 +91,7 @@ macro_rules! gen_try_from_chunks_impl {
                 chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync+ Unpin,
                 metadata: FieldMetadata,
             ) -> Result<Self, TypedMultipartError> {
-                let field_name = metadata.name.clone().unwrap().to_string();
+                let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
                 let text = String::try_from_chunks(chunks, metadata).await?;
 
                 str::parse(&text).map_err(|_| TypedMultipartError::WrongFieldType {
@@ -137,6 +138,21 @@ impl TryFromChunks for NamedTempFile {
         async_file.flush().await.map_err(anyhow::Error::new)?;
 
         Ok(temp_file)
+    }
+}
+
+#[async_trait]
+impl TryFromChunks for Uuid {
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
+        let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
+        Uuid::try_parse_ascii(&bytes).map_err(|_| TypedMultipartError::WrongFieldType {
+            field_name,
+            wanted_type: type_name::<Uuid>().to_string(),
+        })
     }
 }
 
@@ -286,6 +302,14 @@ mod tests {
     async fn test_try_from_chunks_char() {
         test_try_from_chunks_valid::<char>("a", 'a').await;
         test_try_from_chunks_invalid::<char>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_uuid() {
+        let valid_input = "550e8400-e29b-41d4-a716-446655440000";
+        let valid_output = Uuid::parse_str(valid_input).unwrap();
+        test_try_from_chunks_valid::<Uuid>(valid_input, valid_output).await;
+        test_try_from_chunks_invalid::<Uuid>("invalid").await;
     }
 
     #[tokio::test]

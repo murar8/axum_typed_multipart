@@ -23,6 +23,7 @@ futures-core = "0.3.28"
 futures-util = "0.3.28"
 tempfile = "3.7.1"
 thiserror = "1.0.44"
+uuid = "1.0.0"
 
 [dependencies.tokio]
 version = "1.30.0"
