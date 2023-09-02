@@ -21,9 +21,9 @@ axum_typed_multipart_macros = { version = "0.8.1", path = "macros" }
 bytes = "1.4.0"
 futures-core = "0.3.28"
 futures-util = "0.3.28"
-tempfile = "3.7.1"
+tempfile = "3"
 thiserror = "1.0.44"
-uuid = "1.0.0"
+uuid = "1"
 
 [dependencies.tokio]
 version = "1.30.0"
