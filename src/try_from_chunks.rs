@@ -71,12 +71,13 @@ impl TryFromChunks for String {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
+        let field_name = get_field_name(&metadata.name);
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
 
-        String::from_utf8(bytes.into()).map_err(|_| TypedMultipartError::WrongFieldType {
+        String::from_utf8(bytes.into()).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
             wanted_type: type_name::<String>().to_string(),
+            source: err.into(),
         })
     }
 }
@@ -91,12 +92,13 @@ macro_rules! gen_try_from_chunks_impl {
                 chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync+ Unpin,
                 metadata: FieldMetadata,
             ) -> Result<Self, TypedMultipartError> {
-                let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
+                let field_name = get_field_name(&metadata.name);
                 let text = String::try_from_chunks(chunks, metadata).await?;
 
-                str::parse(&text).map_err(|_| TypedMultipartError::WrongFieldType {
+                str::parse(&text).map_err(|err| TypedMultipartError::WrongFieldType {
                     field_name,
                     wanted_type: type_name::<$type>().to_string(),
+                    source: anyhow::Error::new(err),
                 })
             }
         }
@@ -147,13 +149,20 @@ impl TryFromChunks for Uuid {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = metadata.name.clone().unwrap_or("<unknown>".into());
+        let field_name = get_field_name(&metadata.name);
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
-        Uuid::try_parse_ascii(&bytes).map_err(|_| TypedMultipartError::WrongFieldType {
+        Uuid::try_parse_ascii(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
             wanted_type: type_name::<Uuid>().to_string(),
+            source: err.into(),
         })
     }
+}
+
+fn get_field_name(name: &Option<String>) -> String {
+    // Theoretically, the name should always be present, but it's better to be
+    // safe than sorry.
+    name.clone().unwrap_or("<unknown>".into())
 }
 
 #[cfg(test)]
