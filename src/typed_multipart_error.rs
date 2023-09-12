@@ -32,6 +32,9 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
     FieldTooLarge { field_name: String, limit_bytes: usize },
 
+    #[error("field with no name")]
+    NamelessField,
+
     #[error(transparent)]
     Other {
         #[from]
@@ -45,7 +48,8 @@ impl TypedMultipartError {
             | Self::MissingField { .. }
             | Self::WrongFieldType { .. }
             | Self::DuplicateField { .. }
-            | Self::UnknownField { .. } => StatusCode::BAD_REQUEST,
+            | Self::UnknownField { .. }
+            | Self::NamelessField => StatusCode::BAD_REQUEST,
             | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),

@@ -165,7 +165,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 #(#declarations)*
 
                 while let Some(__field__) = multipart.next_field().await? {
-                    let __field_name__ = __field__.name().unwrap().to_string();
+                    let __field_name__ = __field__.name().ok_or(axum_typed_multipart::TypedMultipartError::NamelessField)?.to_string();
                     #(#assignments) else *
                 }
 
