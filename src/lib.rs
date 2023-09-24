@@ -31,7 +31,7 @@
 //! - [char]
 //! - [String]
 //! - [axum::body::Bytes]
-//! - [tempfile::NamedTempFile]
+//! - [tempfile::NamedTempFile] (v3)
 //! - [uuid::Uuid] (v1)
 //!
 //! If the request body is malformed the request will be aborted with an error.
