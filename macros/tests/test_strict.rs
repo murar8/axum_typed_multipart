@@ -56,3 +56,23 @@ async fn test_strict_deplicate_field() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(res.text().await, "field 'name' is already present");
 }
+
+#[tokio::test]
+async fn test_strict_missing_field_name() {
+    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
+
+    // TODO: The multipart/form-data spec allows for having fields without a
+    // name, but reqwest does not support adding them to the form. Currently we
+    // are only testing fields with empty name but not missing ones. We should
+    // find a way to test this.
+    let form = Form::new().text("", "data");
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(form)
+        .send()
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field name is empty");
+}

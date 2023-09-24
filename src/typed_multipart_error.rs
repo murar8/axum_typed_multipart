@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 /// Error type for the [TryFromMultipart](crate::TryFromMultipart) trait.
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
     #[error("request is malformed ({})", .source.body_text())]
@@ -29,6 +30,9 @@ pub enum TypedMultipartError {
     #[error("field '{field_name}' is not expected")]
     UnknownField { field_name: String },
 
+    #[error("field name is empty")]
+    NamelessField,
+
     #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
     FieldTooLarge { field_name: String, limit_bytes: usize },
 
@@ -45,7 +49,8 @@ impl TypedMultipartError {
             | Self::MissingField { .. }
             | Self::WrongFieldType { .. }
             | Self::DuplicateField { .. }
-            | Self::UnknownField { .. } => StatusCode::BAD_REQUEST,
+            | Self::UnknownField { .. }
+            | Self::NamelessField { .. } => StatusCode::BAD_REQUEST,
             | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),
@@ -148,6 +153,13 @@ mod tests {
         let error = TypedMultipartError::UnknownField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field 'data' is not expected");
+    }
+
+    #[tokio::test]
+    async fn test_nameless_field() {
+        let error = TypedMultipartError::NamelessField;
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field name is empty");
     }
 
     #[tokio::test]

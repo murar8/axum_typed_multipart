@@ -158,6 +158,12 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let idents = fields.iter().map(|FieldData { ident, .. }| ident);
 
+    let missing_field_name_fallback = if strict {
+        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
+    } else {
+        quote! { continue }
+    };
+
     let output = quote! {
         #[axum::async_trait]
         impl axum_typed_multipart::TryFromMultipart for #ident {
@@ -165,7 +171,12 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 #(#declarations)*
 
                 while let Some(__field__) = multipart.next_field().await? {
-                    let __field_name__ = __field__.name().unwrap().to_string();
+                    let __field_name__ = match __field__.name() {
+                        | Some("")
+                        | None => #missing_field_name_fallback,
+                        | Some(name) => name.to_string(),
+                    };
+
                     #(#assignments) else *
                 }
 
