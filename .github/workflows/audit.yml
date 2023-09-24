@@ -1,5 +1,7 @@
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * MON" # Every Monday at 00:00 UTC
   push:
     branches:
       - main
@@ -10,6 +12,7 @@ on:
 jobs:
   audit:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
