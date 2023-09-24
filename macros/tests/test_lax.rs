@@ -16,11 +16,16 @@ async fn test_field_order() {
         assert_eq!(data.field, "baz");
     };
 
+    // TODO: The multipart/form-data spec allows for having fields without a
+    // name, but reqwest does not support adding them to the form. Currently we
+    // are only testing fields with empty name but not missing ones. We should
+    // find a way to test this.
     let form = Form::new()
         .text("field", "data")
         .text("field", "bar")
         .text("field", "baz")
-        .text("unknown_field", "data");
+        .text("unknown_field", "data") // should be ignored
+        .text("", "data"); // should be ignored
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
