@@ -3,6 +3,7 @@ use axum::body::{Bytes, HttpBody};
 use axum::extract::FromRequest;
 use axum::http::Request;
 use axum::{async_trait, BoxError};
+use std::ops::{Deref, DerefMut};
 
 /// Used as as an argument for axum [Handlers](axum::handler::Handler).
 ///
@@ -31,6 +32,20 @@ use axum::{async_trait, BoxError};
 /// ```
 #[derive(Debug)]
 pub struct TypedMultipart<T>(pub T);
+
+impl<T> Deref for TypedMultipart<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for TypedMultipart<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 #[async_trait]
 impl<T, S, B> FromRequest<S, B> for TypedMultipart<T>
@@ -78,5 +93,29 @@ mod tests {
             .multipart(Form::new())
             .send()
             .await;
+    }
+
+    #[test]
+    fn deref() {
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        struct Data {
+            v0: String,
+            v1: i32,
+        }
+
+        impl Data {
+            fn modify(&mut self) {
+                self.v0.push_str("modified");
+                self.v1 += 1;
+            }
+        }
+
+        let mut data = Data { v0: "DATA".into(), v1: 12 };
+        let mut tm = TypedMultipart(data.clone());
+        assert_eq!(tm.deref(), &data);
+
+        data.modify();
+        tm.modify();
+        assert_eq!(tm.deref(), &data);
     }
 }
