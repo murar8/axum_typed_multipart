@@ -5,6 +5,7 @@ use axum::http::Request;
 use axum::response::IntoResponse;
 use axum::{async_trait, BoxError};
 use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
 /// Used as as an argument for axum [Handlers](axum::handler::Handler).
 ///
@@ -37,6 +38,20 @@ use std::marker::PhantomData;
 pub struct BaseMultipart<T, R> {
     pub data: T,
     rejection: PhantomData<R>,
+}
+
+impl<T, R> Deref for BaseMultipart<T, R> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl<T, R> DerefMut for BaseMultipart<T, R> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
 }
 
 #[async_trait]
@@ -87,5 +102,29 @@ mod tests {
             .multipart(Form::new())
             .send()
             .await;
+    }
+
+    #[test]
+    fn deref() {
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        struct Data {
+            v0: String,
+            v1: i32,
+        }
+
+        impl Data {
+            fn modify(&mut self) {
+                self.v0.push_str("modified");
+                self.v1 += 1;
+            }
+        }
+
+        let mut data = Data { v0: "DATA".into(), v1: 12 };
+        let mut tm = BaseMultipart { data: data.clone(), rejection: PhantomData::<()> };
+        assert_eq!(tm.deref(), &data);
+
+        data.modify();
+        tm.modify();
+        assert_eq!(tm.deref(), &data);
     }
 }
