@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn deref() {
+    fn test_deref() {
         #[derive(Debug, Clone, Eq, PartialEq)]
         struct Data {
             v0: String,
