@@ -110,7 +110,7 @@ dependencies = [
 
 [[package]]
 name = "axum_typed_multipart"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -129,7 +129,7 @@ dependencies = [
 
 [[package]]
 name = "axum_typed_multipart_macros"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "axum",
  "axum-test-helper",
