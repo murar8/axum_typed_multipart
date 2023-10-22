@@ -16,7 +16,7 @@ pub struct MultipartData {
     pub sex: Sex,
 }
 
-async fn test_multipart(TypedMultipart(multipart): TypedMultipart<MultipartData>) -> StatusCode {
+async fn test_multipart(multipart: TypedMultipart<MultipartData>) -> StatusCode {
     println!("name = {}, sex = {:?}", multipart.name, multipart.sex);
     StatusCode::OK
 }

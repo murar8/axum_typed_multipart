@@ -38,9 +38,7 @@ struct UpdatePositionRequest {
 
 // Step 5: Define a handler that takes the custom multipart as argument.
 // If the request is malformed, a `CustomError` will be returned.
-async fn update_position(
-    CustomMultipart { data, .. }: CustomMultipart<UpdatePositionRequest>,
-) -> StatusCode {
+async fn update_position(data: CustomMultipart<UpdatePositionRequest>) -> StatusCode {
     println!("name = '{}'", data.name);
     println!("position = '{}'", data.position);
     StatusCode::OK

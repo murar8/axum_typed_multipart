@@ -10,10 +10,8 @@ struct CreateUserRequest {
     last_name: String,
 }
 
-async fn create_user(
-    TypedMultipart(CreateUserRequest { first_name, last_name }): TypedMultipart<CreateUserRequest>,
-) -> StatusCode {
-    println!("name: '{} {}'", first_name, last_name); // Your logic here.
+async fn create_user(data: TypedMultipart<CreateUserRequest>) -> StatusCode {
+    println!("name: '{} {}'", data.first_name, data.last_name); // Your logic here.
     StatusCode::CREATED
 }
 

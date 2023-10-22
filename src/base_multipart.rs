@@ -28,10 +28,10 @@ use std::ops::{Deref, DerefMut};
 ///
 /// type CustomMultipart<T> = BaseMultipart<T, TypedMultipartError>;
 ///
-/// async fn handle_data(CustomMultipart { data, .. }: CustomMultipart<Data>) -> StatusCode {
+/// async fn handle_data(data: CustomMultipart<Data>) -> StatusCode {
 ///     println!("name: {}", data.name);
-///     println!("email: {}", data.email.unwrap_or_default());
-///     println!("url: {}", data.url.unwrap_or_default());
+///     println!("email: {}", data.email.as_deref().unwrap_or_default());
+///     println!("url: {}", data.url.as_deref().unwrap_or_default());
 ///     StatusCode::OK
 /// }
 /// ```

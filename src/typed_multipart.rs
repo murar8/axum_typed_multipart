@@ -23,10 +23,10 @@ use std::ops::{Deref, DerefMut};
 ///     url: Option<String>,
 /// }
 ///
-/// async fn handle_data(TypedMultipart(data): TypedMultipart<Data>) -> StatusCode {
+/// async fn handle_data(data: TypedMultipart<Data>) -> StatusCode {
 ///     println!("name: {}", data.name);
-///     println!("email: {}", data.email.unwrap_or_default());
-///     println!("url: {}", data.url.unwrap_or_default());
+///     println!("email: {}", data.email.as_deref().unwrap_or_default());
+///     println!("url: {}", data.url.as_deref().unwrap_or_default());
 ///     StatusCode::OK
 /// }
 /// ```
