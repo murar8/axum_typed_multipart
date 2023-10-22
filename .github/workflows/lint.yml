@@ -1,10 +1,6 @@
 on:
   workflow_call:
 
-env:
-  RUSTFLAGS: -Dwarnings # Make sure CI fails on all warnings.
-  RUSTDOCFLAGS: -Dwarnings -Drustdoc::all
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -12,30 +8,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: webiny/action-conventional-commits@v1.1.0
-
-      - uses: creyD/prettier_action@v4.3
-        with:
-          dry: true
-          prettier_options: --check --ignore-path .gitignore .
-
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all --check
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --workspace --all-features --all-targets --no-deps
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --workspace --all-features
+      - uses: pre-commit/action@v3.0.0
