@@ -1,13 +1,22 @@
 {
   "name": "axum_typed_multipart",
   "image": "mcr.microsoft.com/devcontainers/rust:1",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers-contrib/features/prettier:1": {}
+  },
   "customizations": {
     "vscode": {
       "extensions": [
-        "github.vscode-github-actions",
+        "editorconfig.editorconfig",
         "esbenp.prettier-vscode",
-        "editorconfig.editorconfig"
-      ]
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "[json,jsonc,markdown,yaml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
     }
   }
 }

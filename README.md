@@ -23,6 +23,10 @@ Direct push to the `main` branch is not allowed, any updates require a pull requ
 
 Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification.
 
+The project comes with an optional pre-configured development container with all the required tools. For more information on how to use it please refer to https://containers.dev
+
+To make sure your changes match the project style you can install the pre-commit hooks with `pre-commit install`. This requires [pre-commit](https://pre-commit.com/) to be installed on your system.
+
 ## License
 
 Copyright (c) 2023 Lorenzo Murarotto <lnzmrr@gmail.com>
