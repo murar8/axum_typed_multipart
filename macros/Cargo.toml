@@ -22,7 +22,7 @@ heck = "0.4.1"
 
 
 [dev-dependencies]
-axum = { version = "0.6.20", features = ["multipart"] }
+axum = "0.6.12"
 axum_typed_multipart = { path = ".." }
 axum-test-helper = "0.3.0"
 reqwest = "0.11.18"

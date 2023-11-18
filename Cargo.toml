@@ -16,14 +16,14 @@ members = ["macros"]
 
 [dependencies]
 anyhow = "1.0.72"
-axum = { version = "0.6.20", features = ["multipart"] }
+axum = { version = "0.6.0", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.10.1", path = "macros" }
 bytes = "1.4.0"
 futures-core = "0.3.28"
 futures-util = "0.3.28"
-tempfile = "3"
+tempfile = "3.0.2"
 thiserror = "1.0.44"
-uuid = "1"
+uuid = "1.0.0"
 
 [dependencies.tokio]
 version = "1.30.0"
@@ -34,3 +34,7 @@ features = ["macros", "rt-multi-thread", "fs", "io-util"]
 axum-test-helper = "0.3.0"
 reqwest = "0.11.18"
 serde = { version = "1.0.183", features = ["derive"] }
+
+
+[build-dependencies]
+openssl = "0.10.35"
