@@ -16,7 +16,7 @@ members = ["macros"]
 
 [dependencies]
 anyhow = "1.0.72"
-axum = { version = "0.6.0", features = ["multipart"] }
+axum = { version = "0.7.1", features = ["multipart"] }
 axum_typed_multipart_macros = { version = "0.10.2", path = "macros" }
 bytes = "1.4.0"
 futures-core = "0.3.28"
