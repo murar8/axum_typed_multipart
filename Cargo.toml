@@ -32,8 +32,8 @@ features = ["macros", "rt-multi-thread", "fs", "io-util"]
 
 [dev-dependencies]
 axum_test_helper = { path = "test_helper" }
-reqwest = "0.11.18"
-serde = { version = "1.0.183", features = ["derive"] }
+reqwest = "0.11.22"
+serde = { version = "1.0.193", features = ["derive"] }
 
 
 [build-dependencies]
