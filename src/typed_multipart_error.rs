@@ -68,28 +68,22 @@ impl IntoResponse for TypedMultipartError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::body::HttpBody;
-    use axum::extract::{FromRequest, Multipart};
-    use axum::http::{Request, StatusCode};
+    use axum::extract::{FromRequest, Multipart, Request};
+    use axum::http::{header, StatusCode};
     use axum::routing::post;
-    use axum::{async_trait, BoxError, Router};
+    use axum::{async_trait, Router};
     use axum_test_helper::TestClient;
-    use bytes::Bytes;
-    use reqwest::header;
 
     struct Data();
 
     #[async_trait]
-    impl<S, B> FromRequest<S, B> for Data
+    impl<S> FromRequest<S> for Data
     where
-        B: HttpBody + Send + 'static,
-        B::Data: Into<Bytes>,
-        B::Error: Into<BoxError>,
         S: Send + Sync,
     {
         type Rejection = TypedMultipartError;
 
-        async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
             let multipart = &mut Multipart::from_request(req, state).await?;
             while multipart.next_field().await?.is_some() {}
             unreachable!()

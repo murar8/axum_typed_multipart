@@ -1,9 +1,9 @@
+use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_test_helper::TestClient;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 use reqwest::multipart::Form;
-use reqwest::StatusCode;
 
 /// The fields are declared this way to make sure the derive macro supports all
 /// [Vec] signatures.

@@ -93,11 +93,11 @@ mod tests {
     use super::*;
     use crate::TryFromField;
     use axum::extract::Multipart;
+    use axum::http::StatusCode;
     use axum::routing::post;
     use axum::Router;
     use axum_test_helper::TestClient;
     use reqwest::multipart::{Form, Part};
-    use reqwest::StatusCode;
 
     #[tokio::test]
     async fn test_field_data() {

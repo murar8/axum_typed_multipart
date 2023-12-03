@@ -1,9 +1,7 @@
 use crate::{TryFromMultipart, TypedMultipartError};
-use axum::body::{Bytes, HttpBody};
-use axum::extract::{FromRequest, Multipart};
-use axum::http::Request;
+use axum::async_trait;
+use axum::extract::{FromRequest, Multipart, Request};
 use axum::response::IntoResponse;
-use axum::{async_trait, BoxError};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
@@ -55,18 +53,15 @@ impl<T, R> DerefMut for BaseMultipart<T, R> {
 }
 
 #[async_trait]
-impl<S, B, T, R> FromRequest<S, B> for BaseMultipart<T, R>
+impl<S, T, R> FromRequest<S> for BaseMultipart<T, R>
 where
     S: Send + Sync,
-    B: HttpBody + Send + 'static,
-    B::Data: Into<Bytes>,
-    B::Error: Into<BoxError>,
     T: TryFromMultipart,
     R: IntoResponse + From<TypedMultipartError>,
 {
     type Rejection = R;
 
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let multipart = &mut Multipart::from_request(req, state).await.map_err(Into::into)?;
         let data = T::try_from_multipart(multipart).await?;
         Ok(Self { data, rejection: PhantomData })

@@ -4,7 +4,6 @@ use axum::routing::post;
 use axum::{Json, Router};
 use axum_typed_multipart::{BaseMultipart, TryFromMultipart, TypedMultipartError};
 use serde::Serialize;
-use std::net::SocketAddr;
 
 // Step 1: Define a custom error type.
 #[derive(Serialize)]
@@ -46,8 +45,7 @@ async fn update_position(data: CustomMultipart<UpdatePositionRequest>) -> Status
 
 #[tokio::main]
 async fn main() {
-    axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-        .serve(Router::new().route("/position/update", post(update_position)).into_make_service())
-        .await
-        .unwrap();
+    let app = Router::new().route("/position/update", post(update_position)).into_make_service();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
