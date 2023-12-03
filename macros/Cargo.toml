@@ -15,9 +15,9 @@ proc_macro = true
 [dependencies]
 darling = "0.20.3"
 proc-macro-error = "1.0.4"
-quote = "1.0.32"
-syn = "2.0.28"
-ubyte = "0.10.3"
+quote = "1.0.33"
+syn = "2.0.39"
+ubyte = "0.10.4"
 heck = "0.4.1"
 
 
@@ -25,5 +25,5 @@ heck = "0.4.1"
 axum = "0.7.0"
 axum_typed_multipart = { path = ".." }
 axum_test_helper = { path = "../test_helper" }
-reqwest = "0.11.18"
-tokio = { version = "1.30.0" }
+reqwest = "0.11.22"
+tokio = { version = "1.34.0" }
