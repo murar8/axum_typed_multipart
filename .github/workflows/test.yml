@@ -118,6 +118,7 @@ jobs:
           --llvm
           --ignore-not-existing
           --ignore '**/tests/**'
+          --ignore '**/test_helper/**'
           --ignore '**/examples/**'
           --ignore '/*'
           --excl-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
