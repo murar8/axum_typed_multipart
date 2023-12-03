@@ -3,7 +3,6 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
-use std::net::SocketAddr;
 use std::path::Path;
 use tempfile::NamedTempFile;
 
@@ -34,13 +33,12 @@ async fn upload_asset(
 
 #[tokio::main]
 async fn main() {
-    let router = Router::new()
+    let app = Router::new()
         .route("/", post(upload_asset))
         // The default axum body size limit is 2MiB, so we increase it to 1GiB.
-        .layer(DefaultBodyLimit::max(1024 * 1024 * 1024));
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 1024))
+        .into_make_service();
 
-    axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-        .serve(router.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

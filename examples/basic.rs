@@ -2,7 +2,6 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
-use std::net::SocketAddr;
 
 #[derive(TryFromMultipart)]
 struct CreateUserRequest {
@@ -17,8 +16,7 @@ async fn create_user(data: TypedMultipart<CreateUserRequest>) -> StatusCode {
 
 #[tokio::main]
 async fn main() {
-    axum::Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-        .serve(Router::new().route("/users/create", post(create_user)).into_make_service())
-        .await
-        .unwrap();
+    let app = Router::new().route("/users/create", post(create_user)).into_make_service();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

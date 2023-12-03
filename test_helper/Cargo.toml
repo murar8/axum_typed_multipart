@@ -1,0 +1,19 @@
+[package]
+name = "axum_test_helper"
+description = "Test helper for axum_typed_multipart."
+license = "MIT"
+repository = "https://github.com/murar8/axum_typed_multipart"
+authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
+edition = "2021"
+version = "0.10.2"
+
+
+[dependencies]
+axum = "0.7.0"
+http = "1.0.0"
+bytes = "1.5.0"
+tower = "0.4.13"
+tower-service = "0.3.2"
+serde = "1.0.193"
+reqwest = { version = "0.11.14", features = ["json", "multipart"] }
+tokio = { version = "1.30.0" }

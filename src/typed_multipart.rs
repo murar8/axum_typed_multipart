@@ -1,8 +1,6 @@
 use crate::{BaseMultipart, TryFromMultipart, TypedMultipartError};
-use axum::body::{Bytes, HttpBody};
-use axum::extract::FromRequest;
-use axum::http::Request;
-use axum::{async_trait, BoxError};
+use axum::async_trait;
+use axum::extract::{FromRequest, Request};
 use std::ops::{Deref, DerefMut};
 
 /// Used as as an argument for axum [Handlers](axum::handler::Handler).
@@ -48,17 +46,14 @@ impl<T> DerefMut for TypedMultipart<T> {
 }
 
 #[async_trait]
-impl<T, S, B> FromRequest<S, B> for TypedMultipart<T>
+impl<T, S> FromRequest<S> for TypedMultipart<T>
 where
     T: TryFromMultipart,
-    B: HttpBody + Send + 'static,
-    B::Data: Into<Bytes>,
-    B::Error: Into<BoxError>,
     S: Send + Sync,
 {
     type Rejection = TypedMultipartError;
 
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let base = BaseMultipart::<T, Self::Rejection>::from_request(req, state).await?;
         Ok(Self(base.data))
     }
