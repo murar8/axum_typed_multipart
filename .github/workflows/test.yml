@@ -128,7 +128,7 @@ jobs:
           --excl-stop '^\}$'
           --excl-br-stop '^\}$'
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: target/coverage/coverage.lcov
           fail_ci_if_error: true
