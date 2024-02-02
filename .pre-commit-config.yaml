@@ -11,16 +11,12 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      - id: check-case-conflict # checks for files that would conflict in case-insensitive filesystems.
-      - id: check-executables-have-shebangs # ensures that (non-binary) executables have a shebang.
-      - id: check-json # checks json files for parseable syntax.
-      - id: check-merge-conflict # checks for files that contain merge conflict strings.
-      - id: check-symlinks # checks for symlinks which do not point to anything.
-      - id: check-toml # checks toml files for parseable syntax.
-      - id: check-vcs-permalinks # ensures that links to vcs websites are permalinks.
-      - id: check-xml # checks xml files for parseable syntax.
-      - id: check-yaml # checks yaml files for parseable syntax.
-      - id: fix-byte-order-marker # removes utf-8 byte order marker.
+      - id: check-added-large-files # Prevents giant files from being committed.
+      - id: check-case-conflict # Checks for files that would conflict in case-insensitive filesystems.
+      - id: check-merge-conflict # Checks for files that contain merge conflict strings.
+      - id: check-symlinks # Checks for symlinks which do not point to anything.
+      - id: check-vcs-permalinks # Ensures that links to vcs websites are permalinks.
+      - id: destroyed-symlinks # Detects symlinks which are changed to regular files with a content of a path which that symlink was pointing to.
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.1.0
@@ -28,18 +24,18 @@ repos:
       - id: prettier
         stages: [commit]
 
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.12.0
+    hooks:
+      - id: pretty-format-toml
+        args: [--autofix, --indent=4]
+
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.9.0
+    rev: v9.11.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
         additional_dependencies: ["@commitlint/config-conventional"]
-
-  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
-    rev: 2.7.3
-    hooks:
-      - id: editorconfig-checker
-        args: [--disable-indent-size, --disable-max-line-length]
 
   - repo: local
     hooks:
@@ -50,7 +46,6 @@ repos:
         entry: cargo fmt
         args:
           - --all
-          - --check
           - --
 
       - id: cargo-clippy
@@ -63,7 +58,6 @@ repos:
           - --workspace
           - --all-features
           - --all-targets
-          - --no-deps
           - --
           - -Dwarnings
           - -Dclippy::all

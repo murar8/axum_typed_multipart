@@ -81,6 +81,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
 
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,7 +131,7 @@ jobs:
           --excl-stop '^\}$'
           --excl-br-stop '^\}$'
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           files: target/coverage/coverage.lcov
           fail_ci_if_error: true

@@ -9,3 +9,4 @@ jobs:
 
   test:
     uses: ./.github/workflows/test.yml
+    secrets: inherit # For the CODECOV_TOKEN
