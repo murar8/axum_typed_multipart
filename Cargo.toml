@@ -1,23 +1,10 @@
-[package]
-name = "axum_typed_multipart"
-description = "Type safe multipart/form-data handling for axum."
-license = "MIT"
-repository = "https://github.com/murar8/axum_typed_multipart"
-authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
-edition = "2021"
-version = "0.11.0"
-categories = ["web-programming"]
-keywords = ["axum", "multipart", "form"]
-
-
-[workspace]
-members = ["macros", "test_helper"]
-
+[build-dependencies]
+openssl = "0.10.35"
 
 [dependencies]
 anyhow = "1.0.72"
-axum = { version = "0.7.0", features = ["multipart"] }
-axum_typed_multipart_macros = { version = "0.11.0", path = "macros" }
+axum = {version = "0.7.0", features = ["multipart"]}
+axum_typed_multipart_macros = {version = "0.11.0", path = "macros"}
 bytes = "1.4.0"
 futures-core = "0.3.28"
 futures-util = "0.3.28"
@@ -26,15 +13,24 @@ thiserror = "1.0.44"
 uuid = "1.0.0"
 
 [dependencies.tokio]
-version = "1.30.0"
 features = ["macros", "rt-multi-thread", "fs", "io-util"]
-
+version = "1.30.0"
 
 [dev-dependencies]
-axum_test_helper = { path = "test_helper" }
+axum_test_helper = {path = "test_helper"}
 reqwest = "0.11.22"
-serde = { version = "1.0.193", features = ["derive"] }
+serde = {version = "1.0.193", features = ["derive"]}
 
+[package]
+authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
+categories = ["web-programming"]
+description = "Type safe multipart/form-data handling for axum."
+edition = "2021"
+keywords = ["axum", "multipart", "form"]
+license = "MIT"
+name = "axum_typed_multipart"
+repository = "https://github.com/murar8/axum_typed_multipart"
+version = "0.11.0"
 
-[build-dependencies]
-openssl = "0.10.35"
+[workspace]
+members = ["macros", "test_helper"]

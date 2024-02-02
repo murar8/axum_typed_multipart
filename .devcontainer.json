@@ -2,8 +2,7 @@
   "name": "axum_typed_multipart",
   "image": "mcr.microsoft.com/devcontainers/rust:1",
   "features": {
-    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
-    "ghcr.io/devcontainers-contrib/features/prettier:1": {}
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
   },
   "customizations": {
     "vscode": {
@@ -11,12 +10,7 @@
         "editorconfig.editorconfig",
         "esbenp.prettier-vscode",
         "github.vscode-github-actions"
-      ],
-      "settings": {
-        "[json,jsonc,markdown,yaml]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
-        }
-      }
+      ]
     }
   }
 }
