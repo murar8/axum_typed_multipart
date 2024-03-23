@@ -94,15 +94,7 @@ impl RequestBuilder {
         HeaderValue: TryFrom<V>,
         <HeaderValue as TryFrom<V>>::Error: Into<http::Error>,
     {
-        // reqwest still uses http 0.2
-        let key: HeaderName = key.try_into().map_err(Into::into).unwrap();
-        let key = reqwest::header::HeaderName::from_bytes(key.as_ref()).unwrap();
-
-        let value: HeaderValue = value.try_into().map_err(Into::into).unwrap();
-        let value = reqwest::header::HeaderValue::from_bytes(value.as_bytes()).unwrap();
-
         self.builder = self.builder.header(key, value);
-
         self
     }
 
