@@ -2,9 +2,10 @@ use crate::{FieldMetadata, TypedMultipartError};
 use axum::async_trait;
 use axum::body::Bytes;
 use bytes::BytesMut;
+use chrono::{DateTime, FixedOffset, Utc};
 use futures_core::stream::Stream;
 use futures_util::stream::StreamExt;
-use std::any::type_name;
+use std::{any::type_name, str::FromStr};
 use tempfile::NamedTempFile;
 use tokio::fs::File as AsyncFile;
 use tokio::io::AsyncWriteExt;
@@ -154,6 +155,50 @@ impl TryFromChunks for Uuid {
         Uuid::try_parse_ascii(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
             wanted_type: type_name::<Uuid>().to_string(),
+            source: err.into(),
+        })
+    }
+}
+
+#[async_trait]
+impl TryFromChunks for DateTime<FixedOffset> {
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let field_name = get_field_name(&metadata.name);
+        let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
+        let body_str =
+            std::str::from_utf8(&*bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+                field_name: field_name.clone(),
+                wanted_type: type_name::<DateTime<FixedOffset>>().to_string(),
+                source: err.into(),
+            })?;
+        DateTime::parse_from_rfc3339(body_str).map_err(|err| TypedMultipartError::WrongFieldType {
+            field_name,
+            wanted_type: type_name::<DateTime<FixedOffset>>().to_string(),
+            source: err.into(),
+        })
+    }
+}
+
+#[async_trait]
+impl TryFromChunks for DateTime<Utc> {
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let field_name = get_field_name(&metadata.name);
+        let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
+        let body_str =
+            std::str::from_utf8(&*bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+                field_name: field_name.clone(),
+                wanted_type: type_name::<DateTime<FixedOffset>>().to_string(),
+                source: err.into(),
+            })?;
+        DateTime::<Utc>::from_str(body_str).map_err(|err| TypedMultipartError::WrongFieldType {
+            field_name,
+            wanted_type: type_name::<DateTime<Utc>>().to_string(),
             source: err.into(),
         })
     }
@@ -319,6 +364,22 @@ mod tests {
         let valid_output = Uuid::parse_str(valid_input).unwrap();
         test_try_from_chunks_valid::<Uuid>(valid_input, valid_output).await;
         test_try_from_chunks_invalid::<Uuid>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_chrono_datetime_fixed() {
+        let valid_input = "2024-01-01T04:20:00Z";
+        let valid_output = DateTime::parse_from_rfc3339(valid_input).unwrap();
+        test_try_from_chunks_valid::<DateTime<FixedOffset>>(valid_input, valid_output).await;
+        test_try_from_chunks_invalid::<DateTime<FixedOffset>>("invalid").await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_chrono_datetime_utc() {
+        let valid_input = "2024-01-01T04:20:00Z";
+        let valid_output = DateTime::<Utc>::from_str(valid_input).unwrap();
+        test_try_from_chunks_valid::<DateTime<Utc>>(valid_input, valid_output).await;
+        test_try_from_chunks_invalid::<DateTime<Utc>>("invalid").await;
     }
 
     #[tokio::test]
