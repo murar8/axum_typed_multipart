@@ -31,6 +31,8 @@
 //! - [char]
 //! - [String]
 //! - [axum::body::Bytes]
+//! - [chrono::DateTime<chrono::FixedOffset>]
+//! - [chrono::DateTime<chrono::Utc>]
 //! - [tempfile::NamedTempFile] (v3)
 //! - [uuid::Uuid] (v1)
 //!
