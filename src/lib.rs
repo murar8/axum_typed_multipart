@@ -30,9 +30,9 @@
 //! - [bool]
 //! - [char]
 //! - [String]
-//! - [axum::body::Bytes]
-//! - [chrono::DateTime<chrono::FixedOffset>]
-//! - [chrono::DateTime<chrono::Utc>]
+//! - [axum::body::Bytes] (v0.7)
+//! - [chrono::DateTime<chrono::FixedOffset>] (v0.4)
+//! - [chrono::DateTime<chrono::Utc>] (v0.4)
 //! - [tempfile::NamedTempFile] (v3)
 //! - [uuid::Uuid] (v1)
 //!

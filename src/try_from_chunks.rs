@@ -169,7 +169,7 @@ impl TryFromChunks for DateTime<FixedOffset> {
         let field_name = get_field_name(&metadata.name);
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         let body_str =
-            std::str::from_utf8(&*bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+            std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
                 field_name: field_name.clone(),
                 wanted_type: type_name::<DateTime<FixedOffset>>().to_string(),
                 source: err.into(),
@@ -191,7 +191,7 @@ impl TryFromChunks for DateTime<Utc> {
         let field_name = get_field_name(&metadata.name);
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         let body_str =
-            std::str::from_utf8(&*bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+            std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
                 field_name: field_name.clone(),
                 wanted_type: type_name::<DateTime<FixedOffset>>().to_string(),
                 source: err.into(),
