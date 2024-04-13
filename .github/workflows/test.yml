@@ -1,39 +1,9 @@
 on:
-  workflow_call:
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        include:
-          - toolchain: beta
-            os: ubuntu-latest
-          - toolchain: nightly
-            os: ubuntu-latest
-          - toolchain: stable
-            os: macos-latest
-          - toolchain: stable
-            os: windows-latest
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          profile: minimal
-
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-features --all-targets
-
   # See https://users.rust-lang.org/t/psa-please-specify-precise-dependency-versions-in-cargo-toml/71277
   minimal-version-test:
     runs-on: ubuntu-latest
@@ -57,6 +27,8 @@ jobs:
         with:
           command: minimal-versions
           args: test --workspace --all-features --all-targets
+        env:
+          OPENSSL_DIR: /usr/lib/x86_64-linux-gnu
 
   doctest:
     runs-on: ubuntu-latest
