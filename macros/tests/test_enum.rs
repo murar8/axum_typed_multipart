@@ -36,6 +36,7 @@ async fn test_enum() {
         .text("interests", "PROGRAMMING");
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(form)
         .send()

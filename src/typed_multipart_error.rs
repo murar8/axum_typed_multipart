@@ -90,14 +90,14 @@ mod tests {
         }
     }
 
-    fn create_client() -> TestClient {
+    async fn create_client() -> TestClient {
         let handler = |_: Data| async { panic!("should never be called") };
-        TestClient::new(Router::new().route("/", post(handler)))
+        TestClient::new(Router::new().route("/", post(handler))).await
     }
 
     #[tokio::test]
     async fn test_invalid_request() {
-        let res = create_client().post("/").json(&"{}").send().await;
+        let res = create_client().await.post("/").json(&"{}").send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
         assert!(res.text().await.contains("request is malformed"));
     }
@@ -105,8 +105,9 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_request_body() {
         let res = create_client()
+            .await
             .post("/")
-            .header(header::CONTENT_TYPE, "multipart/form-data; boundary=BOUNDARY")
+            .header(header::CONTENT_TYPE.as_str(), "multipart/form-data; boundary=BOUNDARY")
             .body("BOUNDARY\r\n\r\nBOUNDARY--\r\n")
             .send()
             .await;

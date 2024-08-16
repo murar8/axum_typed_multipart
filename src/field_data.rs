@@ -114,6 +114,7 @@ mod tests {
         let part = Part::text("test").file_name("test.txt").mime_str("text/plain").unwrap();
 
         let res = TestClient::new(Router::new().route("/", post(handler)))
+            .await
             .post("/")
             .multipart(Form::new().part("input_file", part))
             .send()
