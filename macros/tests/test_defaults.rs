@@ -26,6 +26,7 @@ async fn test_defaults() {
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(Form::new().text("data", "bar"))
         .send()

@@ -29,6 +29,7 @@ async fn test_identifiers() {
         .text("source_field", "baz");
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(form)
         .send()

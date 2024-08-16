@@ -21,6 +21,7 @@ async fn test_strict() {
 
     let form = Form::new().text("name", "data").text("items", "bread").text("items", "cheese");
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(form)
         .send()
@@ -34,6 +35,7 @@ async fn test_strict_unknown_field() {
     let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(Form::new().text("unknown_field", "data"))
         .send()
@@ -48,6 +50,7 @@ async fn test_strict_deplicate_field() {
     let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(Form::new().text("name", "data").text("name", "bar"))
         .send()
@@ -68,6 +71,7 @@ async fn test_strict_missing_field_name() {
     let form = Form::new().text("", "data");
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(form)
         .send()

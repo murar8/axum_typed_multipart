@@ -28,6 +28,7 @@ async fn test_field_order() {
         .text("", "data"); // should be ignored
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(form)
         .send()
@@ -41,6 +42,7 @@ async fn test_missing_field() {
     let handler = |_: TypedMultipart<Data>| async { panic!("should not be called") };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(Form::new().text("unknown_field", "data"))
         .send()

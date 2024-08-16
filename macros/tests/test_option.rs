@@ -23,6 +23,7 @@ async fn test_option() {
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
+        .await
         .post("/")
         .multipart(Form::new().text("option_field", "John"))
         .send()
