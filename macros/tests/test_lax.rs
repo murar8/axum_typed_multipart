@@ -39,7 +39,9 @@ async fn test_field_order() {
 
 #[tokio::test]
 async fn test_missing_field() {
-    let handler = |_: TypedMultipart<Data>| async { panic!("should not be called") };
+    async fn handler(_: TypedMultipart<Data>) {
+        panic!("should not be called");
+    }
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .await

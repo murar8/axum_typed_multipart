@@ -32,7 +32,9 @@ async fn test_strict() {
 
 #[tokio::test]
 async fn test_strict_unknown_field() {
-    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
+    async fn handler(_: TypedMultipart<Data>) {
+        panic!("should not be called");
+    }
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .await
@@ -47,7 +49,9 @@ async fn test_strict_unknown_field() {
 
 #[tokio::test]
 async fn test_strict_deplicate_field() {
-    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
+    async fn handler(_: TypedMultipart<Data>) {
+        panic!("should not be called");
+    }
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .await
@@ -62,7 +66,9 @@ async fn test_strict_deplicate_field() {
 
 #[tokio::test]
 async fn test_strict_missing_field_name() {
-    let handler = |_: TypedMultipart<Data>| async move { panic!("should not be called") };
+    async fn handler(_: TypedMultipart<Data>) {
+        panic!("should not be called");
+    }
 
     // TODO: The multipart/form-data spec allows for having fields without a
     // name, but reqwest does not support adding them to the form. Currently we
