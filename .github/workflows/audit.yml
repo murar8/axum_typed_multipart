@@ -1,10 +1,19 @@
 on:
+    workflow_call:
     workflow_dispatch:
     schedule:
         - cron: "0 0 * * MON" # Every Monday at 00:00 UTC
+    pull_request:
+        branches:
+            - main
+        paths:
+            - "**/Cargo.toml"
+            - "**/Cargo.lock"
     push:
         branches:
             - main
+        tags:
+            - "[0-9]+.[0-9]+.[0-9]+"
         paths:
             - "**/Cargo.toml"
             - "**/Cargo.lock"
@@ -12,10 +21,6 @@ on:
 jobs:
     audit:
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v4
-
-            - uses: actions-rs/audit-check@v1
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
+            - uses: actions-rust-lang/audit@v1

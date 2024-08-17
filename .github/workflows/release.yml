@@ -1,0 +1,35 @@
+on:
+    workflow_run:
+        workflows:
+            - audit
+            - lint
+            - test
+        branches:
+            - "[0-9]+.[0-9]+.[0-9]+"
+        types:
+            - completed
+
+jobs:
+    publish:
+        env:
+            CARGO_REGISTRY_TOKEN: ${{secrets.CARGO_REGISTRY_TOKEN}}
+
+        permissions:
+            contents: write
+            packages: write
+            pull-requests: read
+
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions-rust-lang/setup-rust-toolchain@v1
+              # TODO: Version
+            - run: |
+                  cargo publish --locked --package axum_typed_multipart_macros
+                  cargo publish --locked
+            - uses: ncipollo/release-action@v1
+              with:
+                  generateReleaseNotes: true
