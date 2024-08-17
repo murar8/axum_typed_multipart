@@ -18,12 +18,6 @@ repos:
           - id: check-vcs-permalinks # Ensures that links to vcs websites are permalinks.
           - id: destroyed-symlinks # Detects symlinks which are changed to regular files with a content of a path which that symlink was pointing to.
 
-    - repo: https://github.com/pre-commit/mirrors-prettier
-      rev: v4.0.0-alpha.8
-      hooks:
-          - id: prettier
-            stages: [commit]
-
     - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
       rev: v2.14.0
       hooks:
@@ -39,6 +33,14 @@ repos:
 
     - repo: local
       hooks:
+          - id: prettier
+            name: prettier
+            entry: prettier --write --ignore-unknown --cache --cache-location=target/.prettier-cache
+            language: node
+            types: [text]
+            stages: [commit]
+            additional_dependencies: ["prettier@3"]
+
           - id: cargo-fmt
             name: cargo-fmt
             language: system
