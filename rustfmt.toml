@@ -1,9 +1,3 @@
 match_arm_leading_pipes = "Preserve"
 use_field_init_shorthand = true
 use_small_heuristics = "Max"
-
-# format_code_in_doc_comments = true
-# group_imports = "One"
-# imports_granularity = "Module"
-# overflow_delimited_expr = true
-# reorder_impl_items = true

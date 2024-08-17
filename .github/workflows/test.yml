@@ -1,137 +1,137 @@
 on:
-  workflow_call:
+    workflow_call:
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        include:
-          - toolchain: beta
-            os: ubuntu-latest
-          - toolchain: nightly
-            os: ubuntu-latest
-          - toolchain: stable
-            os: macos-latest
-          - toolchain: stable
-            os: windows-latest
+    test:
+        strategy:
+            matrix:
+                include:
+                    - toolchain: beta
+                      os: ubuntu-latest
+                    - toolchain: nightly
+                      os: ubuntu-latest
+                    - toolchain: stable
+                      os: macos-latest
+                    - toolchain: stable
+                      os: windows-latest
 
-    runs-on: ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          profile: minimal
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: ${{ matrix.toolchain }}
+                  profile: minimal
 
-      - uses: Swatinem/rust-cache@v2
+            - uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-features --all-targets
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: test
+                  args: --workspace --all-features --all-targets
 
-  # See https://users.rust-lang.org/t/psa-please-specify-precise-dependency-versions-in-cargo-toml/71277
-  minimal-version-test:
-    runs-on: ubuntu-latest
+    # See https://users.rust-lang.org/t/psa-please-specify-precise-dependency-versions-in-cargo-toml/71277
+    minimal-version-test:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: nightly
+                  profile: minimal
 
-      - uses: Swatinem/rust-cache@v2
+            - uses: Swatinem/rust-cache@v2
 
-      - uses: taiki-e/install-action@cargo-hack
-      - uses: taiki-e/install-action@cargo-minimal-versions
+            - uses: taiki-e/install-action@cargo-hack
+            - uses: taiki-e/install-action@cargo-minimal-versions
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: minimal-versions
-          args: test --workspace --all-features --all-targets
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: minimal-versions
+                  args: test --workspace --all-features --all-targets
 
-  doctest:
-    runs-on: ubuntu-latest
+    doctest:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  profile: minimal
 
-      - uses: Swatinem/rust-cache@v2
+            - uses: Swatinem/rust-cache@v2
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-features --doc
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: test
+                  args: --workspace --all-features --doc
 
-  coverage:
-    runs-on: ubuntu-latest
+    coverage:
+        runs-on: ubuntu-latest
 
-    env:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          components: llvm-tools-preview
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --all-features --all-targets
         env:
-          CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Cinstrument-coverage -Cdebug-assertions=no"
-          LLVM_PROFILE_FILE: "target/coverage/coverage-%p-%m.profraw"
+            CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - run: wget -qO- $GRCOV_URL | tar xvj -C "/usr/local/bin"
-        env:
-          GRCOV_URL: https://github.com/mozilla/grcov/releases/download/v0.8.18/grcov-x86_64-unknown-linux-gnu.tar.bz2
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-        # grcov is still a bit rough around the edges, so we need to explicitly
-        # exclude some of the code from the coverage report.
-        # See https://github.com/mozilla/grcov/issues/476
-      - run: >
-          grcov target/coverage macros/target/coverage
-          --source-dir .
-          --binary-path target/debug
-          --output-type lcov
-          --output-path target/coverage/coverage.lcov
-          --branch
-          --llvm
-          --ignore-not-existing
-          --ignore '**/tests/**'
-          --ignore '**/test_helper/**'
-          --ignore '**/examples/**'
-          --ignore '/*'
-          --excl-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
-          --excl-br-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
-          --excl-start '^mod tests \{$'
-          --excl-br-start '^mod tests \{$'
-          --excl-stop '^\}$'
-          --excl-br-stop '^\}$'
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  profile: minimal
+                  components: llvm-tools-preview
 
-      - uses: codecov/codecov-action@v4
-        with:
-          files: target/coverage/coverage.lcov
-          fail_ci_if_error: true
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: test
+                  args: --workspace --all-features --all-targets
+              env:
+                  CARGO_INCREMENTAL: "0"
+                  RUSTFLAGS: "-Cinstrument-coverage -Cdebug-assertions=no"
+                  LLVM_PROFILE_FILE: "target/coverage/coverage-%p-%m.profraw"
+
+            - run: wget -qO- $GRCOV_URL | tar xvj -C "/usr/local/bin"
+              env:
+                  GRCOV_URL: https://github.com/mozilla/grcov/releases/download/v0.8.18/grcov-x86_64-unknown-linux-gnu.tar.bz2
+
+              # grcov is still a bit rough around the edges, so we need to explicitly
+              # exclude some of the code from the coverage report.
+              # See https://github.com/mozilla/grcov/issues/476
+            - run: >
+                  grcov target/coverage macros/target/coverage
+                  --source-dir .
+                  --binary-path target/debug
+                  --output-type lcov
+                  --output-path target/coverage/coverage.lcov
+                  --branch
+                  --llvm
+                  --ignore-not-existing
+                  --ignore '**/tests/**'
+                  --ignore '**/test_helper/**'
+                  --ignore '**/examples/**'
+                  --ignore '/*'
+                  --excl-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
+                  --excl-br-line '(//(/|!)?|mod [^\s]+;|\#\[derive\()'
+                  --excl-start '^mod tests \{$'
+                  --excl-br-start '^mod tests \{$'
+                  --excl-stop '^\}$'
+                  --excl-br-stop '^\}$'
+
+            - uses: codecov/codecov-action@v4
+              with:
+                  files: target/coverage/coverage.lcov
+                  fail_ci_if_error: true
