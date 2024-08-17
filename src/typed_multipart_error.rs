@@ -91,7 +91,9 @@ mod tests {
     }
 
     async fn create_client() -> TestClient {
-        let handler = |_: Data| async { panic!("should never be called") };
+        async fn handler(_: Data) {
+            panic!("should never be called")
+        }
         TestClient::new(Router::new().route("/", post(handler))).await
     }
 
