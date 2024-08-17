@@ -1,16 +1,16 @@
 {
-  "name": "axum_typed_multipart",
-  "image": "mcr.microsoft.com/devcontainers/rust:1",
-  "features": {
-    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "editorconfig.editorconfig",
-        "esbenp.prettier-vscode",
-        "github.vscode-github-actions"
-      ]
+    "name": "axum_typed_multipart",
+    "image": "mcr.microsoft.com/devcontainers/rust:1",
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "editorconfig.editorconfig",
+                "esbenp.prettier-vscode",
+                "github.vscode-github-actions"
+            ]
+        }
     }
-  }
 }
