@@ -66,6 +66,7 @@ impl IntoResponse for TypedMultipartError {
 }
 
 #[cfg(test)]
+#[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
     use axum::extract::{FromRequest, Multipart, Request};
