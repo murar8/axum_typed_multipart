@@ -1,19 +1,16 @@
+name: release
+
 on:
     workflow_run:
         workflows:
             - audit
             - lint
             - test
-        branches:
-            - "[0-9]+.[0-9]+.[0-9]+"
         types:
             - completed
 
 jobs:
     publish:
-        env:
-            CARGO_REGISTRY_TOKEN: ${{secrets.CARGO_REGISTRY_TOKEN}}
-
         permissions:
             contents: write
             packages: write
@@ -21,18 +18,24 @@ jobs:
 
         runs-on: ubuntu-latest
 
+        if: ${{ github.ref_type == 'tag' && github.event.workflow_run.conclusion == 'success' }}
+
         steps:
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
             - uses: actions-rust-lang/setup-rust-toolchain@v1
-            - uses: taiki-e/install-action@cargo-edit
+            - uses: taiki-e/install-action@v2
+              with:
+                  tool: cargo-edit
             - run: |
                   cargo set-version --workspace ${GITHUB_REF#refs/tags/}
                   git add -A
                   git commit -m "chore(${{ github.workflow }}): bump version to ${GITHUB_REF#refs/tags/}"
                   cargo publish --locked --package axum_typed_multipart_macros
                   cargo publish --locked
+              env:
+                  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
             - uses: ncipollo/release-action@v1
               with:
                   generateReleaseNotes: true
