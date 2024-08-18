@@ -20,7 +20,7 @@ bytes = "1.4.0"
 chrono = "0.4.37"
 futures-core = "0.3.28"
 futures-util = "0.3.28"
-tempfile = "3.0.2"
+tempfile = "3.1.0"
 thiserror = "1.0.44"
 tokio = { version = "1.30.0", features = ["fs", "io-util", "macros", "rt-multi-thread"] }
 uuid = "1.0.0"
