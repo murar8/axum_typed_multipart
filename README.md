@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
 [![](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
-[![.github/workflows/push.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/push.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/push.yml)
+[![.github/workflows/release.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml)
 [![.github/workflows/audit.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml)
 [![codecov](https://codecov.io/gh/murar8/axum_typed_multipart/branch/main/graph/badge.svg?token=AUQ4P8EFVK)](https://codecov.io/gh/murar8/axum_typed_multipart)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -23,7 +23,7 @@ Direct push to the `main` branch is not allowed, any updates require a pull requ
 
 Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) specification.
 
-The project comes with an optional pre-configured development container with all the required tools. For more information on how to use it please refer to https://containers.dev
+The project comes with an optional pre-configured development container with all the required tools. For more information on how to use it please refer to <https://containers.dev>
 
 To make sure your changes match the project style you can install the pre-commit hooks with `pre-commit install`. This requires [pre-commit](https://pre-commit.com/) to be installed on your system.
 
