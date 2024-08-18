@@ -7,7 +7,6 @@ keywords = ["axum", "form", "multipart"]
 license = "MIT"
 name = "axum_typed_multipart"
 repository = "https://github.com/murar8/axum_typed_multipart"
-version = "0.11.2"
 
 [workspace]
 members = ["macros"]
@@ -18,7 +17,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)
 [dependencies]
 anyhow = "1.0.72"
 axum = { version = "0.7.0", features = ["multipart"] }
-axum_typed_multipart_macros = { version = "0.11.2", path = "macros" }
+axum_typed_multipart_macros = { path = "macros" }
 bytes = "1.4.0"
 chrono = "0.4.37"
 futures-core = "0.3.28"

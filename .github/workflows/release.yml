@@ -26,8 +26,11 @@ jobs:
               with:
                   fetch-depth: 0
             - uses: actions-rust-lang/setup-rust-toolchain@v1
-              # TODO: Version
+            - uses: taiki-e/install-action@cargo-edit
             - run: |
+                  cargo set-version --workspace ${GITHUB_REF#refs/tags/}
+                  git add -A
+                  git commit -m "chore(${{ github.workflow }}): bump version to ${GITHUB_REF#refs/tags/}"
                   cargo publish --locked --package axum_typed_multipart_macros
                   cargo publish --locked
             - uses: ncipollo/release-action@v1
