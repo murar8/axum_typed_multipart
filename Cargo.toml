@@ -12,6 +12,9 @@ version = "0.11.2"
 [workspace]
 members = ["macros"]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+
 [dependencies]
 anyhow = "1.0.72"
 axum = { version = "0.7.0", features = ["multipart"] }

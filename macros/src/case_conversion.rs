@@ -63,6 +63,7 @@ impl<'a> TryFrom<&'a str> for RenameCase {
 }
 
 #[cfg(test)]
+#[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
 

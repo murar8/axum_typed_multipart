@@ -69,6 +69,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
     use axum::extract::Multipart;

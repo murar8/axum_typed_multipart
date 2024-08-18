@@ -258,6 +258,8 @@
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
 
+#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
+
 pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
