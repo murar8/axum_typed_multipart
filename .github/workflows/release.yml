@@ -18,12 +18,6 @@ jobs:
             CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
         steps:
-            - name: Wait for checks to succeed
-              uses: lewagon/wait-on-check-action@v1.3.4
-              with:
-                  ref: ${{ github.ref }}
-                  repo-token: ${{ secrets.GITHUB_TOKEN }}
-                  running-workflow-name: ${{ github.job }}
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
@@ -38,6 +32,11 @@ jobs:
                   git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
                   git add -A
                   git commit -m "chore(${{ github.workflow }}): bump version to ${GITHUB_REF#refs/tags/}"
+            - uses: lewagon/wait-on-check-action@v1.3.4
+              with:
+                  ref: ${{ github.ref }}
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
+                  running-workflow-name: ${{ github.job }}
             - run: cargo publish --locked --package axum_typed_multipart_macros
             - run: cargo publish --locked
             - uses: ncipollo/release-action@v1
