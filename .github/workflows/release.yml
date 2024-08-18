@@ -1,26 +1,29 @@
 name: release
 
 on:
-    workflow_run:
-        workflows:
-            - audit
-            - lint
-            - test
-        types:
-            - completed
+    push:
+        tags:
+            - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
     publish:
+        runs-on: ubuntu-latest
+
         permissions:
             contents: write
             packages: write
             pull-requests: read
 
-        runs-on: ubuntu-latest
-
-        if: ${{ github.ref_type == 'tag' && github.event.workflow_run.conclusion == 'success' }}
+        env:
+            CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
         steps:
+            - name: Wait for checks to succeed
+              uses: lewagon/wait-on-check-action@v1.3.4
+              with:
+                  ref: ${{ github.ref }}
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
+                  running-workflow-name: ${{ github.job }}
             - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
@@ -28,14 +31,15 @@ jobs:
             - uses: taiki-e/install-action@v2
               with:
                   tool: cargo-edit
+            - run: cargo set-version --workspace ${GITHUB_REF#refs/tags/}
             - run: |
-                  cargo set-version --workspace ${GITHUB_REF#refs/tags/}
+                  # See https://github.com/orgs/community/discussions/40405#discussioncomment-8361451
+                  git config user.name "${{ github.actor }}"
+                  git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
                   git add -A
                   git commit -m "chore(${{ github.workflow }}): bump version to ${GITHUB_REF#refs/tags/}"
-                  cargo publish --locked --package axum_typed_multipart_macros
-                  cargo publish --locked
-              env:
-                  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+            - run: cargo publish --locked --package axum_typed_multipart_macros
+            - run: cargo publish --locked
             - uses: ncipollo/release-action@v1
               with:
                   generateReleaseNotes: true
