@@ -31,8 +31,7 @@
 //! - [char]
 //! - [String]
 //! - [axum::body::Bytes] (v0.7)
-//! - [chrono::DateTime<chrono::FixedOffset>] (v0.4)
-//! - [chrono::DateTime<chrono::Utc>] (v0.4)
+//! - [chrono::DateTime] ([chrono::FixedOffset] and [chrono::Utc]) (v0.4)
 //! - [tempfile::NamedTempFile] (v3)
 //! - [uuid::Uuid] (v1)
 //!
@@ -257,6 +256,13 @@
 //! ```rust,no_run
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
+//!
+//! ### Validation
+//!
+//! In order to perform validation on the various attributes of a field, I would recommend using the
+//! [validator](https://crates.io/crates/validator) crate together with the
+//! [axum-valid](https://crates.io/crates/axum-valid) crate. A nice example can be found at
+//! [docs.rs](https://docs.rs/axum-valid/0.19.0/axum_valid/#-validatede-modifiede-validifiede-and-validifiedbyrefe).
 
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
