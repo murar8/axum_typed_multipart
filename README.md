@@ -1,7 +1,7 @@
 # axum_typed_multipart
 
-[![](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
-[![](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
+[![crates.io](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
+[![docs.rs](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
 [![.github/workflows/release.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml)
 [![.github/workflows/audit.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml)
 [![codecov](https://codecov.io/gh/murar8/axum_typed_multipart/branch/main/graph/badge.svg?token=AUQ4P8EFVK)](https://codecov.io/gh/murar8/axum_typed_multipart)
