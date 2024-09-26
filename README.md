@@ -1,8 +1,9 @@
 # axum_typed_multipart
 
 [![crates.io](https://img.shields.io/crates/v/axum_typed_multipart.svg)](https://crates.io/crates/axum_typed_multipart)
+![Crates.io Size](https://img.shields.io/crates/size/axum_typed_multipart)
+![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/axum_typed_multipart)
 [![docs.rs](https://docs.rs/axum_typed_multipart/badge.svg)](https://docs.rs/axum_typed_multipart)
-[![.github/workflows/release.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/release.yml)
 [![.github/workflows/audit.yml](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml/badge.svg)](https://github.com/murar8/axum_typed_multipart/actions/workflows/audit.yml)
 [![codecov](https://codecov.io/gh/murar8/axum_typed_multipart/branch/main/graph/badge.svg?token=AUQ4P8EFVK)](https://codecov.io/gh/murar8/axum_typed_multipart)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
