@@ -2,7 +2,7 @@ use crate::case_conversion::RenameCase;
 use crate::util::{matches_option_signature, matches_vec_signature, strip_leading_rawlit};
 use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
-use proc_macro_error::abort;
+use proc_macro_error2::abort;
 use quote::quote;
 use ubyte::ByteUnit;
 
