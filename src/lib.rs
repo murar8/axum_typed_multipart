@@ -9,6 +9,14 @@
 //! cargo add axum_typed_multipart
 //! ```
 //!
+//! ### Features
+//!
+//! All features are enabled by default.
+//!
+//! - `chrono_0_4`: Enables support for [chrono::DateTime](chrono_0_4::DateTime) (v0.4)
+//! - `tempfile_3`: Enables support for [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (v3)
+//! - `uuid_1`: Enables support for [uuid::Uuid](uuid_1::Uuid) (v1)
+//!
 //! ## Usage
 //!
 //! ### Getting started
@@ -30,10 +38,10 @@
 //! - [bool]
 //! - [char]
 //! - [String]
-//! - [axum::body::Bytes] (v0.7)
-//! - [chrono::DateTime] ([chrono::FixedOffset] and [chrono::Utc]) (v0.4)
-//! - [tempfile::NamedTempFile] (v3)
-//! - [uuid::Uuid] (v1)
+//! - [axum::body::Bytes]
+//! - [chrono::DateTime](chrono_0_4::DateTime) (feature: `chrono_0_4`)
+//! - [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (feature: `tempfile_3`)
+//! - [uuid::Uuid](uuid_1::Uuid) (feature: `uuid_1`)
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
@@ -130,11 +138,11 @@
 //! ### Large uploads
 //!
 //! For large uploads you can save the contents of the field to the file system
-//! using [tempfile::NamedTempFile]. This will efficiently stream the field data
+//! using [tempfile::NamedTempFile](tempfile_3::NamedTempFile). This will efficiently stream the field data
 //! directly to the file system, without needing to fit all the data in memory.
 //! Once the upload is complete, you can then save the contents to a location of
 //! your choice. For more information check out the
-//! [NamedTempFile](tempfile::NamedTempFile) documentation.
+//! [NamedTempFile](tempfile_3::NamedTempFile) documentation.
 //!
 //! #### **Warning**
 //! Field size limits for [Vec] fields are applied to **each** occurrence of the

@@ -25,8 +25,8 @@ syn = "2.0.39"
 ubyte = "0.10.4"
 
 [dev-dependencies]
-axum = "0.7.0"
+axum = { workspace = true }
 axum-test-helper = { workspace = true }
 axum_typed_multipart = { path = ".." }
 reqwest = { workspace = true }
-tokio = "1.30.0"
+tokio = { workspace = true, features = ["macros"] }

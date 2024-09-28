@@ -4,7 +4,7 @@ use axum::routing::post;
 use axum::Router;
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 use std::path::Path;
-use tempfile::NamedTempFile;
+use tempfile_3::NamedTempFile;
 
 #[derive(TryFromMultipart)]
 struct UploadAssetRequest {
