@@ -1,6 +1,5 @@
-//! Designed to seamlessly integrate with
-//! [Axum](https://github.com/tokio-rs/axum), this crate simplifies the process
-//! of handling `multipart/form-data` requests in your web application by
+//! Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum), this crate
+//! simplifies the process of handling `multipart/form-data` requests in your web application by
 //! allowing you to parse the request body into a type-safe struct.
 //!
 //! ## Installation
@@ -21,17 +20,15 @@
 //!
 //! ### Getting started
 //!
-//! To get started you will need to define a struct with the desired fields and
-//! implement the [TryFromMultipart](crate::TryFromMultipart) trait. In the vast
-//! majority of cases you will want to use the derive macro to generate the
-//! implementation automatically.
+//! To get started you will need to define a struct with the desired fields and implement the
+//! [TryFromMultipart](crate::TryFromMultipart) trait. In the vast majority of cases you will want
+//! to use the derive macro to generate the implementation automatically.
 //!
-//! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait
-//! every field in the struct must implement the
-//! [TryFromField](crate::TryFromField) trait.
+//! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait every field in the
+//! struct must implement the [TryFromField](crate::TryFromField) trait.
 //!
-//! The [TryFromField](crate::TryFromField) trait is implemented by default for
-//! the following types:
+//! The [TryFromField](crate::TryFromField) trait is implemented by default for the following
+//! types:
 //! - [i8], [i16], [i32], [i64], [i128], [isize]
 //! - [u8], [u16], [u32], [u64], [u128], [usize]
 //! - [f32], [f64]
@@ -45,9 +42,8 @@
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
-//! An error will be returned if at least one field is missing, with the
-//! exception of [Option] and [Vec] types, which will be set respectively as
-//! [Option::None] and `[]`.
+//! An error will be returned if at least one field is missing, with the exception of [Option] and
+//! [Vec] types, which will be set respectively as [Option::None] and `[]`.
 //!
 //! ```rust,no_run
 #![doc = include_str!("../examples/basic.rs")]
@@ -55,8 +51,8 @@
 //!
 //! ### Optional fields
 //!
-//! If a field is declared as an [Option] the value will default to [None] when
-//! the field is missing from the request body.
+//! If a field is declared as an [Option] the value will default to [None] when the field is
+//! missing from the request body.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -68,8 +64,8 @@
 //!
 //! ### Renaming fields
 //!
-//! If you would like to assign a custom name for the source field you can use
-//! the `field_name` parameter of the `form_data` attribute.
+//! If you would like to assign a custom name for the source field you can use the `field_name`
+//! parameter of the `form_data` attribute.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -80,9 +76,9 @@
 //! }
 //! ```
 //!
-//! The `rename_all` parameter from the `try_from_multipart` attribute can be
-//! used to automatically rename each field of your struct to a specific case.
-//! It works the same way as `#[serde(rename_all = "...")]`.
+//! The `rename_all` parameter from the `try_from_multipart` attribute can be used to automatically
+//! rename each field of your struct to a specific case. It works the same way as
+//! `#[serde(rename_all = "...")]`.
 //!
 //! Supported cases:
 //! - `snake_case`
@@ -102,14 +98,13 @@
 //! }
 //! ```
 //!
-//! NOTE: If the `#[form_data(field_name = "...")]` attribute is specified, the
-//! `rename_all` rule will not be applied.
+//! NOTE: If the `#[form_data(field_name = "...")]` attribute is specified, the `rename_all` rule
+//! will not be applied.
 //!
 //! ### Default values
 //!
-//! If the `default` parameter in the `form_data` attribute is present the value
-//! will be populated using the type's [Default] implementation when the field
-//! is not supplied in the request.
+//! If the `default` parameter in the `form_data` attribute is present the value will be populated
+//! using the type's [Default] implementation when the field is not supplied in the request.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -122,9 +117,8 @@
 //!
 //! ### Field metadata
 //!
-//! If you need access to the field metadata (e.g. the field headers like file
-//! name or content type) you can use the [FieldData](crate::FieldData) struct
-//! to wrap your field.
+//! If you need access to the field metadata (e.g. the field headers like file name or content
+//! type) you can use the [FieldData](crate::FieldData) struct to wrap your field.
 //! ```rust
 //! use axum::body::Bytes;
 //! use axum_typed_multipart::{FieldData, TryFromMultipart};
@@ -137,37 +131,34 @@
 //!
 //! ### Large uploads
 //!
-//! For large uploads you can save the contents of the field to the file system
-//! using [tempfile::NamedTempFile](tempfile_3::NamedTempFile). This will efficiently stream the field data
-//! directly to the file system, without needing to fit all the data in memory.
-//! Once the upload is complete, you can then save the contents to a location of
-//! your choice. For more information check out the
-//! [NamedTempFile](tempfile_3::NamedTempFile) documentation.
+//! For large uploads you can save the contents of the field to the file system using
+//! [tempfile::NamedTempFile](tempfile_3::NamedTempFile). This will efficiently stream the field
+//! data directly to the file system, without needing to fit all the data in memory. Once the
+//! upload is complete, you can then save the contents to a location of your choice. For more
+//! information check out the [NamedTempFile](tempfile_3::NamedTempFile) documentation.
 //!
 //! #### **Warning**
-//! Field size limits for [Vec] fields are applied to **each** occurrence of the
-//! field. This means that if you have a 1GiB field limit and the field contains
+//! Field size limits for [Vec] fields are applied to **each** occurrence of the field. This means
+//! that if you have a 1GiB field limit and the field contains
 //! 5 entries, the total size of the request body will be 5GiB.
 //!
 //! #### **Note**
-//! When handling large uploads you will need to increase both the request body
-//! size limit and the field size limit. The request body size limit can be
-//! increased using the [DefaultBodyLimit](axum::extract::DefaultBodyLimit)
-//! middleware, while the field size limit can be increased using the `limit`
-//! parameter of the `form_data` attribute.
+//! When handling large uploads you will need to increase both the request body size limit and the
+//! field size limit. The request body size limit can be increased using the
+//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware, while the field size limit can
+//! be increased using the `limit` parameter of the `form_data` attribute.
 //! ```rust,no_run
 #![doc = include_str!("../examples/upload.rs")]
 //! ```
 //!
 //! ### Lists
 //!
-//! If the incoming request will include multiple fields that share the same
-//! name (AKA lists) the field can be declared as a [Vec], allowing for all
-//! occurrences of the field to be stored.
+//! If the incoming request will include multiple fields that share the same name (AKA lists) the
+//! field can be declared as a [Vec], allowing for all occurrences of the field to be stored.
 //!
 //! #### **Warning**
-//! Field size limits for [Vec] fields are applied to **each** occurrence of the
-//! field. This means that if you have a 1GiB field limit and the field contains
+//! Field size limits for [Vec] fields are applied to **each** occurrence of the field. This means
+//! that if you have a 1GiB field limit and the field contains
 //! 5 entries, the total size of the request body will be 5GiB.
 //! ```rust
 //! use axum::http::StatusCode;
@@ -181,11 +172,10 @@
 //!
 //! ### Strict mode
 //!
-//! By default the derive macro will store the last occurrence of a field and it
-//! will ignore unknown fields. This behavior can be changed by using the
-//! `strict` parameter in the derive macro. This will make the macro throw an
-//! error if the request contains multiple fields with the same name or if it
-//! contains unknown fields. In addition when using strict mode sending fields
+//! By default the derive macro will store the last occurrence of a field and it will ignore
+//! unknown fields. This behavior can be changed by using the `strict` parameter in the derive
+//! macro. This will make the macro throw an error if the request contains multiple fields with the
+//! same name or if it contains unknown fields. In addition when using strict mode sending fields
 //! with a missing or empty name will result in an error.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
@@ -237,38 +227,34 @@
 //! ### Custom types
 //!
 //! If you would like to use a custom type for a field you need to implement the
-//! [TryFromField](crate::TryFromField) trait for your type. This will allow the
-//! derive macro to generate the [TryFromMultipart](crate::TryFromMultipart)
-//! implementation automatically. Instead of implementing the trait directly, it
-//! is recommended to implement the [TryFromChunks](crate::TryFromChunks) trait
-//! and the [TryFromField](crate::TryFromField) trait will be implemented
-//! automatically. This is recommended since you won't need to manually
+//! [TryFromField](crate::TryFromField) trait for your type. This will allow the derive macro to
+//! generate the [TryFromMultipart](crate::TryFromMultipart) implementation automatically. Instead
+//! of implementing the trait directly, it is recommended to implement the
+//! [TryFromChunks](crate::TryFromChunks) trait and the [TryFromField](crate::TryFromField) trait
+//! will be implemented automatically. This is recommended since you won't need to manually
 //! implement the size limit logic.
 //!
-//! To implement the [TryFromChunks](crate::TryFromChunks) trait for external
-//! types you will need to create a newtype wrapper and implement the trait for
-//! the wrapper.
+//! To implement the [TryFromChunks](crate::TryFromChunks) trait for external types you will need
+//! to create a newtype wrapper and implement the trait for the wrapper.
 //!
 //! ### Custom error format
 //!
-//! When using [TypedMultipart](crate::TypedMultipart) as an argument for your
-//! handlers, when the request is malformed, the error will be serialized as a
-//! string. If you would like to customize the error format you can use the
-//! [BaseMultipart](crate::BaseMultipart) struct instead. This struct is used
-//! internally by [TypedMultipart](crate::TypedMultipart) and it can be used to
+//! When using [TypedMultipart](crate::TypedMultipart) as an argument for your handlers, when the
+//! request is malformed, the error will be serialized as a string. If you would like to customize
+//! the error format you can use the [BaseMultipart](crate::BaseMultipart) struct instead. This
+//! struct is used internally by [TypedMultipart](crate::TypedMultipart) and it can be used to
 //! customize the error type.
 //!
-//! To customize the error you will need to define a custom error type and
-//! implement [IntoResponse](axum::response::IntoResponse) and
-//! `From<TypedMultipartError>`.
+//! To customize the error you will need to define a custom error type and implement
+//! [IntoResponse](axum::response::IntoResponse) and `From<TypedMultipartError>`.
 //! ```rust,no_run
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
 //!
 //! ### Validation
 //!
-//! In order to perform validation on the various attributes of a field, I would recommend using the
-//! [validator](https://crates.io/crates/validator) crate together with the
+//! In order to perform validation on the various attributes of a field, I would recommend using
+//! the [validator](https://crates.io/crates/validator) crate together with the
 //! [axum-valid](https://crates.io/crates/axum-valid) crate. A nice example can be found at
 //! [docs.rs](https://docs.rs/axum-valid/0.19.0/axum_valid/#-validatede-modifiede-validifiede-and-validifiedbyrefe).
 
