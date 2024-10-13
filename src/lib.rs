@@ -251,6 +251,20 @@
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
 //!
+//! ### Usage with utoipa
+//!
+//! If you would like to use `axum_typed_multipart` as part of a documented API then
+//! [`utoipa`](https://github.com/juhaku/utoipa) can provide a simple way to add documentation to
+//! an API and automatically generate `openapi.json` specifications. `axum_typed_multipart` can
+//! be used in conjunction with `utoipa` easily. An example implementation is included.
+//!
+//! Note: File uploads in `utoipa` require a type of `Vec<u8>` which is incompatible with
+//! `axum_typed_multipart` which uses either `Bytes` or [tempfile::NamedTempFile](tempfile_3::NamedTempFile)
+//! as above. It is possible to get the best of both worlds as shown in the example.
+//! ```rust,no_run
+#![doc = include_str!("../examples/utoipa/src/main.rs")]
+//! ```
+//!
 //! ### Validation
 //!
 //! In order to perform validation on the various attributes of a field, I would recommend using
