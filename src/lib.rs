@@ -261,9 +261,8 @@
 //! Note: File uploads in `utoipa` require a type of `Vec<u8>` which is incompatible with
 //! `axum_typed_multipart` which uses either `Bytes` or [tempfile::NamedTempFile](tempfile_3::NamedTempFile)
 //! as above. It is possible to get the best of both worlds as shown in the example.
-//! ```rust,no_run
-#![doc = include_str!("../examples/utoipa/src/main.rs")]
-//! ```
+//!
+//! The example can be found in the [example directory](https://github.com/murar8/axum_typed_multipart/tree/main/examples/utoipa)
 //!
 //! ### Validation
 //!
