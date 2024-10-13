@@ -44,8 +44,8 @@ anyhow = "1.0.72"
 axum = { workspace = true, features = ["multipart"] }
 axum_typed_multipart_macros = { path = "macros", version = "0.0.0" }
 bytes = "1.4.0"
-futures-core = "0.3.28"
-futures-util = "0.3.28"
+futures-core = "0.3.31"
+futures-util = "0.3.31"
 thiserror = "1.0.7"
 
 chrono_0_4 = { package = "chrono", version = "0.4.0", optional = true }
