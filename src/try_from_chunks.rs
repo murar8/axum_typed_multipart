@@ -189,6 +189,35 @@ where
     }
 }
 
+#[cfg(feature = "rust_decimal_1")]
+#[async_trait]
+impl<Err> TryFromChunks for rust_decimal_1::Decimal
+where
+    Err: Into<anyhow::Error>,
+    rust_decimal_1::Decimal: FromStr<Err = Err>,
+{
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let field_name = get_field_name(&metadata.name);
+        let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
+        let body_str =
+            std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+                field_name: field_name.clone(),
+                wanted_type: type_name::<rust_decimal_1::Decimal>().to_string(),
+                source: err.into(),
+            })?;
+        rust_decimal_1::Decimal::from_str(body_str).map_err(|err| {
+            TypedMultipartError::WrongFieldType {
+                field_name,
+                wanted_type: type_name::<rust_decimal_1::Decimal>().to_string(),
+                source: err.into(),
+            }
+        })
+    }
+}
+
 fn get_field_name(name: &Option<String>) -> String {
     // Theoretically, the name should always be present, but it's better to be
     // safe than sorry.
@@ -368,6 +397,14 @@ mod tests {
         let valid_output = DateTime::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<DateTime>(valid_input, valid_output).await;
         test_try_from_chunks_invalid::<DateTime>(Bytes::from_static(&[0, 159, 146, 150])).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_rust_decimal() {
+        let valid_input = "1.50";
+        let valid_output = rust_decimal_1::Decimal::from_str(valid_input).unwrap();
+        test_try_from_chunks_valid::<rust_decimal_1::Decimal>(valid_input, valid_output).await;
+        test_try_from_chunks_invalid::<rust_decimal_1::Decimal>("invalid").await;
     }
 
     #[tokio::test]
