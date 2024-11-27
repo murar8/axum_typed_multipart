@@ -188,6 +188,34 @@ where
         })
     }
 }
+#[cfg(feature = "chrono_0_4")]
+#[async_trait]
+impl<Err> TryFromChunks for chrono_0_4::NaiveDate
+where
+    Err: Into<anyhow::Error>,
+    chrono_0_4::NaiveDate: FromStr<Err = Err>,
+{
+    async fn try_from_chunks(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+    ) -> Result<Self, TypedMultipartError> {
+        let field_name = get_field_name(&metadata.name);
+        let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
+        let body_str =
+            std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
+                field_name: field_name.clone(),
+                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_string(),
+                source: err.into(),
+            })?;
+        chrono_0_4::NaiveDate::from_str(body_str).map_err(|err| {
+            TypedMultipartError::WrongFieldType {
+                field_name,
+                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_string(),
+                source: err.into(),
+            }
+        })
+    }
+}
 
 fn get_field_name(name: &Option<String>) -> String {
     // Theoretically, the name should always be present, but it's better to be
@@ -200,6 +228,7 @@ fn get_field_name(name: &Option<String>) -> String {
 mod tests {
     use super::*;
     use bytes::Bytes;
+    use chrono_0_4::NaiveDate;
     use futures_util::stream;
     use std::fmt::Debug;
     use std::io::Read;
@@ -368,6 +397,14 @@ mod tests {
         let valid_output = DateTime::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<DateTime>(valid_input, valid_output).await;
         test_try_from_chunks_invalid::<DateTime>(Bytes::from_static(&[0, 159, 146, 150])).await;
+    }
+
+    #[tokio::test]
+    async fn test_try_from_chunks_chrono_native_date_fixed() {
+        let valid_input = "2024-01-01";
+        let valid_output = NaiveDate::from_str(valid_input).unwrap();
+        test_try_from_chunks_valid::<NaiveDate>(valid_input, valid_output).await;
+        test_try_from_chunks_invalid::<NaiveDate>("invalid").await;
     }
 
     #[tokio::test]
