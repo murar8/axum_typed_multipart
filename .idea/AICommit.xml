@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.github.blarc.ai.commits.intellij.plugin.settings.ProjectSettings" isProjectSpecificPrompt="true">
+    <option name="projectSpecificPrompt" value="true" />
+    <option name="activePrompt">
+      <Prompt>
+        <option name="canBeChanged" value="false" />
+        <option name="content" value="Write a commit message in the conventional commit convention. I'll send you an output of 'git diff --staged' command, and you convert it into a commit message. Lines must not be longer than 74 characters. Use {locale} language to answer. End commit title with issue number if you can get it from the branch name: {branch} in parenthesis.&#10;{Use this hint to improve the commit message: $hint}&#10;{diff}" />
+        <option name="description" value="Prompt for commit message in the conventional commit convention." />
+        <option name="name" value="Conventional" />
+      </Prompt>
+    </option>
+    <option name="locale" value="und" />
+  </component>
+</project>
