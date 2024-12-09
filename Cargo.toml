@@ -50,7 +50,7 @@ futures-util = "0.3.31"
 thiserror = "2.0.0"
 
 chrono_0_4 = { package = "chrono", version = "0.4.0", optional = true }
-rust_decimal_1 = { package = "rust_decimal", version = "1.36.0", features = [
+rust_decimal_1 = { package = "rust_decimal", version = "1.30.0", features = [
     "serde-str",
 ], optional = true }
 tempfile_3 = { package = "tempfile", version = "3.1.0", optional = true }
