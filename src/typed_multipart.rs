@@ -3,7 +3,7 @@ use axum::async_trait;
 use axum::extract::{FromRequest, Request};
 use std::ops::{Deref, DerefMut};
 
-/// Used as as an argument for axum [Handlers](axum::handler::Handler).
+/// Used as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
 /// [TryFromMultipart] trait.

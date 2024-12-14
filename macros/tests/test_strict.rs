@@ -50,7 +50,7 @@ async fn test_strict_unknown_field() {
 }
 
 #[tokio::test]
-async fn test_strict_deplicate_field() {
+async fn test_strict_duplicate_field() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }

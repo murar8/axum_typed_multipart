@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-/// Used as as an argument for axum [Handlers](axum::handler::Handler).
+/// Used as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
 /// [TryFromMultipart] trait and the generic rejection implements the

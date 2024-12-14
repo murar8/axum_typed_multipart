@@ -56,7 +56,7 @@ impl FieldData {
         }
     }
 
-    /// Parse the supplied human readable size limit into a byte limit.
+    /// Parse the supplied human-readable size limit into a byte limit.
     fn limit_bytes(&self) -> Option<usize> {
         match self.limit.as_deref() {
             None => Some(DEFAULT_FIELD_SIZE_LIMIT_BYTES),

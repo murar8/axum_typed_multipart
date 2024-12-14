@@ -42,8 +42,8 @@
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
-//! An error will be returned if at least one field is missing, with the exception of [Option] and
-//! [Vec] types, which will be set respectively as [Option::None] and `[]`.
+//! An error will be returned if at least one field is missing, except for [Option] and
+//! [Vec] types, which will be set respectively as [None] and `[]`.
 //!
 //! ```rust,no_run
 #![doc = include_str!("../examples/basic.rs")]
@@ -118,7 +118,7 @@
 //! ### Field metadata
 //!
 //! If you need access to the field metadata (e.g. the field headers like file name or content
-//! type) you can use the [FieldData](crate::FieldData) struct to wrap your field.
+//! type) you can use the [FieldData](FieldData) struct to wrap your field.
 //! ```rust
 //! use axum::body::Bytes;
 //! use axum_typed_multipart::{FieldData, TryFromMultipart};
@@ -172,10 +172,10 @@
 //!
 //! ### Strict mode
 //!
-//! By default the derive macro will store the last occurrence of a field and it will ignore
+//! By default, the derive macro will store the last occurrence of a field, and it will ignore
 //! unknown fields. This behavior can be changed by using the `strict` parameter in the derive
 //! macro. This will make the macro throw an error if the request contains multiple fields with the
-//! same name or if it contains unknown fields. In addition when using strict mode sending fields
+//! same name or if it contains unknown fields. In addition, when using strict mode sending fields
 //! with a missing or empty name will result in an error.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
@@ -230,19 +230,19 @@
 //! [TryFromField](crate::TryFromField) trait for your type. This will allow the derive macro to
 //! generate the [TryFromMultipart](crate::TryFromMultipart) implementation automatically. Instead
 //! of implementing the trait directly, it is recommended to implement the
-//! [TryFromChunks](crate::TryFromChunks) trait and the [TryFromField](crate::TryFromField) trait
+//! [TryFromChunks](TryFromChunks) trait and the [TryFromField](crate::TryFromField) trait
 //! will be implemented automatically. This is recommended since you won't need to manually
 //! implement the size limit logic.
 //!
-//! To implement the [TryFromChunks](crate::TryFromChunks) trait for external types you will need
+//! To implement the [TryFromChunks](TryFromChunks) trait for external types you will need
 //! to create a newtype wrapper and implement the trait for the wrapper.
 //!
 //! ### Custom error format
 //!
-//! When using [TypedMultipart](crate::TypedMultipart) as an argument for your handlers, when the
+//! When using [TypedMultipart](TypedMultipart) as an argument for your handlers, when the
 //! request is malformed, the error will be serialized as a string. If you would like to customize
-//! the error format you can use the [BaseMultipart](crate::BaseMultipart) struct instead. This
-//! struct is used internally by [TypedMultipart](crate::TypedMultipart) and it can be used to
+//! the error format you can use the [BaseMultipart](BaseMultipart) struct instead. This
+//! struct is used internally by [TypedMultipart](TypedMultipart) and it can be used to
 //! customize the error type.
 //!
 //! To customize the error you will need to define a custom error type and implement

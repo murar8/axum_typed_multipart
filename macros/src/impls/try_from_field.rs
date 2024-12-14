@@ -62,7 +62,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         }
     });
 
-    quote! {
+    let res = quote! {
         #[axum::async_trait]
         impl ::axum_typed_multipart::TryFromField for #ident {
             async fn try_from_field(
@@ -78,6 +78,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 }
             }
         }
-    }
-    .into()
+    };
+
+    res.into()
 }
