@@ -1,5 +1,5 @@
 use crate::{BaseMultipart, TryFromMultipart, TypedMultipartError};
-use axum::async_trait;
+
 use axum::extract::{FromRequest, Request};
 use std::ops::{Deref, DerefMut};
 
@@ -45,7 +45,6 @@ impl<T> DerefMut for TypedMultipart<T> {
     }
 }
 
-#[async_trait]
 impl<T, S> FromRequest<S> for TypedMultipart<T>
 where
     T: TryFromMultipart,
@@ -63,9 +62,10 @@ where
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
     use axum::extract::Multipart;
     use axum::routing::post;
-    use axum::{async_trait, Router};
+    use axum::Router;
     use axum_test_helper::TestClient;
     use reqwest::multipart::Form;
 
@@ -85,10 +85,8 @@ mod tests {
         }
 
         TestClient::new(Router::new().route("/", post(handler)))
-            .await
             .post("/")
             .multipart(Form::new())
-            .send()
             .await;
     }
 

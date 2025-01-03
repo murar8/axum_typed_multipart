@@ -63,7 +63,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     });
 
     let res = quote! {
-        #[axum::async_trait]
+        #[async_trait::async_trait]
         impl ::axum_typed_multipart::TryFromField for #ident {
             async fn try_from_field(
                 field: ::axum::extract::multipart::Field<'_>,

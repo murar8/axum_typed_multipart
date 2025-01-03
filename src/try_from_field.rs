@@ -1,6 +1,6 @@
 use crate::try_from_chunks::TryFromChunks;
 use crate::{FieldMetadata, TypedMultipartError};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::extract::multipart::Field;
 use futures_util::stream::StreamExt;
 use futures_util::TryStreamExt;
@@ -14,6 +14,7 @@ use std::mem;
 /// Implementing this trait directly is not recommended since it requires the
 /// user to manually implement the size limit logic. Instead, implement the
 /// [TryFromChunks] trait and this trait will be implemented automatically.
+
 #[async_trait]
 pub trait TryFromField: Sized {
     /// Consume the input [Field] to create the supplied type.
@@ -98,10 +99,8 @@ mod tests {
         };
 
         TestClient::new(Router::new().route("/", post(handler)))
-            .await
             .post("/")
             .multipart(Form::new().text("data", input))
-            .send()
             .await;
     }
 
