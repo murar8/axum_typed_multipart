@@ -65,10 +65,8 @@ async fn test_limit() {
     for Test { field, size, status, error } in tests.into_iter() {
         let res =
             TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async {})))
-                .await
                 .post("/")
                 .multipart(Form::new().text(field, "x".repeat(size)))
-                .send()
                 .await;
 
         assert_eq!(res.status(), status);

@@ -1,5 +1,5 @@
 use crate::{FieldMetadata, TypedMultipartError};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::body::Bytes;
 use bytes::BytesMut;
 use futures_core::stream::Stream;
@@ -16,7 +16,7 @@ use std::str::FromStr;
 /// ## Example
 ///
 /// ```rust
-/// use axum::async_trait;
+/// use async_trait::async_trait;
 /// use axum::body::Bytes;
 /// use axum_typed_multipart::{FieldMetadata, TryFromChunks, TypedMultipartError};
 /// use futures_util::stream::Stream;

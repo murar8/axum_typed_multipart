@@ -26,7 +26,7 @@ ubyte = "0.10.4"
 
 [dev-dependencies]
 axum = { workspace = true }
-axum-test-helper = { workspace = true }
+axum_test_helper = { path = "../test_helper" }
 axum_typed_multipart = { path = ".." }
 reqwest = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }

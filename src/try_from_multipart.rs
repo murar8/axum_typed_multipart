@@ -1,5 +1,5 @@
 use crate::TypedMultipartError;
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::extract::Multipart;
 
 /// Types that can be created from an instance of [Multipart].

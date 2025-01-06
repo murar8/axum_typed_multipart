@@ -6,3 +6,7 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+# Git Toolbox files
+/git_toolbox_*.xml
+# Git Link files
+/GitLink.xml

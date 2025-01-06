@@ -1,10 +1,8 @@
-use axum::{
-    body::Bytes,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    routing::post,
-    Json, Router,
-};
+use axum::body::Bytes;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::routing::post;
+use axum::{Json, Router};
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
 use serde::Serialize;
 use utoipa::{OpenApi, ToSchema};

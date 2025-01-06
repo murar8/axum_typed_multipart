@@ -1,0 +1,21 @@
+[dependencies]
+axum = { workspace = true }
+bytes = { workspace = true }
+futures-util = "0.3.31"
+http = "1.2.0"
+reqwest = { workspace = true, features = ["json", "multipart"] }
+serde = { workspace = true }
+tokio = { workspace = true }
+tower = "0.5.2"
+tower-service = "0.3.3"
+
+[package]
+description = "Test helper for axum_typed_multipart."
+name = "axum_test_helper"
+publish = false
+
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+version = { workspace = true }
