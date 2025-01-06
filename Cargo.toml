@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros"]
+members = ["macros", "test_helper"]
 
 [workspace.package]
 authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
@@ -12,9 +12,11 @@ repository = "https://github.com/murar8/axum_typed_multipart"
 version = "0.0.0"
 
 [workspace.dependencies]
-axum = "0.7.0"
-axum-test-helper = "0.4.0"
-reqwest = "0.11.23"
+async-trait = "0.1.84"
+axum = "0.8.1"
+bytes = "1.7.1"
+reqwest = "0.12.12"
+serde = "1.0.193"
 tokio = "1.25.0"
 
 [package]
@@ -42,9 +44,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)
 
 [dependencies]
 anyhow = "1.0.72"
+async-trait = { workspace = true }
 axum = { workspace = true, features = ["multipart"] }
 axum_typed_multipart_macros = { path = "macros", version = "0.0.0" }
-bytes = "1.4.0"
+bytes = { workspace = true }
 futures-core = "0.3.31"
 futures-util = "0.3.31"
 thiserror = "2.0.0"
@@ -58,7 +61,9 @@ tokio = { workspace = true, features = ["fs", "io-util"], optional = true }
 uuid_1 = { package = "uuid", version = "1.0.0", optional = true }
 
 [dev-dependencies]
-axum-test-helper = { workspace = true }
+axum_test_helper = { path = "test_helper" }
 reqwest = { workspace = true }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+utoipa = "5.3.1"
+utoipa-rapidoc = { version = "5.0.1", features = ["axum"] }

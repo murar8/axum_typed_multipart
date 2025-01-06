@@ -1,5 +1,5 @@
 use crate::{TryFromField, TypedMultipartError};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::extract::multipart::Field;
 use axum::http::HeaderMap;
 
@@ -115,10 +115,8 @@ mod tests {
         let part = Part::text("test").file_name("test.txt").mime_str("text/plain").unwrap();
 
         let res = TestClient::new(Router::new().route("/", post(handler)))
-            .await
             .post("/")
             .multipart(Form::new().part("input_file", part))
-            .send()
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);

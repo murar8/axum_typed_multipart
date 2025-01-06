@@ -72,12 +72,11 @@ mod tests {
     use axum::extract::{FromRequest, Multipart, Request};
     use axum::http::{header, StatusCode};
     use axum::routing::post;
-    use axum::{async_trait, Router};
+    use axum::Router;
     use axum_test_helper::TestClient;
 
     struct Data();
 
-    #[async_trait]
     impl<S> FromRequest<S> for Data
     where
         S: Send + Sync,
@@ -95,12 +94,12 @@ mod tests {
         async fn handler(_: Data) {
             panic!("should never be called")
         }
-        TestClient::new(Router::new().route("/", post(handler))).await
+        TestClient::new(Router::new().route("/", post(handler)))
     }
 
     #[tokio::test]
     async fn test_invalid_request() {
-        let res = create_client().await.post("/").json(&"{}").send().await;
+        let res = create_client().await.post("/").json(&"{}").await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
         assert!(res.text().await.contains("request is malformed"));
     }
@@ -112,7 +111,6 @@ mod tests {
             .post("/")
             .header(header::CONTENT_TYPE.as_str(), "multipart/form-data; boundary=BOUNDARY")
             .body("BOUNDARY\r\n\r\nBOUNDARY--\r\n")
-            .send()
             .await;
 
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);

@@ -37,12 +37,8 @@ async fn test_enum() {
         .text("interests", "MUSIC")
         .text("interests", "PROGRAMMING");
 
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .await
-        .post("/")
-        .multipart(form)
-        .send()
-        .await;
+    let res =
+        TestClient::new(Router::new().route("/", post(handler))).post("/").multipart(form).await;
 
     assert_eq!(res.status(), StatusCode::OK);
 }

@@ -262,7 +262,7 @@
 //! `axum_typed_multipart` which uses either `Bytes` or [tempfile::NamedTempFile](tempfile_3::NamedTempFile)
 //! as above. It is possible to get the best of both worlds as shown in the example.
 //!
-//! The example can be found in the [example directory](https://github.com/murar8/axum_typed_multipart/tree/main/examples/utoipa)
+//! The example can be found in the [example directory](https://github.com/murar8/axum_typed_multipart/tree/main/examples/utoipa.rs).
 //!
 //! ### Validation
 //!
@@ -273,6 +273,7 @@
 
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
+pub use async_trait::async_trait;
 pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;

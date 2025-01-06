@@ -23,10 +23,8 @@ async fn test_list() {
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
-        .await
         .post("/")
         .multipart(Form::new().text("vec_field", "Apple").text("vec_field", "Orange"))
-        .send()
         .await;
 
     assert_eq!(res.status(), StatusCode::OK);

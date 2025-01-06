@@ -1,6 +1,6 @@
 use crate::try_from_chunks::TryFromChunks;
 use crate::{FieldMetadata, TypedMultipartError};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::extract::multipart::Field;
 use futures_util::stream::StreamExt;
 use futures_util::TryStreamExt;
@@ -98,10 +98,8 @@ mod tests {
         };
 
         TestClient::new(Router::new().route("/", post(handler)))
-            .await
             .post("/")
             .multipart(Form::new().text("data", input))
-            .send()
             .await;
     }
 
