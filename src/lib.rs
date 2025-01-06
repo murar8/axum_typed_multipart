@@ -15,6 +15,7 @@
 //! - `chrono_0_4`: Enables support for [chrono::DateTime](chrono_0_4::DateTime) (v0.4)
 //! - `tempfile_3`: Enables support for [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (v3)
 //! - `uuid_1`: Enables support for [uuid::Uuid](uuid_1::Uuid) (v1)
+//! - `rust_decimal_1`: Enables support for [rust_decimal::Decimal](rust_decimal_1::Decimal) (v1)
 //!
 //! ## Usage
 //!
