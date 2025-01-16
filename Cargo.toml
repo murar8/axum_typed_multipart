@@ -66,4 +66,4 @@ reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 utoipa = "5.3.1"
-utoipa-rapidoc = { version = "5.0.1", features = ["axum"] }
+utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
