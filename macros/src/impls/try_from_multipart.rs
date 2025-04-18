@@ -6,8 +6,6 @@ use proc_macro_error2::abort;
 use quote::quote;
 use ubyte::ByteUnit;
 
-const DEFAULT_FIELD_SIZE_LIMIT_BYTES: usize = 1024 * 1024; // 1MiB
-
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
 struct InputData {
@@ -59,8 +57,7 @@ impl FieldData {
     /// Parse the supplied human-readable size limit into a byte limit.
     fn limit_bytes(&self) -> Option<usize> {
         match self.limit.as_deref() {
-            None => Some(DEFAULT_FIELD_SIZE_LIMIT_BYTES),
-            Some("unlimited") => None,
+            None | Some("unlimited") => None,
             Some(limit) => match limit.parse::<ByteUnit>() {
                 Ok(limit) => Some(limit.as_u64() as usize),
                 Err(_) => abort!(self.ident.as_ref().unwrap(), "limit must be a valid byte unit"),
