@@ -144,10 +144,9 @@
 //! 5 entries, the total size of the request body will be 5GiB.
 //!
 //! #### **Note**
-//! When handling large uploads you will need to increase both the request body size limit and the
-//! field size limit. The request body size limit can be increased using the
-//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware, while the field size limit can
-//! be increased using the `limit` parameter of the `form_data` attribute.
+//! When handling large uploads you will need to increase the request body size limit using the
+//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware. Field size limits are disabled by default,
+//! but can be enabled using the `limit` parameter of the `form_data` attribute if desired.
 //! ```rust,no_run
 #![doc = include_str!("../examples/upload.rs")]
 //! ```

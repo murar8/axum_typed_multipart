@@ -11,7 +11,7 @@ use reqwest::multipart::Form;
 #[allow(dead_code)]
 #[derive(TryFromMultipart)]
 struct Data {
-    default_limit_field: Option<Bytes>,
+    default_unlimited_field: Option<Bytes>,
 
     #[form_data(limit = "16KiB")]
     limited_field: Option<Bytes>,
@@ -31,16 +31,10 @@ async fn test_limit() {
 
     let tests = [
         Test {
-            field: "default_limit_field",
-            size: 1024 * 1024, // 1MiB
+            field: "default_unlimited_field",
+            size: 1000 * 1000 * 2, // 2MB (must be lower than the axum request limit)
             status: StatusCode::OK,
             error: None,
-        },
-        Test {
-            field: "default_limit_field",
-            size: 1024 * 1024 + 1, // 1.001MiB
-            status: StatusCode::PAYLOAD_TOO_LARGE,
-            error: Some("field 'default_limit_field' is larger than 1048576 bytes"),
         },
         Test {
             field: "limited_field",
