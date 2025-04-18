@@ -6,10 +6,8 @@ use axum::serve;
 use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use http::header::{HeaderName, HeaderValue};
-use std::convert::Infallible;
-use std::future::IntoFuture;
-use std::net::SocketAddr;
 use std::ops::Deref;
+use std::{convert::Infallible, future::IntoFuture, net::SocketAddr};
 use tokio::net::TcpListener;
 use tower::make::Shared;
 use tower_service::Service;
@@ -115,8 +113,8 @@ impl RequestBuilder {
 }
 
 impl IntoFuture for RequestBuilder {
-    type IntoFuture = BoxFuture<'static, Self::Output>;
     type Output = TestResponse;
+    type IntoFuture = BoxFuture<'static, Self::Output>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async { TestResponse { response: self.builder.send().await.unwrap() } })
