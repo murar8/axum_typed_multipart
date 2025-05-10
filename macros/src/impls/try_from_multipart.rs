@@ -78,13 +78,11 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let fields = data.take_struct().unwrap();
 
-    let declarations = fields.iter().map(|FieldData { ident, ty, default, .. }| {
-         if matches_vec_signature(ty) {
+    let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
+        if matches_vec_signature(ty) {
             quote! { let mut #ident: #ty = std::vec::Vec::new(); }
         } else if matches_option_signature(ty) {
             quote! { let mut #ident: #ty = std::option::Option::None; }
-        } else if *default {
-            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::Some(#ty::default()); }
         } else {
             quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::None; }
         }
@@ -141,6 +139,12 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let required_fields = fields
         .iter()
         .filter(|FieldData { ty, .. }| !matches_option_signature(ty) && !matches_vec_signature(ty));
+    let default_fields = required_fields.clone().filter(|FieldData { default, .. }| *default);
+    let default_assignments = default_fields.map(|FieldData { ident, ty, .. }| {
+        quote! {
+            let #ident: Option<#ty> = #ident.or_else(|| Some(#ty::default()));
+        }
+    });
 
     let checks = required_fields.map(|field @ FieldData { ident, .. }| {
         let field_name = field.name(rename_all);
@@ -176,6 +180,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
                     #(#assignments) else *
                 }
+
+                #(#default_assignments)*
 
                 #(#checks)*
 
