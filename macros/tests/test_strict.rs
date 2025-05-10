@@ -12,6 +12,8 @@ use reqwest::multipart::Form;
 struct Data {
     name: String,
     items: Vec<String>,
+    #[form_data(default)]
+    default_value: String,
 }
 
 #[tokio::test]
@@ -19,9 +21,14 @@ async fn test_strict() {
     async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
         assert_eq!(data.name, "data");
         assert_eq!(data.items, vec!["bread", "cheese"]);
+        assert_eq!(data.default_value, "default");
     }
 
-    let form = Form::new().text("name", "data").text("items", "bread").text("items", "cheese");
+    let form = Form::new()
+        .text("name", "data")
+        .text("items", "bread")
+        .text("items", "cheese")
+        .text("default_value", "default");
     let res =
         TestClient::new(Router::new().route("/", post(handler))).post("/").multipart(form).await;
 
