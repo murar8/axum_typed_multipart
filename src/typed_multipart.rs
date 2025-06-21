@@ -46,13 +46,13 @@ impl<T> DerefMut for TypedMultipart<T> {
 
 impl<T, S> FromRequest<S> for TypedMultipart<T>
 where
-    T: TryFromMultipart,
+    T: TryFromMultipart<S>,
     S: Send + Sync,
 {
     type Rejection = TypedMultipartError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let base = BaseMultipart::<T, Self::Rejection>::from_request(req, state).await?;
+        let base = BaseMultipart::<T, Self::Rejection, S>::from_request(req, state).await?;
         Ok(Self(base.data))
     }
 }
@@ -71,7 +71,10 @@ mod tests {
 
     #[async_trait::async_trait]
     impl TryFromMultipart for Data {
-        async fn try_from_multipart(_: &mut Multipart) -> Result<Self, TypedMultipartError> {
+        async fn try_from_multipart(
+            _: &mut Multipart,
+            _: &(),
+        ) -> Result<Self, TypedMultipartError> {
             Ok(Self(String::from("data")))
         }
     }

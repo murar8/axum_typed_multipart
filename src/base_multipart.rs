@@ -32,12 +32,13 @@ use std::ops::{Deref, DerefMut};
 ///     StatusCode::OK
 /// }
 /// ```
-pub struct BaseMultipart<T, R> {
+pub struct BaseMultipart<T, R, S = ()> {
     pub data: T,
     rejection: PhantomData<R>,
+    state: PhantomData<S>,
 }
 
-impl<T, R> Deref for BaseMultipart<T, R> {
+impl<T, R, S> Deref for BaseMultipart<T, R, S> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -45,24 +46,24 @@ impl<T, R> Deref for BaseMultipart<T, R> {
     }
 }
 
-impl<T, R> DerefMut for BaseMultipart<T, R> {
+impl<T, R, S> DerefMut for BaseMultipart<T, R, S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
 }
 
-impl<S, T, R> FromRequest<S> for BaseMultipart<T, R>
+impl<S, T, R> FromRequest<S> for BaseMultipart<T, R, S>
 where
     S: Send + Sync,
-    T: TryFromMultipart,
+    T: TryFromMultipart<S>,
     R: IntoResponse + From<TypedMultipartError>,
 {
     type Rejection = R;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let multipart = &mut Multipart::from_request(req, state).await.map_err(Into::into)?;
-        let data = T::try_from_multipart(multipart).await?;
-        Ok(Self { data, rejection: PhantomData })
+        let data = T::try_from_multipart(multipart, state).await?;
+        Ok(Self { data, rejection: PhantomData, state: PhantomData })
     }
 }
 
@@ -81,7 +82,10 @@ mod tests {
 
     #[async_trait]
     impl TryFromMultipart for Data {
-        async fn try_from_multipart(_: &mut Multipart) -> Result<Self, TypedMultipartError> {
+        async fn try_from_multipart(
+            _: &mut Multipart,
+            _: &(),
+        ) -> Result<Self, TypedMultipartError> {
             Ok(Self(String::from("data")))
         }
     }
@@ -114,7 +118,11 @@ mod tests {
         }
 
         let mut data = Data { v0: "DATA".into(), v1: 12 };
-        let mut tm = BaseMultipart { data: data.clone(), rejection: PhantomData::<()> };
+        let mut tm = BaseMultipart {
+            data: data.clone(),
+            rejection: PhantomData::<()>,
+            state: PhantomData::<()>,
+        };
         assert_eq!(tm.deref(), &data);
 
         data.modify();
