@@ -284,6 +284,8 @@ mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
+pub(crate) mod util;
+
 pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::try_from_chunks::TryFromChunks;
