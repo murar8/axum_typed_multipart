@@ -1,41 +1,32 @@
-use crate::try_from_chunks::TryFromChunks;
-use crate::{util, FieldMetadata, TypedMultipartError};
+use crate::{util, FieldMetadata, StatefulTryFromChunks, TypedMultipartError};
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
 
-/// Types that can be created from an instance of [Field].
-///
-/// All fields for a given struct must implement this trait to be able to derive
-/// the [TryFromMultipart](crate::TryFromMultipart) trait.
-///
-/// Implementing this trait directly is not recommended since it requires the
-/// user to manually implement the size limit logic. Instead, implement the
-/// [TryFromChunks] trait and this trait will be implemented automatically.
+/// Types that can be created from an instance of [Field] with a state.
 #[async_trait]
-pub trait TryFromField: Sized {
-    /// Consume the input [Field] to create the supplied type.
-    ///
-    /// The `limit_bytes` parameter is used to limit the size of the field. If
-    /// the field is larger than the limit, an error is returned.
-    async fn try_from_field(
+pub trait StatefulTryFromField<S>: Sized {
+    async fn try_from_field_with_state(
         field: Field<'_>,
         limit_bytes: Option<usize>,
+        state: &S,
     ) -> Result<Self, TypedMultipartError>;
 }
 
 #[async_trait]
-impl<T> TryFromField for T
+impl<T, S> StatefulTryFromField<S> for T
 where
-    T: TryFromChunks,
+    T: StatefulTryFromChunks<S>,
+    S: Sync,
 {
-    async fn try_from_field(
+    async fn try_from_field_with_state(
         field: Field<'_>,
         limit_bytes: Option<usize>,
+        state: &S,
     ) -> Result<Self, TypedMultipartError> {
         let metadata = FieldMetadata::from(&field);
         let mut field_name = metadata.name.clone().unwrap_or(String::new());
         let chunks = util::get_chunks(field, limit_bytes, &mut field_name);
-        T::try_from_chunks(chunks, metadata).await
+        T::try_from_chunks_with_state(chunks, metadata, state).await
     }
 }
 
@@ -56,12 +47,13 @@ mod tests {
     struct Data(String);
 
     #[async_trait]
-    impl TryFromChunks for Data {
-        async fn try_from_chunks(
+    impl StatefulTryFromChunks<()> for Data {
+        async fn try_from_chunks_with_state(
             chunks: impl Stream<Item = Result<bytes::Bytes, TypedMultipartError>> + Send + Sync + Unpin,
             metadata: FieldMetadata,
+            state: &(),
         ) -> Result<Self, TypedMultipartError> {
-            let data = String::try_from_chunks(chunks, metadata).await?;
+            let data = String::try_from_chunks_with_state(chunks, metadata, state).await?;
             Ok(Self(data))
         }
     }
@@ -73,7 +65,7 @@ mod tests {
     {
         let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let res = Data::try_from_field(field, Some(512)).await;
+            let res = Data::try_from_field_with_state(field, Some(512), &()).await;
             validator(res);
         };
 
