@@ -16,9 +16,8 @@ use std::str::FromStr;
 /// ## Example
 ///
 /// ```rust
-/// use axum_typed_multipart::async_trait;
 /// use axum::body::Bytes;
-/// use axum_typed_multipart::{FieldMetadata, TryFromChunks, TypedMultipartError};
+/// use axum_typed_multipart::{async_trait, FieldMetadata, TryFromChunks, TypedMultipartError};
 /// use futures_util::stream::Stream;
 ///
 /// struct Data(String);
@@ -181,6 +180,7 @@ impl<Tz, Err> TryFromChunks for chrono_0_4::DateTime<Tz>
 where
     Err: Into<anyhow::Error>,
     Tz: chrono_0_4::TimeZone,
+    Tz::Offset: Send + Sync,
     chrono_0_4::DateTime<Tz>: FromStr<Err = Err>,
 {
     async fn try_from_chunks(
