@@ -24,6 +24,14 @@ pub trait TryFromField: Sized {
         field: Field<'_>,
         limit_bytes: Option<usize>,
     ) -> Result<Self, TypedMultipartError>;
+
+    async fn try_from_field_with_state<S>(
+        field: Field<'_>,
+        limit_bytes: Option<usize>,
+        _state: &S,
+    ) -> Result<Self, TypedMultipartError> {
+        Self::try_from_field(field, limit_bytes).await
+    }
 }
 
 #[async_trait]
