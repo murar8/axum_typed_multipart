@@ -16,9 +16,8 @@ use std::str::FromStr;
 /// ## Example
 ///
 /// ```rust
-/// use axum_typed_multipart::async_trait;
 /// use axum::body::Bytes;
-/// use axum_typed_multipart::{FieldMetadata, TryFromChunks, TypedMultipartError};
+/// use axum_typed_multipart::{async_trait, FieldMetadata, TryFromChunks, TypedMultipartError};
 /// use futures_util::stream::Stream;
 ///
 /// struct Data(String);
@@ -43,6 +42,14 @@ pub trait TryFromChunks: Sized {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError>;
+
+    async fn try_from_chunks_with_state<S>(
+        chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
+        metadata: FieldMetadata,
+        _state: &S,
+    ) -> Result<Self, TypedMultipartError> {
+        Self::try_from_chunks(chunks, metadata).await
+    }
 }
 
 #[async_trait]
