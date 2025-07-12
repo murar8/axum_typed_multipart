@@ -26,6 +26,32 @@ pub trait TryFromField: Sized {
     ) -> Result<Self, TypedMultipartError>;
 }
 
+/// Stateful variant of [TryFromField].
+///
+/// This trait allows you to inject application state into the parser.
+#[async_trait]
+pub trait TryFromFieldWithState<S>: Sized {
+    async fn try_from_field_with_state(
+        field: Field<'_>,
+        limit_bytes: Option<usize>,
+        state: &S,
+    ) -> Result<Self, TypedMultipartError>;
+}
+
+#[async_trait]
+impl<T, S> TryFromFieldWithState<S> for T
+where
+    T: TryFromField,
+{
+    async fn try_from_field_with_state(
+        field: Field<'_>,
+        limit_bytes: Option<usize>,
+        _state: &S,
+    ) -> Result<Self, TypedMultipartError> {
+        T::try_from_field(field, limit_bytes).await
+    }
+}
+
 #[async_trait]
 impl<T> TryFromField for T
 where
@@ -117,5 +143,47 @@ mod tests {
             assert!(matches!(res, Err(TypedMultipartError::FieldTooLarge { .. })));
         };
         test_try_from_field("x".repeat(513), validator).await;
+    }
+}
+
+#[cfg(test)]
+#[cfg_attr(all(coverage_nightly, test), coverage(off))]
+mod tests_with_state {
+    use super::*;
+    use axum::extract::Multipart;
+    use axum::routing::post;
+    use axum::Router;
+    use axum_test_helper::TestClient;
+    use reqwest::multipart::Form;
+
+    #[derive(Clone)]
+    struct State(String);
+
+    struct DataWithState(String);
+
+    #[async_trait]
+    impl TryFromFieldWithState<State> for DataWithState {
+        async fn try_from_field_with_state(
+            field: Field<'_>,
+            limit_bytes: Option<usize>,
+            state: &State,
+        ) -> Result<Self, TypedMultipartError> {
+            let data = String::try_from_field(field, limit_bytes).await?;
+            Ok(Self(format!("{}, {}", state.0, data)))
+        }
+    }
+
+    #[tokio::test]
+    async fn test_try_from_field_with_state() {
+        let handler = |mut multipart: Multipart| async move {
+            let field = multipart.next_field().await.unwrap().unwrap();
+            let state = State("Hello".to_string());
+            let res = DataWithState::try_from_field_with_state(field, Some(512), &state).await;
+            assert_eq!(res.unwrap().0, "Hello, world!");
+        };
+        TestClient::new(Router::new().route("/", post(handler)))
+            .post("/")
+            .multipart(Form::new().text("data", "world!"))
+            .await;
     }
 }
