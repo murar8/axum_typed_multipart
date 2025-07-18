@@ -6,7 +6,7 @@ use axum::routing::post;
 use axum::Router;
 use axum_test_helper::TestClient;
 use axum_typed_multipart::{
-    anyhow, async_trait, TryFromField as _, TryFromFieldWithState, TryFromMultipart,
+    anyhow, async_trait, FieldData, TryFromField as _, TryFromFieldWithState, TryFromMultipart,
     TypedMultipart, TypedMultipartError,
 };
 use reqwest::multipart::Form;
@@ -45,11 +45,11 @@ where
 #[derive(TryFromMultipart)]
 #[try_from_multipart(strict, state = AppState::<u32>)]
 struct Data {
-    name: String,
+    name: FieldData<String>,
     items: Vec<String>,
     #[form_data(default)]
     default_value: String,
-    position: Position,
+    position: FieldData<Position>,
 }
 
 fn create_test_client<H, T, S>(handler: H, state: S) -> TestClient
@@ -66,10 +66,10 @@ where
 #[tokio::test]
 async fn test_state_valid() {
     async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
-        assert_eq!(data.name, "data");
+        assert_eq!(data.name.contents, "data");
         assert_eq!(data.items, vec!["bread", "cheese"]);
         assert_eq!(data.default_value, "default");
-        assert_eq!(data.position.0, 20);
+        assert_eq!(data.position.contents.0, 20);
     }
     let form = Form::new()
         .text("name", "data")
