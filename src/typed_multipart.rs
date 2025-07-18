@@ -1,11 +1,11 @@
-use crate::{BaseMultipart, TryFromMultipart, TypedMultipartError};
+use crate::{BaseMultipart, TryFromMultipartWithState, TypedMultipartError};
 use axum::extract::{FromRequest, Request};
 use std::ops::{Deref, DerefMut};
 
 /// Used as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart] trait.
+/// [TryFromMultipart](crate::TryFromMultipart) trait.
 ///
 /// ## Example
 ///
@@ -46,7 +46,7 @@ impl<T> DerefMut for TypedMultipart<T> {
 
 impl<T, S> FromRequest<S> for TypedMultipart<T>
 where
-    T: TryFromMultipart,
+    T: TryFromMultipartWithState<S>,
     S: Send + Sync,
 {
     type Rejection = TypedMultipartError;
@@ -61,6 +61,7 @@ where
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
+    use crate::TryFromMultipart;
     use axum::extract::Multipart;
     use axum::routing::post;
     use axum::Router;

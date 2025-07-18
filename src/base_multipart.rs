@@ -1,4 +1,4 @@
-use crate::{TryFromMultipart, TypedMultipartError};
+use crate::{TryFromMultipartWithState, TypedMultipartError};
 use axum::extract::{FromRequest, Multipart, Request};
 use axum::response::IntoResponse;
 use std::marker::PhantomData;
@@ -7,8 +7,8 @@ use std::ops::{Deref, DerefMut};
 /// Used as an argument for axum [Handlers](axum::handler::Handler).
 ///
 /// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart] trait and the generic rejection implements the
-/// [IntoResponse] and `From<TypedMultipartError>` traits.
+/// [TryFromMultipart](crate::TryFromMultipart) trait and the generic rejection
+/// implements the [IntoResponse] and `From<TypedMultipartError>` traits.
 ///
 /// ## Example
 ///
@@ -54,14 +54,14 @@ impl<T, R> DerefMut for BaseMultipart<T, R> {
 impl<S, T, R> FromRequest<S> for BaseMultipart<T, R>
 where
     S: Send + Sync,
-    T: TryFromMultipart,
+    T: TryFromMultipartWithState<S>,
     R: IntoResponse + From<TypedMultipartError>,
 {
     type Rejection = R;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let multipart = &mut Multipart::from_request(req, state).await.map_err(Into::into)?;
-        let data = T::try_from_multipart(multipart).await?;
+        let data = T::try_from_multipart_with_state(multipart, state).await?;
         Ok(Self { data, rejection: PhantomData })
     }
 }
@@ -70,6 +70,7 @@ where
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
+    use crate::TryFromMultipart;
     use async_trait::async_trait;
     use axum::extract::Multipart;
     use axum::routing::post;

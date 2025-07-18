@@ -18,6 +18,9 @@ struct InputData {
 
     #[darling(default)]
     rename_all: Option<String>,
+
+    #[darling(default)]
+    state: Option<syn::Path>,
 }
 
 #[derive(Debug, FromField)]
@@ -70,10 +73,11 @@ impl FieldData {
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
-    let InputData { ident, data, strict, rename_all } = match InputData::from_derive_input(&input) {
-        Ok(input) => input,
-        Err(err) => abort!(input, err.to_string()),
-    };
+    let InputData { ident, data, strict, rename_all, state } =
+        match InputData::from_derive_input(&input) {
+            Ok(input) => input,
+            Err(err) => abort!(input, err.to_string()),
+        };
     let rename_all = RenameCase::from_option_fallible(&ident, rename_all);
 
     let fields = data.take_struct().unwrap();
@@ -95,7 +99,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             let limit_bytes =
                 field.limit_bytes().map(|limit| quote! { Some(#limit) }).unwrap_or(quote! { None });
             let value = quote! {
-                axum_typed_multipart::TryFromField::try_from_field(__field__, #limit_bytes).await?
+                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, state).await?
             };
 
             let assignment = if matches_vec_signature(ty) {
@@ -165,10 +169,13 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         quote! { continue }
     };
 
+    let generic = state.is_none().then(|| quote! { <S: Sync> });
+    let state = state.map(|state| quote! { #state }).unwrap_or(quote! { S });
+
     let output = quote! {
         #[axum_typed_multipart::async_trait]
-        impl axum_typed_multipart::TryFromMultipart for #ident {
-            async fn try_from_multipart(multipart: &mut axum::extract::multipart::Multipart) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
+        impl #generic axum_typed_multipart::TryFromMultipartWithState<#state> for #ident {
+            async fn try_from_multipart_with_state(multipart: &mut axum::extract::multipart::Multipart, state: &#state) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
                 #(#declarations)*
 
                 while let Some(__field__) = multipart.next_field().await? {

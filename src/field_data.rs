@@ -1,4 +1,4 @@
-use crate::{TryFromField, TypedMultipartError};
+use crate::{TryFromFieldWithState, TypedMultipartError};
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
 use axum::http::HeaderMap;
@@ -77,13 +77,18 @@ pub struct FieldData<T> {
 }
 
 #[async_trait]
-impl<T: TryFromField> TryFromField for FieldData<T> {
-    async fn try_from_field(
+impl<S, T> TryFromFieldWithState<S> for FieldData<T>
+where
+    S: Sync,
+    T: TryFromFieldWithState<S>,
+{
+    async fn try_from_field_with_state(
         field: Field<'_>,
         limit_bytes: Option<usize>,
+        state: &S,
     ) -> Result<Self, TypedMultipartError> {
         let metadata = FieldMetadata::from(&field);
-        let contents = T::try_from_field(field, limit_bytes).await?;
+        let contents = T::try_from_field_with_state(field, limit_bytes, state).await?;
         Ok(Self { metadata, contents })
     }
 }
@@ -92,7 +97,6 @@ impl<T: TryFromField> TryFromField for FieldData<T> {
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
-    use crate::TryFromField;
     use axum::extract::Multipart;
     use axum::http::StatusCode;
     use axum::routing::post;
@@ -104,7 +108,14 @@ mod tests {
     async fn test_field_data() {
         let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let field_data = FieldData::<String>::try_from_field(field, None).await.unwrap();
+            let field_data =
+                <FieldData<String> as TryFromFieldWithState<_>>::try_from_field_with_state(
+                    field,
+                    None,
+                    &(),
+                )
+                .await
+                .unwrap();
 
             assert_eq!(field_data.metadata.name.unwrap(), "input_file");
             assert_eq!(field_data.metadata.file_name.unwrap(), "test.txt");
