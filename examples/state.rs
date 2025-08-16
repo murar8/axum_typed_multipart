@@ -28,12 +28,13 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
             // The stateful variant does not have a TryFromChunksWithState trait, so automatic
             // size checking is not available.
             //
-            // If you are not using the #[form_data(limit = "...")] attribute, then limit_bytes
-            // will be None and you can safely ignore size checking.
+            // If you are not using the #[form_data(limit = "...")] attribute and your type is private,
+            // then limit_bytes will be None and you can safely ignore size checking.
             //
-            // However, if you are using #[form_data(limit = "...")], you MUST check the limit_bytes
-            // parameter progressively as shown below to enforce the specified limit and prevent
-            // denial-of-service attacks from malicious clients sending unbounded data.
+            // However, if you are using #[form_data(limit = "...")] or your type is public (so someone else could use it),
+            // you MUST make sure the field is parsed progressively and remains within the configured limit.
+            // Failing to do so can lead to denial-of-service vulnerabilities, allowing attackers to exploit
+            // unbounded memory allocation.
             if let Some(limit) = limit_bytes {
                 if value.len() + chunk.len() > limit {
                     return Err(TypedMultipartError::FieldTooLarge {
