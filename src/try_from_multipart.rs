@@ -25,9 +25,26 @@ pub trait TryFromMultipart: Sized {
 
 /// Stateful variant of [TryFromMultipart].
 ///
-/// This trait allows you to inject application state into the parser.
+/// This trait allows you to inject application state into the multipart parser,
+/// enabling field validation or transformation based on application-specific context.
+///
+/// # Example
+///
+/// ```rust,no_run
+#[doc = include_str!("../examples/state.rs")]
+/// ```
 #[async_trait]
 pub trait TryFromMultipartWithState<S>: Sized {
+    /// Attempts to parse the multipart request with access to application state.
+    ///
+    /// # Arguments
+    ///
+    /// * `multipart` - The multipart request to parse
+    /// * `state` - Reference to the application state
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Self)` if parsing succeeds, or a `TypedMultipartError` if it fails.
     async fn try_from_multipart_with_state(
         multipart: &mut Multipart,
         state: &S,

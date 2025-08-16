@@ -259,18 +259,6 @@
 #![doc = include_str!("../examples/state.rs")]
 //! ```
 //!
-//! #### Missing TryFromChunksWithState
-//! In the example above we reuse the existing [TryFromField] impl on [u32] in the
-//! TryFromFieldWithState impl on our `Position(u32)` newtype. This lets us use the state to validate
-//! things on the type after it has been constructed. Sometimes this isn't enough, for example if we
-//! need access to the state when constructing the type. There is no TryFromChunksWithState trait
-//! which would give us an easy way to get a TryFromFieldWithState impl as is the case with the
-//! 'normal' versions of those traits. That means that we need to cover the size limiting logic that
-//! is normally automatically done for us ourselves in our TryFromFieldWithState impl.
-//! ```rust,no_run
-#![doc = include_str!("../examples/state_from_field_from_chunks.rs")]
-//! ```
-//!
 //! ### Usage with utoipa
 //!
 //! If you would like to use `axum_typed_multipart` as part of a documented API then

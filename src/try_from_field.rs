@@ -28,9 +28,27 @@ pub trait TryFromField: Sized {
 
 /// Stateful variant of [TryFromField].
 ///
-/// This trait allows you to inject application state into the parser.
+/// This trait allows you to inject application state into the parser, enabling validation
+/// or transformation based on application-specific context.
+///
+/// # Example
+///
+/// ```rust,no_run
+#[doc = include_str!("../examples/state.rs")]
+/// ```
 #[async_trait]
 pub trait TryFromFieldWithState<S>: Sized {
+    /// Attempts to parse the field with access to application state.
+    ///
+    /// # Arguments
+    ///
+    /// * `field` - The multipart field to parse
+    /// * `limit_bytes` - Optional size limit for the field data
+    /// * `state` - Reference to the application state
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Self)` if parsing succeeds, or a `TypedMultipartError` if it fails.
     async fn try_from_field_with_state(
         field: Field<'_>,
         limit_bytes: Option<usize>,
