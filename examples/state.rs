@@ -22,11 +22,8 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
         state: &State,
     ) -> Result<Self, TypedMultipartError> {
         let mut value = String::new();
-        let mut size = 0;
 
         while let Some(chunk) = field.chunk().await.map_err(anyhow::Error::from)? {
-            size += chunk.len();
-
             // SECURITY: When implementing TryFromFieldWithState, you must manually handle size limits.
             // The stateful variant does not have a TryFromChunksWithState trait, so automatic
             // size checking is not available.
@@ -38,7 +35,7 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
             // parameter progressively as shown below to enforce the specified limit and prevent
             // denial-of-service attacks from malicious clients sending unbounded data.
             if let Some(limit) = limit_bytes {
-                if size > limit {
+                if value.len() + chunk.len() > limit {
                     return Err(TypedMultipartError::FieldTooLarge {
                         field_name: field.name().unwrap_or("unknown").to_string(),
                         limit_bytes: limit,
