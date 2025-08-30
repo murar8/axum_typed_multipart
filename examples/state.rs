@@ -24,17 +24,19 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
         let mut value = String::new();
 
         while let Some(chunk) = field.chunk().await.map_err(anyhow::Error::from)? {
-            // SECURITY: When implementing TryFromFieldWithState, you must manually handle size limits.
-            // The stateful variant does not have a TryFromChunksWithState trait, so automatic
-            // size checking is not available.
+            // SECURITY: Manual size limit handling is required for TryFromFieldWithState.
+            // Unlike TryFromField which can leverage TryFromChunks for automatic size checking,
+            // the stateful variant requires explicit implementation.
             //
-            // If you are not using the #[form_data(limit = "...")] attribute and your type is private,
-            // then limit_bytes will be None and you can safely ignore size checking.
+            // When limit_bytes will be None:
+            // - Your type is private (not exposed in public API) AND
+            // - You don't use #[form_data(limit = "...")] on fields of this type
+            // In this case, you control all usage and can skip size checking if appropriate.
             //
-            // However, if you are using #[form_data(limit = "...")] or your type is public (so someone else could use it),
-            // you MUST make sure the field is parsed progressively and remains within the configured limit.
-            // Failing to do so can lead to denial-of-service vulnerabilities, allowing attackers to exploit
-            // unbounded memory allocation.
+            // When limit_bytes may have a value:
+            // - Your type is public (part of your API), OR
+            // - You use #[form_data(limit = "...")] on any field of this type
+            // You MUST enforce the limit to prevent denial-of-service attacks from unbounded uploads.
             if let Some(limit) = limit_bytes {
                 if value.len() + chunk.len() > limit {
                     return Err(TypedMultipartError::FieldTooLarge {
