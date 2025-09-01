@@ -4,11 +4,10 @@ use axum::response::IntoResponse;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-/// Used as an argument for axum [Handlers](axum::handler::Handler).
+/// Base extractor for multipart form data with custom error handling.
 ///
-/// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart](crate::TryFromMultipart) trait and the generic rejection
-/// implements the [IntoResponse] and `From<TypedMultipartError>` traits.
+/// Implements [FromRequest] when `T` implements [TryFromMultipart](crate::TryFromMultipart)
+/// and `R` implements [IntoResponse] and `From<TypedMultipartError>`.
 ///
 /// ## Example
 ///

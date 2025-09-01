@@ -51,14 +51,12 @@ impl From<&Field<'_>> for FieldMetadata {
     }
 }
 
-/// Wrapper struct that allows to retrieve both the field contents and the
-/// additional metadata provided by the client.
+/// Wrapper that provides access to both field contents and metadata.
 ///
-/// This is mainly useful for file uploads but can be used for every field where
-/// you need access to the metadata.
+/// Useful for file uploads or any field where metadata (filename, content-type, headers)
+/// is needed alongside the actual content.
 ///
-/// If the generic argument implements [TryFromField](crate::TryFromField) the
-/// struct will implement the trait itself.
+/// Automatically implements [TryFromField](crate::TryFromField) when `T` implements it.
 ///
 /// ## Example
 ///

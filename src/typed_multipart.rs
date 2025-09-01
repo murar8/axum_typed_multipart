@@ -2,10 +2,9 @@ use crate::{BaseMultipart, TryFromMultipartWithState, TypedMultipartError};
 use axum::extract::{FromRequest, Request};
 use std::ops::{Deref, DerefMut};
 
-/// Used as an argument for axum [Handlers](axum::handler::Handler).
+/// Extractor for type-safe multipart form data in Axum [Handlers](axum::handler::Handler).
 ///
-/// Implements [FromRequest] when the generic argument implements the
-/// [TryFromMultipart](crate::TryFromMultipart) trait.
+/// Implements [FromRequest] when `T` implements [TryFromMultipart](crate::TryFromMultipart).
 ///
 /// ## Example
 ///

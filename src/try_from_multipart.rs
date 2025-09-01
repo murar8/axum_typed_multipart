@@ -2,11 +2,10 @@ use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::Multipart;
 
-/// Types that can be created from an instance of [Multipart].
+/// Types that can be created from multipart form data.
 ///
-/// Structs that implement this trait can be used as type parameters for
-/// [TypedMultipart](crate::TypedMultipart) allowing to generate the supplied
-/// struct from the request data.
+/// Structs that implement this trait can be used with the [TypedMultipart](crate::TypedMultipart)
+/// extractor to parse multipart requests into strongly-typed data structures.
 ///
 /// ## Example
 ///
@@ -23,28 +22,18 @@ pub trait TryFromMultipart: Sized {
     async fn try_from_multipart(multipart: &mut Multipart) -> Result<Self, TypedMultipartError>;
 }
 
-/// Stateful variant of [TryFromMultipart].
+/// Stateful variant of [TryFromMultipart] that provides access to application state during parsing.
 ///
-/// This trait allows you to inject application state into the multipart parser,
-/// enabling field validation or transformation based on application-specific context.
+/// This enables validation or transformation based on application-specific context.
 ///
-/// # Example
+/// ## Example
 ///
 /// ```rust,no_run
 #[doc = include_str!("../examples/state.rs")]
 /// ```
 #[async_trait]
 pub trait TryFromMultipartWithState<S>: Sized {
-    /// Attempts to parse the multipart request with access to application state.
-    ///
-    /// # Arguments
-    ///
-    /// * `multipart` - The multipart request to parse
-    /// * `state` - Reference to the application state
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(Self)` if parsing succeeds, or a `TypedMultipartError` if it fails.
+    /// Creates an instance from multipart data with access to application state.
     async fn try_from_multipart_with_state(
         multipart: &mut Multipart,
         state: &S,

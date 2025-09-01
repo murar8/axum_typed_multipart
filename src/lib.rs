@@ -1,6 +1,4 @@
-//! Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum), this crate
-//! simplifies the process of handling `multipart/form-data` requests in your web application by
-//! allowing you to parse the request body into a type-safe struct.
+//! Type-safe `multipart/form-data` handling for [Axum](https://github.com/tokio-rs/axum).
 //!
 //! ## Installation
 //!
@@ -138,11 +136,6 @@
 //! upload is complete, you can then save the contents to a location of your choice. For more
 //! information check out the [NamedTempFile](tempfile_3::NamedTempFile) documentation.
 //!
-//! #### **Warning**
-//! Field size limits for [Vec] fields are applied to **each** occurrence of the field. This means
-//! that if you have a 1GiB field limit and the field contains
-//! 5 entries, the total size of the request body will be 5GiB.
-//!
 //! #### **Note**
 //! When handling large uploads you will need to increase the request body size limit using the
 //! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware. Field size limits are disabled by default,
@@ -158,8 +151,8 @@
 //!
 //! #### **Warning**
 //! Field size limits for [Vec] fields are applied to **each** occurrence of the field. This means
-//! that if you have a 1GiB field limit and the field contains
-//! 5 entries, the total size of the request body will be 5GiB.
+//! that if you have a 1GiB field limit and the field contains 5 entries, the total size of the
+//! request body will be 5GiB.
 //! ```rust
 //! use axum::http::StatusCode;
 //! use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
@@ -239,11 +232,8 @@
 //!
 //! ### Custom error format
 //!
-//! When using [TypedMultipart](TypedMultipart) as an argument for your handlers, when the
-//! request is malformed, the error will be serialized as a string. If you would like to customize
-//! the error format you can use the [BaseMultipart](BaseMultipart) struct instead. This
-//! struct is used internally by [TypedMultipart](TypedMultipart) and it can be used to
-//! customize the error type.
+//! When using [TypedMultipart](TypedMultipart) as an argument for your handlers, errors are
+//! serialized as strings. To customize the error format, use [BaseMultipart](BaseMultipart) instead.
 //!
 //! To customize the error you will need to define a custom error type and implement
 //! [IntoResponse](axum::response::IntoResponse) and `From<TypedMultipartError>`.

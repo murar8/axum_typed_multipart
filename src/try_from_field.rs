@@ -6,49 +6,31 @@ use futures_util::stream::StreamExt;
 use futures_util::TryStreamExt;
 use std::mem;
 
-/// Types that can be created from an instance of [Field].
+/// Types that can be created from a multipart field.
 ///
-/// All fields for a given struct must implement this trait to be able to derive
-/// the [TryFromMultipart](crate::TryFromMultipart) trait.
+/// Required for all fields in structs deriving [TryFromMultipart](crate::TryFromMultipart).
 ///
-/// Implementing this trait directly is not recommended since it requires the
-/// user to manually implement the size limit logic. Instead, implement the
-/// [TryFromChunks] trait and this trait will be implemented automatically.
+/// **Note:** Prefer implementing [TryFromChunks] instead, which automatically provides
+/// this implementation with proper size limit handling.
 #[async_trait]
 pub trait TryFromField: Sized {
-    /// Consume the input [Field] to create the supplied type.
-    ///
-    /// The `limit_bytes` parameter is used to limit the size of the field. If
-    /// the field is larger than the limit, an error is returned.
+    /// Creates an instance from a multipart field with optional size limit.
     async fn try_from_field(
         field: Field<'_>,
         limit_bytes: Option<usize>,
     ) -> Result<Self, TypedMultipartError>;
 }
 
-/// Stateful variant of [TryFromField].
+/// Stateful variant of [TryFromField] that provides access to application state during parsing.
 ///
-/// This trait allows you to inject application state into the parser, enabling validation
-/// or transformation based on application-specific context.
-///
-/// # Example
+/// ## Example
 ///
 /// ```rust,no_run
 #[doc = include_str!("../examples/state.rs")]
 /// ```
 #[async_trait]
 pub trait TryFromFieldWithState<S>: Sized {
-    /// Attempts to parse the field with access to application state.
-    ///
-    /// # Arguments
-    ///
-    /// * `field` - The multipart field to parse
-    /// * `limit_bytes` - Optional size limit for the field data
-    /// * `state` - Reference to the application state
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(Self)` if parsing succeeds, or a `TypedMultipartError` if it fails.
+    /// Creates an instance from a field with access to application state.
     async fn try_from_field_with_state(
         field: Field<'_>,
         limit_bytes: Option<usize>,
