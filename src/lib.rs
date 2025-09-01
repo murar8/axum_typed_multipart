@@ -251,6 +251,14 @@
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
 //!
+//! ### Injecting state into the parser
+//!
+//! Sometimes you may need to access application state during field parsing. This is supported
+//! through the [TryFromFieldWithState](crate::TryFromFieldWithState) trait.
+//! ```rust,no_run
+#![doc = include_str!("../examples/state.rs")]
+//! ```
+//!
 //! ### Usage with utoipa
 //!
 //! If you would like to use `axum_typed_multipart` as part of a documented API then
@@ -273,6 +281,7 @@
 
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
+pub use anyhow;
 pub use async_trait::async_trait;
 pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
@@ -289,7 +298,7 @@ pub(crate) mod util;
 pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::try_from_chunks::TryFromChunks;
-pub use crate::try_from_field::TryFromField;
-pub use crate::try_from_multipart::TryFromMultipart;
+pub use crate::try_from_field::{TryFromField, TryFromFieldWithState};
+pub use crate::try_from_multipart::{TryFromMultipart, TryFromMultipartWithState};
 pub use crate::typed_multipart::TypedMultipart;
 pub use crate::typed_multipart_error::TypedMultipartError;
