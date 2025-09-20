@@ -8,7 +8,7 @@
 [![codecov](https://codecov.io/gh/murar8/axum_typed_multipart/branch/main/graph/badge.svg?token=AUQ4P8EFVK)](https://codecov.io/gh/murar8/axum_typed_multipart)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Designed to seamlessly integrate with [Axum](https://github.com/tokio-rs/axum), this crate simplifies the process of handling `multipart/form-data` requests in your web application by allowing you to parse the request body into a type-safe struct.
+Type-safe multipart/form-data handling for Axum.
 
 ## Documentation
 
