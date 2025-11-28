@@ -5,10 +5,10 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_test_helper::TestClient;
-use axum_typed_multipart::TryFromMultipartBuilder;
+use axum_typed_multipart::TryFromMultipart;
 use reqwest::multipart::Form;
 
-#[derive(TryFromMultipartBuilder)]
+#[derive(TryFromMultipart)]
 struct Data {
     name: String,
     age: u32,

@@ -273,7 +273,7 @@
 
 pub use anyhow;
 pub use async_trait::async_trait;
-pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart, TryFromMultipartBuilder};
+pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
 mod field_data;
