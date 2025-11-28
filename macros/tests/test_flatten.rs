@@ -191,3 +191,143 @@ async fn test_flatten_strict_unknown() {
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 }
+
+// Edge case: custom prefix via field_name
+#[derive(TryFromMultipart)]
+struct NestedCustomPrefix {
+    val: String,
+}
+
+#[derive(TryFromMultipart)]
+struct ParentCustomPrefix {
+    #[form_data(flatten, field_name = "custom")]
+    nested: NestedCustomPrefix,
+}
+
+#[tokio::test]
+async fn test_flatten_custom_prefix() {
+    let handler = |TypedMultipart(data): TypedMultipart<ParentCustomPrefix>| async move {
+        assert_eq!(data.nested.val, "test");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("custom.val", "test"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// Edge case: same field name in multiple nested structs
+#[derive(TryFromMultipart)]
+struct NestedX {
+    id: String,
+}
+
+#[derive(TryFromMultipart)]
+struct NestedY {
+    id: String,
+}
+
+#[derive(TryFromMultipart)]
+struct ParentSameName {
+    #[form_data(flatten)]
+    x: NestedX,
+    #[form_data(flatten)]
+    y: NestedY,
+}
+
+#[tokio::test]
+async fn test_flatten_same_name_different_prefix() {
+    let handler = |TypedMultipart(data): TypedMultipart<ParentSameName>| async move {
+        assert_eq!(data.x.id, "x_id");
+        assert_eq!(data.y.id, "y_id");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("x.id", "x_id").text("y.id", "y_id"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// Edge case: prefix substring (a. vs ab.)
+#[derive(TryFromMultipart)]
+struct NestedShort {
+    v: String,
+}
+
+#[derive(TryFromMultipart)]
+struct NestedLong {
+    v: String,
+}
+
+#[derive(TryFromMultipart)]
+struct ParentPrefixSubstring {
+    #[form_data(flatten)]
+    a: NestedShort,
+    #[form_data(flatten)]
+    ab: NestedLong,
+}
+
+#[tokio::test]
+async fn test_flatten_prefix_substring() {
+    let handler = |TypedMultipart(data): TypedMultipart<ParentPrefixSubstring>| async move {
+        assert_eq!(data.a.v, "short");
+        assert_eq!(data.ab.v, "long");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("a.v", "short").text("ab.v", "long"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// Edge case: nested with all defaults (no fields provided for nested)
+#[derive(TryFromMultipart)]
+struct NestedDefaults {
+    #[form_data(default)]
+    val: String,
+}
+
+#[derive(TryFromMultipart)]
+struct ParentNestedDefaults {
+    name: String,
+    #[form_data(flatten)]
+    nested: NestedDefaults,
+}
+
+#[tokio::test]
+async fn test_flatten_nested_defaults() {
+    let handler = |TypedMultipart(data): TypedMultipart<ParentNestedDefaults>| async move {
+        assert_eq!(data.name, "test");
+        assert_eq!(data.nested.val, "");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("name", "test"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// Edge case: unknown prefixed field in strict mode
+#[tokio::test]
+async fn test_flatten_strict_unknown_prefixed() {
+    async fn handler(_: TypedMultipart<ParentStrict>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("name", "n").text("nested.value", "v").text("nested.unknown", "x"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
