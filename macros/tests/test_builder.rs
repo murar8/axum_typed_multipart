@@ -20,8 +20,9 @@ async fn test_builder_api() {
         let mut builder = DataBuilder::default();
 
         while let Some(field) = multipart.next_field().await.unwrap() {
-            let processed = builder.process_field(field, &()).await.unwrap();
-            assert!(processed);
+            let field_name = field.name().unwrap_or("").to_string();
+            let result = builder.process_field(&field_name, field, &()).await.unwrap();
+            assert!(result.is_none()); // None means field was processed
         }
 
         let data = builder.build().unwrap();

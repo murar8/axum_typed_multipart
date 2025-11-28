@@ -39,7 +39,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let unknown_field_handling = if strict {
         quote! {
-            if !__processed__ {
+            if let Some(_) = __result__ {
                 return Err(axum_typed_multipart::TypedMultipartError::UnknownField {
                     field_name: __field_name__
                 });
@@ -65,7 +65,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                         | Some(name) => name.to_string(),
                     };
 
-                    let __processed__ = __builder__.process_field(__field__, state).await?;
+                    let __result__ = __builder__.process_field(&__field_name__, __field__, state).await?;
                     #unknown_field_handling
                 }
 
