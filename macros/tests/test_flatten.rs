@@ -315,6 +315,33 @@ async fn test_flatten_nested_defaults() {
     assert_eq!(res.status(), StatusCode::OK);
 }
 
+// Edge case: custom separator
+#[derive(TryFromMultipart)]
+struct NestedSep {
+    val: String,
+}
+
+#[derive(TryFromMultipart)]
+#[try_from_multipart(separator = "_")]
+struct ParentSep {
+    #[form_data(flatten)]
+    nested: NestedSep,
+}
+
+#[tokio::test]
+async fn test_flatten_custom_separator() {
+    let handler = |TypedMultipart(data): TypedMultipart<ParentSep>| async move {
+        assert_eq!(data.nested.val, "test");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("nested_val", "test"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
 // Edge case: unknown prefixed field in strict mode
 #[tokio::test]
 async fn test_flatten_strict_unknown_prefixed() {

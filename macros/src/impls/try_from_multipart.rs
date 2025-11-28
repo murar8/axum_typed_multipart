@@ -18,6 +18,11 @@ struct InputData {
 
     #[darling(default)]
     state: Option<syn::Path>,
+
+    /// Accepted but handled by the builder macro.
+    #[darling(default)]
+    #[allow(dead_code)]
+    separator: Option<String>,
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.

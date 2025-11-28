@@ -21,6 +21,10 @@ struct InputData {
 
     #[darling(default)]
     state: Option<syn::Path>,
+
+    /// Separator between prefix and nested field name for flatten (defaults to ".").
+    #[darling(default)]
+    separator: Option<String>,
 }
 
 #[derive(Debug, FromField)]
@@ -76,12 +80,13 @@ impl FieldData {
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
-    let InputData { ident, data, strict, rename_all, state } =
+    let InputData { ident, data, strict, rename_all, state, separator } =
         match InputData::from_derive_input(&input) {
             Ok(input) => input,
             Err(err) => abort!(input, err.to_string()),
         };
     let rename_all = RenameCase::from_option_fallible(&ident, rename_all);
+    let separator = separator.as_deref().unwrap_or(".");
 
     let fields = data.take_struct().unwrap();
     let builder_ident = syn::Ident::new(&format!("{}Builder", ident), ident.span());
@@ -156,7 +161,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         quote! {}
     } else {
         let checks = flatten_fields.iter().map(|field @ FieldData { ident, .. }| {
-            let prefix = format!("{}.", field.name(rename_all));
+            let prefix = format!("{}{}", field.name(rename_all), separator);
             quote! {
                 if let Some(__stripped__) = __field_name__.strip_prefix(#prefix) {
                     match self.#ident.process_field(__stripped__, __field__, __state__).await? {
