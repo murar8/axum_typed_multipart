@@ -1,7 +1,6 @@
 use crate::case_conversion::RenameCase;
 use crate::util::{matches_option_signature, matches_vec_signature, strip_leading_rawlit};
 use darling::{FromDeriveInput, FromField};
-use proc_macro::TokenStream;
 use proc_macro_error2::abort;
 use quote::quote;
 use ubyte::ByteUnit;
@@ -85,7 +84,7 @@ impl FieldData {
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
-pub fn macro_impl(input: TokenStream) -> TokenStream {
+pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
     let InputData { ident, data, strict, rename_all, state, separator } =
@@ -96,21 +95,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let rename_all = RenameCase::from_option_fallible(&ident, rename_all);
     let fields = data.take_struct().unwrap();
-    let separator = separator.as_deref().unwrap_or(".");
 
-    let missing_field_name_handling = if strict {
-        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
-    } else {
-        quote! { continue }
-    };
-
-    let unknown_field_handling = strict.then_some(quote! {
-        if let Some(_) = __result__ {
-            return Err(axum_typed_multipart::TypedMultipartError::UnknownField { field_name: __field_name__ });
-        }
-    });
-
-    let generic = state.is_none().then(|| quote! { <S: Sync> });
+    let impl_generics = state.is_none().then(|| quote! { <S: Sync> });
     let state_ty = state.as_ref().map(|s| quote! { #s }).unwrap_or(quote! { S });
 
     let builder_fields = fields.iter().map(|field| {
@@ -139,29 +125,14 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         }
     });
 
-    // Assignments in process_field (skip flattened fields)
-    let assignments = fields
-        .iter()
-        .filter(|f| !f.flatten)
-        .map(|field| process_field(strict, rename_all, field))
-        .collect::<Vec<_>>();
-
-    // Delegate to flattened builders (strip prefix if present)
-    let flatten_delegation = {
-        let checks = fields.iter().filter(|f| f.flatten).map(|field| {
-            let ident = field.ident();
-            let prefix = format!("{}{}", field.name(rename_all), separator);
-            quote! {
-                if let Some(__stripped__) = __field_name__.strip_prefix(#prefix) {
-                    match self.#ident.process_field(__stripped__, __field__, __state__).await? {
-                        None => return Ok(None),
-                        Some(f) => return Ok(Some(f)),
-                    }
-                }
-            }
-        });
-        quote! { #(#checks) else * }
-    };
+    let separator = separator.as_deref().unwrap_or(".");
+    let field_handlers = fields.iter().map(|field| {
+        if field.flatten {
+            gen_flatten_handler(rename_all, separator, field)
+        } else {
+            gen_field_handler(strict, rename_all, field)
+        }
+    });
 
     // Build: validate required fields and construct target struct
     let build_fields = fields.iter().map(|field| {
@@ -184,16 +155,29 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         }
     });
 
-    let mut generic_params = vec![quote! { 'f }];
-    let builder_state_ty = if let Some(state) = state {
+    let mut process_field_generics = vec![quote! { 'f }];
+    let process_field_state_ty = if let Some(state) = state {
         quote! { #state }
     } else {
-        generic_params.push(quote! { __S__: Sync });
+        process_field_generics.push(quote! { __S__: Sync });
         quote! { __S__ }
     };
 
     let builder_ident = syn::Ident::new(&format!("{}Builder", ident), ident.span());
-    let builder = quote! {
+
+    let on_missing_name = if strict {
+        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
+    } else {
+        quote! { continue }
+    };
+
+    let on_unknown_field = strict.then_some(quote! {
+        if let Some(_) = __result__ {
+            return Err(axum_typed_multipart::TypedMultipartError::UnknownField { field_name: __field_name__ });
+        }
+    });
+
+    let output = quote! {
         struct #builder_ident {
             #(#builder_fields),*
         }
@@ -207,15 +191,13 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         }
 
         impl #builder_ident {
-            pub async fn process_field<#(#generic_params),*> (
+            pub async fn process_field<#(#process_field_generics),*> (
                 &mut self,
                 __field_name__: &str,
                 __field__: axum::extract::multipart::Field<'f>,
-                __state__: &#builder_state_ty,
+                __state__: &#process_field_state_ty,
             ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
-                #(#assignments)*
-
-                #flatten_delegation
+                #(#field_handlers)*
 
                 Ok(Some(__field__))
             }
@@ -226,25 +208,21 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 })
             }
         }
-    };
-
-    let output = quote! {
-        #builder
 
         #[axum_typed_multipart::async_trait]
-        impl #generic axum_typed_multipart::TryFromMultipartWithState<#state_ty> for #ident {
+        impl #impl_generics axum_typed_multipart::TryFromMultipartWithState<#state_ty> for #ident {
             async fn try_from_multipart_with_state(multipart: &mut axum::extract::multipart::Multipart, state: &#state_ty) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
                 let mut __builder__ = #builder_ident::default();
 
                 while let Some(__field__) = multipart.next_field().await? {
                     let __field_name__ = match __field__.name() {
                         | Some("")
-                        | None => #missing_field_name_handling,
+                        | None => #on_missing_name,
                         | Some(name) => name.to_string(),
                     };
 
                     let __result__ = __builder__.process_field(&__field_name__, __field__, state).await?;
-                    #unknown_field_handling
+                    #on_unknown_field
                 }
 
                 __builder__.build()
@@ -255,7 +233,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-fn process_field(
+fn gen_field_handler(
     strict: bool,
     rename_all: Option<RenameCase>,
     field: &FieldData,
@@ -294,6 +272,23 @@ fn process_field(
         if __field_name__ == #name {
             #assignment
             return Ok(None);
+        }
+    }
+}
+
+fn gen_flatten_handler(
+    rename_all: Option<RenameCase>,
+    separator: &str,
+    field: &FieldData,
+) -> proc_macro2::TokenStream {
+    let ident = field.ident();
+    let prefix = format!("{}{}", field.name(rename_all), separator);
+    quote! {
+        if let Some(__stripped__) = __field_name__.strip_prefix(#prefix) {
+            match self.#ident.process_field(__stripped__, __field__, __state__).await? {
+                None => return Ok(None),
+                Some(f) => return Ok(Some(f)),
+            }
         }
     }
 }
