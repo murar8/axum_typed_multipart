@@ -5,6 +5,7 @@ use proc_macro_error2::abort;
 use quote::quote;
 use ubyte::ByteUnit;
 
+/// Struct-level options parsed from `#[try_from_multipart(...)]`.
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
 struct InputData {
@@ -26,6 +27,7 @@ struct InputData {
     separator: Option<String>,
 }
 
+/// Field-level options parsed from `#[form_data(...)]`.
 #[derive(Debug, FromField)]
 #[darling(attributes(form_data))]
 struct FieldData {
@@ -48,11 +50,6 @@ struct FieldData {
 impl FieldData {
     fn ident(&self) -> &syn::Ident {
         self.ident.as_ref().unwrap()
-    }
-
-    fn builder_ident(&self) -> syn::Ident {
-        let ty = &self.ty;
-        syn::Ident::new(&format!("{}Builder", quote!(#ty)), self.ident().span())
     }
 
     /// Get the name of the field from the `field_name` attribute, falling back
@@ -99,12 +96,12 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let impl_generics = state.is_none().then(|| quote! { <S: Sync> });
     let state_ty = state.as_ref().map(|s| quote! { #s }).unwrap_or(quote! { S });
 
-    let builder_fields = fields.iter().map(|field| {
+    let struct_field_decls = fields.iter().map(|field| {
         let ident = field.ident();
         let ty = &field.ty;
         if field.flatten {
-            let builder = field.builder_ident();
-            quote! { #ident: #builder }
+            let nested_builder_ident = builder_ident(&field.ty, field.ident().span());
+            quote! { #ident: #nested_builder_ident }
         } else if matches_vec_signature(ty) || matches_option_signature(ty) {
             quote! { #ident: #ty }
         } else {
@@ -113,11 +110,11 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     });
 
     // Default impl: Vec::new() or None
-    let default_fields = fields.iter().map(|field| {
+    let default_field_inits = fields.iter().map(|field| {
         let ident = field.ident();
         if field.flatten {
-            let builder = field.builder_ident();
-            quote! { #ident: #builder::default() }
+            let nested_builder_ident = builder_ident(&field.ty, field.ident().span());
+            quote! { #ident: #nested_builder_ident::default() }
         } else if matches_vec_signature(&field.ty) {
             quote! { #ident: std::vec::Vec::new() }
         } else {
@@ -126,7 +123,7 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     });
 
     let separator = separator.as_deref().unwrap_or(".");
-    let field_handlers = fields.iter().map(|field| {
+    let process_field_branches = fields.iter().map(|field| {
         if field.flatten {
             gen_flatten_handler(rename_all, separator, field)
         } else {
@@ -135,7 +132,7 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     });
 
     // Build: validate required fields and construct target struct
-    let build_fields = fields.iter().map(|field| {
+    let build_field_exprs = fields.iter().map(|field| {
         let ident = field.ident();
         let field_name = field.name(rename_all);
         if field.flatten {
@@ -163,7 +160,7 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         quote! { __S__ }
     };
 
-    let builder_ident = syn::Ident::new(&format!("{}Builder", ident), ident.span());
+    let builder_ident = builder_ident(&ident, ident.span());
 
     let on_missing_name = if strict {
         quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
@@ -179,13 +176,13 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let output = quote! {
         struct #builder_ident {
-            #(#builder_fields),*
+            #(#struct_field_decls),*
         }
 
         impl std::default::Default for #builder_ident {
             fn default() -> Self {
                 Self {
-                    #(#default_fields),*
+                    #(#default_field_inits),*
                 }
             }
         }
@@ -197,14 +194,14 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 __field__: axum::extract::multipart::Field<'f>,
                 __state__: &#process_field_state_ty,
             ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
-                #(#field_handlers)*
+                #(#process_field_branches)*
 
                 Ok(Some(__field__))
             }
 
             pub fn build(self) -> Result<#ident, axum_typed_multipart::TypedMultipartError> {
                 Ok(#ident {
-                    #(#build_fields),*
+                    #(#build_field_exprs),*
                 })
             }
         }
@@ -238,38 +235,38 @@ fn gen_field_handler(
     rename_all: Option<RenameCase>,
     field: &FieldData,
 ) -> proc_macro2::TokenStream {
-    let ident = field.ident();
-    let name = field.name(rename_all);
+    let field_ident = field.ident();
+    let field_name = field.name(rename_all);
     let limit_bytes =
         field.limit_bytes().map(|limit| quote! { Some(#limit) }).unwrap_or(quote! { None });
-    let value = quote! {
+    let parsed_value = quote! {
         <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, __state__).await?
     };
 
     let assignment = if matches_vec_signature(&field.ty) {
         quote! {
-            self.#ident.push(#value);
+            self.#field_ident.push(#parsed_value);
         }
     } else if strict {
         quote! {
-            if let None = self.#ident {
-                self.#ident = Some(#value);
+            if let None = self.#field_ident {
+                self.#field_ident = Some(#parsed_value);
             } else {
                 return Err(
                     axum_typed_multipart::TypedMultipartError::DuplicateField {
-                        field_name: String::from(#name)
+                        field_name: String::from(#field_name)
                     }
                 );
             }
         }
     } else {
         quote! {
-            self.#ident = Some(#value);
+            self.#field_ident = Some(#parsed_value);
         }
     };
 
     quote! {
-        if __field_name__ == #name {
+        if __field_name__ == #field_name {
             #assignment
             return Ok(None);
         }
@@ -281,14 +278,18 @@ fn gen_flatten_handler(
     separator: &str,
     field: &FieldData,
 ) -> proc_macro2::TokenStream {
-    let ident = field.ident();
-    let prefix = format!("{}{}", field.name(rename_all), separator);
+    let field_ident = field.ident();
+    let field_prefix = format!("{}{}", field.name(rename_all), separator);
     quote! {
-        if let Some(__stripped__) = __field_name__.strip_prefix(#prefix) {
-            match self.#ident.process_field(__stripped__, __field__, __state__).await? {
+        if let Some(__stripped__) = __field_name__.strip_prefix(#field_prefix) {
+            match self.#field_ident.process_field(__stripped__, __field__, __state__).await? {
                 None => return Ok(None),
                 Some(f) => return Ok(Some(f)),
             }
         }
     }
+}
+
+fn builder_ident(tokens: impl quote::ToTokens, span: proc_macro2::Span) -> syn::Ident {
+    syn::Ident::new(&format!("{}Builder", quote!(#tokens)), span)
 }
