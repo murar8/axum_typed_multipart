@@ -180,6 +180,32 @@
 //! }
 //! ```
 //!
+//! ### Flattening nested structs
+//!
+//! The `flatten` parameter allows you to include fields from a nested struct that also derives
+//! [TryFromMultipart](crate::TryFromMultipart). Nested fields are accessed using a prefix based on
+//! the field name, with a dot (`.`) separator by default.
+//! ```rust,no_run
+#![doc = include_str!("../examples/flatten.rs")]
+//! ```
+//!
+//! The separator can be customized using the `separator` parameter:
+//! ```rust
+//! use axum_typed_multipart::TryFromMultipart;
+//!
+//! #[derive(TryFromMultipart)]
+//! struct Address {
+//!     city: String,
+//! }
+//!
+//! #[derive(TryFromMultipart)]
+//! #[try_from_multipart(separator = "_")]
+//! struct CreateUserRequest {
+//!     #[form_data(flatten)]
+//!     address: Address, // Field name will be `address_city`
+//! }
+//! ```
+//!
 //! ### Enums
 //!
 //! `axum_typed_multipart` also supports custom enum parsing by deriving the
