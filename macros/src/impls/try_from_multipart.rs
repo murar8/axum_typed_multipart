@@ -125,7 +125,7 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let separator = separator.as_deref().unwrap_or(".");
     let process_field_branches = fields.iter().map(|field| {
         if field.flatten {
-            gen_flatten_handler(rename_all, separator, field)
+            gen_flatten_handler(rename_all, separator, field, &state_ty)
         } else {
             gen_field_handler(strict, rename_all, field)
         }
@@ -136,7 +136,8 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         let ident = field.ident();
         let field_name = field.name(rename_all);
         if field.flatten {
-            quote! { #ident: self.#ident.build()? }
+            let nested_builder_ident = builder_ident(&field.ty, field.ident().span());
+            quote! { #ident: <#nested_builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::build(self.#ident)? }
         } else if matches_vec_signature(&field.ty) || matches_option_signature(&field.ty) {
             quote! { #ident: self.#ident }
         } else if field.default {
@@ -151,14 +152,6 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
         }
     });
-
-    let mut process_field_generics = vec![quote! { 'f }];
-    let process_field_state_ty = if let Some(state) = state {
-        quote! { #state }
-    } else {
-        process_field_generics.push(quote! { __S__: Sync });
-        quote! { __S__ }
-    };
 
     let builder_ident = builder_ident(&ident, ident.span());
 
@@ -187,19 +180,21 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
         }
 
-        impl #builder_ident {
-            pub async fn process_field<#(#process_field_generics),*> (
+        #[axum_typed_multipart::async_trait]
+        impl #impl_generics axum_typed_multipart::MultipartBuilder<#state_ty> for #builder_ident {
+            type Target = #ident;
+
+            async fn process_field<'f>(
                 &mut self,
                 __field_name__: &str,
                 __field__: axum::extract::multipart::Field<'f>,
-                __state__: &#process_field_state_ty,
+                __state__: &#state_ty,
             ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
                 #(#process_field_branches)*
-
                 Ok(Some(__field__))
             }
 
-            pub fn build(self) -> Result<#ident, axum_typed_multipart::TypedMultipartError> {
+            fn build(self) -> Result<#ident, axum_typed_multipart::TypedMultipartError> {
                 Ok(#ident {
                     #(#build_field_exprs),*
                 })
@@ -218,11 +213,11 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         | Some(name) => name.to_string(),
                     };
 
-                    let __result__ = __builder__.process_field(&__field_name__, __field__, state).await?;
+                    let __result__ = <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::process_field(&mut __builder__, &__field_name__, __field__, state).await?;
                     #on_unknown_field
                 }
 
-                __builder__.build()
+                <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::build(__builder__)
             }
         }
     };
@@ -277,12 +272,14 @@ fn gen_flatten_handler(
     rename_all: Option<RenameCase>,
     separator: &str,
     field: &FieldData,
+    state_ty: &proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let field_ident = field.ident();
     let field_prefix = format!("{}{}", field.name(rename_all), separator);
+    let nested_builder_ident = builder_ident(&field.ty, field.ident().span());
     quote! {
         if let Some(__stripped__) = __field_name__.strip_prefix(#field_prefix) {
-            match self.#field_ident.process_field(__stripped__, __field__, __state__).await? {
+            match <#nested_builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::process_field(&mut self.#field_ident, __stripped__, __field__, __state__).await? {
                 None => return Ok(None),
                 Some(f) => return Ok(Some(f)),
             }

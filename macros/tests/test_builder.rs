@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_test_helper::TestClient;
-use axum_typed_multipart::TryFromMultipart;
+use axum_typed_multipart::{MultipartBuilder, TryFromMultipart};
 use reqwest::multipart::Form;
 
 #[derive(TryFromMultipart)]
@@ -21,11 +21,18 @@ async fn test_builder_api() {
 
         while let Some(field) = multipart.next_field().await.unwrap() {
             let field_name = field.name().unwrap_or("").to_string();
-            let result = builder.process_field(&field_name, field, &()).await.unwrap();
+            let result = <DataBuilder as MultipartBuilder<()>>::process_field(
+                &mut builder,
+                &field_name,
+                field,
+                &(),
+            )
+            .await
+            .unwrap();
             assert!(result.is_none()); // None means field was processed
         }
 
-        let data = builder.build().unwrap();
+        let data = <DataBuilder as MultipartBuilder<()>>::build(builder).unwrap();
         assert_eq!(data.name, "Alice");
         assert_eq!(data.age, 30);
     };
