@@ -39,7 +39,7 @@ struct TryFromFieldInputData {
     data: darling::ast::Data<FieldEnumData, ()>,
 
     #[darling(default)]
-    rename_all: Option<String>,
+    rename_all: Option<RenameCase>,
 }
 
 /// Derive `TryFromField` for arbitrary unit-enums.
@@ -51,7 +51,6 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             Err(err) => abort!(input, err.to_string()),
         };
     let fields = data.take_enum().unwrap();
-    let rename_all = RenameCase::from_option_fallible(&ident, rename_all);
 
     let match_arms = fields.iter().map(|f| {
         let name = f.name(rename_all);
