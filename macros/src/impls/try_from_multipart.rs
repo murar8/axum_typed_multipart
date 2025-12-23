@@ -264,54 +264,9 @@ fn gen_process_field_method(
         let ty = &field.ty;
 
         if field.flatten {
-            let nested_builder_ident = gen_builder_ident(ty, field_ident.span());
-            let field_prefix = format!("{}{}", field_name, separator);
-
-            quote! {
-                if let Some(__stripped__) = __field_name__.strip_prefix(#field_prefix) {
-                    match #nested_builder_ident::process_field(&mut self.#field_ident, __stripped__, __field__, __state__).await? {
-                        None => return Ok(None),
-                        Some(f) => return Ok(Some(f)),
-                    }
-                }
-            }
+            gen_flatten_field_branch(field_ident, &field_name, ty, separator)
         } else {
-            let limit_bytes = field
-                .limit_bytes()
-                .map(|limit| quote! { Some(#limit) })
-                .unwrap_or(quote! { None });
-
-            let parsed_value = quote! {
-                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, __state__).await?
-            };
-
-            let assignment = if matches_vec_signature(ty) {
-                quote! { self.#field_ident.push(#parsed_value); }
-            } else {
-                let assignment = quote! { self.#field_ident = Some(#parsed_value); };
-                if !strict {
-                    assignment
-                } else {
-                    quote! {
-                        if let None = self.#field_ident {
-                            #assignment
-                        } else {
-                            return Err(
-                                axum_typed_multipart::TypedMultipartError::DuplicateField {
-                                    field_name: String::from(#field_name)
-                                }
-                            );
-                        }
-                    }
-                }
-            };
-
-            quote! {
-                if __field_name__ == #field_name {
-                    #assignment
-                    return Ok(None);
-                }
-            }
+            gen_regular_field_branch(field, field_ident, &field_name, ty, strict)
         }
     });
 
@@ -324,6 +279,68 @@ fn gen_process_field_method(
         ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
             #(#field_branches)*
             Ok(Some(__field__))
+        }
+    }
+}
+
+fn gen_flatten_field_branch(
+    field_ident: &syn::Ident,
+    field_name: &str,
+    ty: &syn::Type,
+    separator: &str,
+) -> proc_macro2::TokenStream {
+    let nested_builder_ident = gen_builder_ident(ty, field_ident.span());
+    let field_prefix = format!("{}{}", field_name, separator);
+
+    quote! {
+        if let Some(__stripped__) = __field_name__.strip_prefix(#field_prefix) {
+            match #nested_builder_ident::process_field(&mut self.#field_ident, __stripped__, __field__, __state__).await? {
+                None => return Ok(None),
+                Some(f) => return Ok(Some(f)),
+            }
+        }
+    }
+}
+
+fn gen_regular_field_branch(
+    field: &FieldData,
+    field_ident: &syn::Ident,
+    field_name: &str,
+    ty: &syn::Type,
+    strict: bool,
+) -> proc_macro2::TokenStream {
+    let limit_bytes =
+        field.limit_bytes().map(|limit| quote! { Some(#limit) }).unwrap_or(quote! { None });
+
+    let parsed_value = quote! {
+        <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, __state__).await?
+    };
+
+    let assignment = if matches_vec_signature(ty) {
+        quote! { self.#field_ident.push(#parsed_value); }
+    } else {
+        let assignment = quote! { self.#field_ident = Some(#parsed_value); };
+        if !strict {
+            assignment
+        } else {
+            quote! {
+                if let None = self.#field_ident {
+                    #assignment
+                } else {
+                    return Err(
+                        axum_typed_multipart::TypedMultipartError::DuplicateField {
+                            field_name: String::from(#field_name)
+                        }
+                    );
+                }
+            }
+        }
+    };
+
+    quote! {
+        if __field_name__ == #field_name {
+            #assignment
+            return Ok(None);
         }
     }
 }
