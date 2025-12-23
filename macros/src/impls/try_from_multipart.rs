@@ -91,28 +91,16 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         };
 
     let fields = data.take_struct().unwrap();
-    let impl_generics = state.is_none().then(|| quote! { <S: Sync> });
-    let state_ty = state.as_ref().map(|s| quote! { #s }).unwrap_or(quote! { S });
-
     let builder_ident = gen_builder_ident(&ident, ident.span());
 
     let builder_struct = gen_builder_struct_def(&fields, &builder_ident);
 
     let default_impl = gen_builder_default_impl(&fields, &builder_ident);
 
-    let multipart_builder_impl = gen_builder_impl(
-        &fields,
-        &ident,
-        &builder_ident,
-        &impl_generics,
-        &state_ty,
-        strict,
-        rename_all,
-        &separator,
-    );
+    let multipart_builder_impl =
+        gen_builder_impl(&fields, &ident, &builder_ident, &state, strict, rename_all, &separator);
 
-    let try_from_impl =
-        gen_try_from_multipart_impl(&ident, &builder_ident, &impl_generics, &state_ty, strict);
+    let try_from_impl = gen_try_from_multipart_impl(&ident, &builder_ident, &state, strict);
 
     quote! {
         #builder_struct
@@ -125,6 +113,14 @@ pub fn macro_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 fn gen_builder_ident(ty: impl quote::ToTokens, span: proc_macro2::Span) -> syn::Ident {
     syn::Ident::new(&format!("{}Builder", quote!(#ty)), span)
+}
+
+fn gen_impl_generics(state: &Option<syn::Path>) -> Option<proc_macro2::TokenStream> {
+    state.is_none().then(|| quote! { <S: Sync> })
+}
+
+fn gen_state_ty(state: &Option<syn::Path>) -> proc_macro2::TokenStream {
+    state.as_ref().map(|s| quote! { #s }).unwrap_or(quote! { S })
 }
 
 fn gen_builder_struct_def(
@@ -181,10 +177,12 @@ fn gen_builder_default_impl(
 fn gen_try_from_multipart_impl(
     ident: &syn::Ident,
     builder_ident: &syn::Ident,
-    impl_generics: &Option<proc_macro2::TokenStream>,
-    state_ty: &proc_macro2::TokenStream,
+    state: &Option<syn::Path>,
     strict: bool,
 ) -> proc_macro2::TokenStream {
+    let impl_generics = gen_impl_generics(state);
+    let state_ty = gen_state_ty(state);
+
     let on_missing_name = if strict {
         quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
     } else {
@@ -224,22 +222,46 @@ fn gen_try_from_multipart_impl(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn gen_builder_impl(
     fields: &darling::ast::Fields<FieldData>,
     ident: &syn::Ident,
     builder_ident: &syn::Ident,
-    impl_generics: &Option<proc_macro2::TokenStream>,
+    state: &Option<syn::Path>,
+    strict: bool,
+    rename_all: Option<RenameCase>,
+    separator: &Option<String>,
+) -> proc_macro2::TokenStream {
+    let impl_generics = gen_impl_generics(state);
+    let state_ty = gen_state_ty(state);
+
+    let process_field_method =
+        gen_process_field_method(fields, &state_ty, strict, rename_all, separator);
+    let build_method = gen_build_method(fields, ident, &state_ty, rename_all);
+
+    quote! {
+        #[axum_typed_multipart::async_trait]
+        impl #impl_generics axum_typed_multipart::MultipartBuilder<#state_ty> for #builder_ident {
+            type Target = #ident;
+
+            #process_field_method
+
+            #build_method
+        }
+    }
+}
+
+fn gen_process_field_method(
+    fields: &darling::ast::Fields<FieldData>,
     state_ty: &proc_macro2::TokenStream,
     strict: bool,
     rename_all: Option<RenameCase>,
     separator: &Option<String>,
 ) -> proc_macro2::TokenStream {
+    let separator = separator.as_deref().unwrap_or(".");
     let field_branches = fields.iter().map(|field| {
         let field_ident = field.ident();
         let field_name = field.name(rename_all);
         let ty = &field.ty;
-        let separator = separator.as_deref().unwrap_or(".");
 
         if field.flatten {
             let nested_builder_ident = gen_builder_ident(ty, field_ident.span());
@@ -265,20 +287,23 @@ fn gen_builder_impl(
 
             let assignment = if matches_vec_signature(ty) {
                 quote! { self.#field_ident.push(#parsed_value); }
-            } else if strict {
-                quote! {
-                    if let None = self.#field_ident {
-                        self.#field_ident = Some(#parsed_value);
-                    } else {
-                        return Err(
-                            axum_typed_multipart::TypedMultipartError::DuplicateField {
-                                field_name: String::from(#field_name)
-                            }
-                        );
+            } else {
+                let assignment = quote! { self.#field_ident = Some(#parsed_value); };
+                if !strict {
+                    assignment
+                } else {
+                    quote! {
+                        if let None = self.#field_ident {
+                            #assignment
+                        } else {
+                            return Err(
+                                axum_typed_multipart::TypedMultipartError::DuplicateField {
+                                    field_name: String::from(#field_name)
+                                }
+                            );
+                        }
                     }
                 }
-            } else {
-                quote! { self.#field_ident = Some(#parsed_value); }
             };
 
             quote! {
@@ -290,6 +315,25 @@ fn gen_builder_impl(
         }
     });
 
+    quote! {
+        async fn process_field<'f>(
+            &mut self,
+            __field_name__: &str,
+            __field__: axum::extract::multipart::Field<'f>,
+            __state__: &#state_ty,
+        ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
+            #(#field_branches)*
+            Ok(Some(__field__))
+        }
+    }
+}
+
+fn gen_build_method(
+    fields: &darling::ast::Fields<FieldData>,
+    ident: &syn::Ident,
+    state_ty: &proc_macro2::TokenStream,
+    rename_all: Option<RenameCase>,
+) -> proc_macro2::TokenStream {
     let field_exprs = fields.iter().map(|field| {
         let field_ident = field.ident();
         let field_name = field.name(rename_all);
@@ -313,25 +357,10 @@ fn gen_builder_impl(
     });
 
     quote! {
-        #[axum_typed_multipart::async_trait]
-        impl #impl_generics axum_typed_multipart::MultipartBuilder<#state_ty> for #builder_ident {
-            type Target = #ident;
-
-            async fn process_field<'f>(
-                &mut self,
-                __field_name__: &str,
-                __field__: axum::extract::multipart::Field<'f>,
-                __state__: &#state_ty,
-            ) -> Result<Option<axum::extract::multipart::Field<'f>>, axum_typed_multipart::TypedMultipartError> {
-                #(#field_branches)*
-                Ok(Some(__field__))
-            }
-
-            fn build(self) -> Result<#ident, axum_typed_multipart::TypedMultipartError> {
-                Ok(#ident {
-                    #(#field_exprs),*
-                })
-            }
+        fn build(self) -> Result<#ident, axum_typed_multipart::TypedMultipartError> {
+            Ok(#ident {
+                #(#field_exprs),*
+            })
         }
     }
 }
