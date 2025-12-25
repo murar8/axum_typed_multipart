@@ -290,7 +290,7 @@ fn gen_flatten_field_branch(
     separator: &str,
 ) -> proc_macro2::TokenStream {
     let nested_builder_ident = gen_builder_ident(ty, field_ident.span());
-    let field_prefix = format!("{}{}", field_name, separator);
+    let field_prefix = format!("{field_name}{separator}");
 
     quote! {
         if let Some(__stripped__) = __field_name__.strip_prefix(#field_prefix) {
@@ -354,11 +354,10 @@ fn gen_build_method(
     let field_exprs = fields.iter().map(|field| {
         let field_ident = field.ident();
         let field_name = field.name(rename_all);
-        let ty = &field.ty;
         if field.flatten {
-            let nested_builder_ident = gen_builder_ident(ty, field_ident.span());
+            let nested_builder_ident = gen_builder_ident(&field.ty, field_ident.span());
             quote! { #field_ident: <#nested_builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::build(self.#field_ident)? }
-        } else if matches_vec_signature(ty) || matches_option_signature(ty) {
+        } else if matches_vec_signature(&field.ty) || matches_option_signature(&field.ty) {
             quote! { #field_ident: self.#field_ident }
         } else if field.default {
             quote! { #field_ident: self.#field_ident.unwrap_or_default() }
