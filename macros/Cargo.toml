@@ -17,7 +17,7 @@ proc-macro = true
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
 
 [dependencies]
-darling = "0.21.3"
+darling = "0.23.0"
 heck = "0.5.0"
 proc-macro-error2 = "2.0.1"
 quote = "1.0.37"
