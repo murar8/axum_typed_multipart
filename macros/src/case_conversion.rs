@@ -1,4 +1,3 @@
-use proc_macro_error2::abort;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -23,6 +22,12 @@ impl Display for InvalidCase {
 
 impl Error for InvalidCase {}
 
+impl darling::FromMeta for RenameCase {
+    fn from_string(value: &str) -> darling::Result<Self> {
+        Self::try_from(value).map_err(|_| darling::Error::unknown_value(value))
+    }
+}
+
 impl RenameCase {
     pub fn convert_case(self, s: &str) -> String {
         match self {
@@ -33,16 +38,6 @@ impl RenameCase {
             Self::Lower => s.to_lowercase(),
             Self::Upper => s.to_uppercase(),
         }
-    }
-
-    pub fn from_option_fallible<S>(spanned: S, option: Option<impl AsRef<str>>) -> Option<Self>
-    where
-        S: darling::ToTokens,
-    {
-        option.as_ref().map(|r| r.as_ref()).map(|value| {
-            Self::try_from(value)
-                .unwrap_or_else(|_| abort!(spanned, "invalid case conversion option"))
-        })
     }
 }
 
@@ -142,14 +137,5 @@ mod tests {
         let error = RenameCase::try_from("invalid_case").unwrap_err();
         assert!(matches!(error, InvalidCase));
         assert_eq!(error.to_string(), "invalid case conversion option");
-    }
-
-    #[test]
-    fn test_from_option_fallible() {
-        assert_eq!(RenameCase::from_option_fallible(0, None::<String>), None);
-        assert_eq!(
-            RenameCase::from_option_fallible("", Some("snake_case")),
-            Some(RenameCase::Snake)
-        );
     }
 }

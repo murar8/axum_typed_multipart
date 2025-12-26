@@ -17,7 +17,7 @@ struct InputData {
     strict: bool,
 
     #[darling(default)]
-    rename_all: Option<String>,
+    rename_all: Option<RenameCase>,
 
     #[darling(default)]
     state: Option<syn::Path>,
@@ -78,7 +78,6 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             Ok(input) => input,
             Err(err) => abort!(input, err.to_string()),
         };
-    let rename_all = RenameCase::from_option_fallible(&ident, rename_all);
 
     let fields = data.take_struct().unwrap();
 
