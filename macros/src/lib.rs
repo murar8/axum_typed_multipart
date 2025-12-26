@@ -3,6 +3,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod case_conversion;
+mod derive_input;
 mod impls;
 mod limit_bytes;
 mod util;
@@ -20,4 +21,10 @@ pub fn try_from_multipart_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(TryFromField, attributes(try_from_field, field))]
 pub fn try_from_field_derive(input: TokenStream) -> TokenStream {
     impls::try_from_field::macro_impl(input)
+}
+
+#[proc_macro_error]
+#[proc_macro_derive(MultipartBuilder, attributes(try_from_multipart, form_data))]
+pub fn multipart_builder_derive(input: TokenStream) -> TokenStream {
+    impls::multipart_builder::macro_impl(input)
 }
