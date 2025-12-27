@@ -575,6 +575,61 @@ async fn test_nested_with_default() {
 }
 
 // =============================================================================
+// Indirect Vec/Option - nested struct with Vec/Option simple fields
+// =============================================================================
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct PersonWithTags {
+    name: String,
+    tags: Vec<String>,
+    nickname: Option<String>,
+}
+
+#[derive(TryFromMultipart)]
+struct FormWithIndirectVecOption {
+    #[form_data(nested)]
+    person: PersonWithTags,
+}
+
+#[tokio::test]
+async fn test_indirect_vec_in_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithIndirectVecOption>| async move {
+        assert_eq!(data.person.name, "Alice");
+        assert_eq!(data.person.tags, vec!["admin", "user"]);
+        assert_eq!(data.person.nickname, Some("Ali".to_string()));
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("person.name", "Alice")
+                .text("person.tags", "admin")
+                .text("person.tags", "user")
+                .text("person.nickname", "Ali"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_indirect_option_none_in_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithIndirectVecOption>| async move {
+        assert_eq!(data.person.name, "Bob");
+        assert!(data.person.tags.is_empty());
+        assert_eq!(data.person.nickname, None);
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("person.name", "Bob"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
 // Vec<Option<T>> - sparse optional elements
 // =============================================================================
 
