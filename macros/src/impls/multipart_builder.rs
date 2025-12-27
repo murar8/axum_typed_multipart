@@ -2,7 +2,7 @@ use crate::case_conversion::RenameCase;
 use crate::derive_input::{FieldData, InputData};
 use crate::limit_bytes::LimitBytes;
 use crate::util::{
-    extract_vec_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
+    extract_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
 };
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
@@ -111,12 +111,18 @@ pub mod gen {
             /// Generates builder field for nested structs.
             /// Example: `addr: Address` → `addr: AddressMultipartBuilder`
             /// Example: `addrs: Vec<Address>` → `addrs: Vec<AddressMultipartBuilder>`
+            /// Example: `addr: Option<Address>` → `addr: Option<AddressMultipartBuilder>`
             pub fn nested(FieldData { ident, ty, .. }: &FieldData) -> proc_macro2::TokenStream {
-                let inner_ty =
-                    if matches_vec_signature(ty) { extract_vec_inner_type(ty) } else { ty };
+                let inner_ty = if matches_vec_signature(ty) || matches_option_signature(ty) {
+                    extract_inner_type(ty)
+                } else {
+                    ty
+                };
                 let field_builder_ident = builder_ident(inner_ty);
                 if matches_vec_signature(ty) {
                     quote! { #ident: Vec<#field_builder_ident> }
+                } else if matches_option_signature(ty) {
+                    quote! { #ident: Option<#field_builder_ident> }
                 } else {
                     quote! { #ident: #field_builder_ident }
                 }
@@ -252,7 +258,7 @@ pub mod gen {
                     name: &str,
                     FieldData { ident, ty, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
-                    let prefix = if matches_vec_signature(ty) || matches_option_signature(ty) {
+                    let prefix = if matches_vec_signature(ty) {
                         name.to_owned()
                     } else {
                         format!("{name}.")
