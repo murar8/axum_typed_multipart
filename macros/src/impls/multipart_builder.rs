@@ -182,12 +182,13 @@ pub mod gen {
             quote! {
                 async fn consume<'a>(
                     &mut self,
-                    __field__: axum::extract::multipart::Field<'a>,
+                    mut __field__: axum::extract::multipart::Field<'a>,
                     __name__: Option<&str>,
                     __state__: &#input_state_ty,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
                     let __name__ = match __name__ {
-                        None | Some("") => return #on_nameless_field,
+                        None => return Ok(Some(__field__)),
+                        Some("") => return #on_nameless_field,
                         Some(__name__) => __name__.strip_prefix('.').unwrap_or(__name__),
                     };
                     #(#branches)*
@@ -253,15 +254,16 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if let Some(rest) = name.strip_prefix("addr") { self.addr.consume(.., rest); }`
+                /// Example: `__field__ = match self.addr.consume(.., name.strip_prefix("addr")).await? { .. }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
                     quote! {
-                        if let Some(__rest__) = __name__.strip_prefix(#name) {
-                            return self.#ident.consume(__field__, Some(__rest__), __state__).await;
-                        }
+                        __field__ = match self.#ident.consume(__field__, __name__.strip_prefix(#name), __state__).await? {
+                            Some(__f__) => __f__,
+                            None => return Ok(None),
+                        };
                     }
                 }
             }

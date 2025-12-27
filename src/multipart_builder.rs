@@ -88,7 +88,11 @@ where
         name: Option<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        self.get_or_insert_with(Default::default).consume(field, name, state).await
+        match name {
+            // Don't create inner builder if prefix didn't match
+            None => Ok(Some(field)),
+            Some(_) => self.get_or_insert_with(Default::default).consume(field, name, state).await,
+        }
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
