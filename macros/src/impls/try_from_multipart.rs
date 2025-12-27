@@ -12,7 +12,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         Err(err) => abort!(input, err.to_string()),
     };
 
-    let builder = crate::impls::multipart_builder::generate(input.clone());
+    let builder = crate::impls::multipart_builder::gen::output(input.clone());
 
     let ident = &input.ident;
     let generic = input.generic();

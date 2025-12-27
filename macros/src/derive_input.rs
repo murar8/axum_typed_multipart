@@ -1,9 +1,6 @@
-use crate::util::{extract_vec_inner_type, strip_leading_rawlit};
-use crate::{case_conversion::RenameCase, util::matches_vec_signature};
+use crate::case_conversion::RenameCase;
 use darling::{FromDeriveInput, FromField};
-use proc_macro_error2::abort;
 use quote::{quote, ToTokens};
-use ubyte::ByteUnit;
 
 #[derive(Debug, Clone, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
@@ -24,7 +21,7 @@ pub(crate) struct InputData {
 
 impl InputData {
     pub(crate) fn builder_ident(&self) -> syn::Ident {
-        builder_ident(&self.ident)
+        crate::impls::multipart_builder::gen::builder_ident(&self.ident)
     }
 
     pub(crate) fn generic(&self) -> Option<impl ToTokens> {
@@ -53,44 +50,4 @@ pub(crate) struct FieldData {
 
     #[darling(default)]
     pub(crate) nested: bool,
-}
-
-impl FieldData {
-    pub(crate) fn name(&self, rename_all: Option<RenameCase>) -> String {
-        if let Some(field_name) = &self.field_name {
-            return field_name.to_string();
-        }
-
-        let ident = self.ident.as_ref().unwrap().to_string();
-        let field_in_struct = strip_leading_rawlit(&ident);
-
-        if let Some(case_conversion) = rename_all {
-            case_conversion.convert_case(&field_in_struct)
-        } else {
-            field_in_struct
-        }
-    }
-
-    pub(crate) fn limit_bytes(&self) -> Option<usize> {
-        match self.limit.as_deref() {
-            None | Some("unlimited") => None,
-            Some(limit) => match limit.parse::<ByteUnit>() {
-                Ok(limit) => Some(limit.as_u64() as usize),
-                Err(_) => abort!(self.ident.as_ref().unwrap(), "limit must be a valid byte unit"),
-            },
-        }
-    }
-
-    pub(crate) fn inner_ty(&self) -> &syn::Type {
-        if matches_vec_signature(&self.ty) {
-            extract_vec_inner_type(&self.ty)
-        } else {
-            &self.ty
-        }
-    }
-}
-
-pub fn builder_ident(ty: &impl quote::ToTokens) -> syn::Ident {
-    use syn::spanned::Spanned;
-    syn::Ident::new(&format!("{}Builder", ty.to_token_stream()), ty.span())
 }
