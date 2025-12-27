@@ -7,7 +7,7 @@ use crate::util::{
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::quote;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -48,8 +48,9 @@ pub mod gen {
         let InputData { ident, data, strict, rename_all, .. } = input;
         let fields = data.take_struct().unwrap();
 
-        // Compute field names once, map name → field
-        let fields: HashMap<_, _> = fields.iter().map(|f| (field_name(f, rename_all), f)).collect();
+        // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
+        let fields: BTreeMap<_, _> =
+            fields.iter().map(|f| (field_name(f, rename_all), f)).collect();
 
         let struct_def = struct_def(&input_builder_ident, &fields);
         let impl_block = impl_block(
@@ -70,7 +71,7 @@ pub mod gen {
     /// Generates: `#[derive(Default)] struct FooMultipartBuilder { .. }`
     fn struct_def(
         input_builder_ident: &syn::Ident,
-        fields: &HashMap<String, &FieldData>,
+        fields: &BTreeMap<String, &FieldData>,
     ) -> proc_macro2::TokenStream {
         let builder_fields = fields.values().map(|f| struct_def::field(f));
         quote! {
@@ -105,22 +106,22 @@ pub mod gen {
                 }
             }
 
-            /// Returns builder field type for nested structs.
+            /// Returns builder field type for nested structs (recursive for container types).
             /// Example: `Address` → `AddressMultipartBuilder`
             /// Example: `Vec<Address>` → `BTreeMap<usize, AddressMultipartBuilder>`
             /// Example: `Option<Address>` → `Option<AddressMultipartBuilder>`
+            /// Example: `Option<Vec<Address>>` → `Option<BTreeMap<usize, AddressMultipartBuilder>>`
             pub fn nested(ty: &syn::Type) -> proc_macro2::TokenStream {
-                let inner_ty = if matches_vec_signature(ty) || matches_option_signature(ty) {
-                    extract_inner_type(ty)
+                if matches_option_signature(ty) {
+                    let inner = extract_inner_type(ty);
+                    let inner_builder = nested(inner); // recurse
+                    quote! { Option<#inner_builder> }
+                } else if matches_vec_signature(ty) {
+                    let inner = extract_inner_type(ty);
+                    let inner_builder = nested(inner); // recurse
+                    quote! { std::collections::BTreeMap<usize, #inner_builder> }
                 } else {
-                    ty
-                };
-                let field_builder_ident = builder_ident(inner_ty);
-                if matches_vec_signature(ty) {
-                    quote! { std::collections::BTreeMap<usize, #field_builder_ident> }
-                } else if matches_option_signature(ty) {
-                    quote! { Option<#field_builder_ident> }
-                } else {
+                    let field_builder_ident = builder_ident(ty);
                     quote! { #field_builder_ident }
                 }
             }
@@ -133,7 +134,7 @@ pub mod gen {
         input_generic: &impl quote::ToTokens,
         input_state_ty: &impl quote::ToTokens,
         input_builder_ident: &syn::Ident,
-        fields: &HashMap<String, &FieldData>,
+        fields: &BTreeMap<String, &FieldData>,
         strict: bool,
     ) -> proc_macro2::TokenStream {
         let consume_method = impl_block::consume(input_state_ty, fields, strict);
@@ -155,7 +156,7 @@ pub mod gen {
         /// Generates: `async fn consume(&mut self, field, name, state) -> Result<Option<Field>, _> { .. }`
         pub fn consume(
             input_state_ty: &impl quote::ToTokens,
-            fields: &HashMap<String, &FieldData>,
+            fields: &BTreeMap<String, &FieldData>,
             strict: bool,
         ) -> proc_macro2::TokenStream {
             let branches = fields.iter().map(|(name, field)| consume::branch(name, field, strict));
@@ -185,8 +186,10 @@ pub mod gen {
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
                     let __name__ = match __name__ {
                         None => return Ok(Some(__field__)),
-                        Some("") => return #on_nameless_field,
-                        Some(__name__) => __name__.strip_prefix('.').unwrap_or(__name__),
+                        Some("") | Some(".") => return #on_nameless_field,
+                        Some(__name__) if __name__.starts_with('.') => &__name__[1..],
+                        Some(__name__) if __name__.starts_with('[') => __name__,
+                        Some(_) => return Ok(Some(__field__)), // No delimiter - not a valid nested path
                     };
                     #(#branches)*
                     #on_unmatched_field
@@ -269,7 +272,7 @@ pub mod gen {
         /// Generates: `fn finalize(self) -> Result<Foo, _> { Ok(Foo { .. }) }`
         pub fn finalize(
             ident: &syn::Ident,
-            fields: &HashMap<String, &FieldData>,
+            fields: &BTreeMap<String, &FieldData>,
             input_state_ty: &impl quote::ToTokens,
         ) -> proc_macro2::TokenStream {
             let field_assignments =

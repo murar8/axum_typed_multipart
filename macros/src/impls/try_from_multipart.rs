@@ -33,8 +33,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 let mut __builder__ = Default::default();
 
                 while let Some(__field__) = multipart.next_field().await? {
-                    let __name__ = __field__.name().map(str::to_owned);
-                    // Ignore unmatched fields - they are handled by the builder's strict mode
+                    // Prefix with '.' so nested builders can require delimiter
+                    let __name__ = __field__.name().map(|n| format!(".{}", n));
                     let _ = #builder_ident::consume(&mut __builder__, __field__, __name__.as_deref(), state).await?;
                 }
 
