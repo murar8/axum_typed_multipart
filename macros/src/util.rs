@@ -37,10 +37,10 @@ pub fn matches_vec_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Vec", "std::vec::Vec"])
 }
 
-/// Extract the inner type from a `Vec<T>` type.
+/// Extract the inner type from a generic type like `Vec<T>` or `Option<T>`.
 ///
-/// Aborts with an error if the type is not a valid `Vec<T>`.
-pub fn extract_vec_inner_type(ty: &syn::Type) -> &syn::Type {
+/// Aborts with an error if the type doesn't have a single type parameter.
+pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
     let path = match ty {
         syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
         _ => abort!(ty, "expected a path type, found complex type"),
@@ -51,10 +51,10 @@ pub fn extract_vec_inner_type(ty: &syn::Type) -> &syn::Type {
     };
     let args = match &last_segment.arguments {
         syn::PathArguments::AngleBracketed(args) => args,
-        _ => abort!(ty, "Vec requires a type parameter"),
+        _ => abort!(ty, "type requires a type parameter"),
     };
     match args.args.first() {
         Some(syn::GenericArgument::Type(inner)) => inner,
-        _ => abort!(ty, "Vec type parameter must be a type"),
+        _ => abort!(ty, "type parameter must be a type"),
     }
 }

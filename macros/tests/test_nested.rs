@@ -119,3 +119,45 @@ async fn test_deep_nesting() {
 
     assert_eq!(res.status(), StatusCode::OK);
 }
+
+#[derive(TryFromMultipart)]
+struct FormWithNestedOption {
+    title: String,
+    #[form_data(nested)]
+    owner: Option<Person>,
+}
+
+#[tokio::test]
+async fn test_nested_option_some() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedOption>| async move {
+        assert_eq!(data.title, "Test Form");
+        assert_eq!(data.owner, Some(Person { name: "Alice".into(), age: 30 }));
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test Form")
+                .text("owner.name", "Alice")
+                .text("owner.age", "30"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_nested_option_none() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedOption>| async move {
+        assert_eq!(data.title, "Test Form");
+        assert_eq!(data.owner, None);
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("title", "Test Form"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
