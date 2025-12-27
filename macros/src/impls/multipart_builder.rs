@@ -107,7 +107,7 @@ pub mod gen {
 
             /// Returns builder field type for nested structs.
             /// Example: `Address` → `AddressMultipartBuilder`
-            /// Example: `Vec<Address>` → `Vec<AddressMultipartBuilder>`
+            /// Example: `Vec<Address>` → `BTreeMap<usize, AddressMultipartBuilder>`
             /// Example: `Option<Address>` → `Option<AddressMultipartBuilder>`
             pub fn nested(ty: &syn::Type) -> proc_macro2::TokenStream {
                 let inner_ty = if matches_vec_signature(ty) || matches_option_signature(ty) {
@@ -117,7 +117,7 @@ pub mod gen {
                 };
                 let field_builder_ident = builder_ident(inner_ty);
                 if matches_vec_signature(ty) {
-                    quote! { Vec<#field_builder_ident> }
+                    quote! { std::collections::BTreeMap<usize, #field_builder_ident> }
                 } else if matches_option_signature(ty) {
                     quote! { Option<#field_builder_ident> }
                 } else {
