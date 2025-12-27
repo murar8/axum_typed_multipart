@@ -188,7 +188,7 @@ pub mod gen {
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
                     let __name__ = match __name__ {
                         None | Some("") => return #on_nameless_field,
-                        Some(__name__) => __name__,
+                        Some(__name__) => __name__.strip_prefix('.').unwrap_or(__name__),
                     };
                     #(#branches)*
                     #on_unmatched_field
@@ -253,18 +253,13 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if let Some(rest) = name.strip_prefix("addr.") { self.addr.consume(.., rest); }`
+                /// Example: `if let Some(rest) = name.strip_prefix("addr") { self.addr.consume(.., rest); }`
                 pub fn nested(
                     name: &str,
-                    FieldData { ident, ty, .. }: &FieldData,
+                    FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
-                    let prefix = if matches_vec_signature(ty) {
-                        name.to_owned()
-                    } else {
-                        format!("{name}.")
-                    };
                     quote! {
-                        if let Some(__rest__) = __name__.strip_prefix(#prefix) {
+                        if let Some(__rest__) = __name__.strip_prefix(#name) {
                             return self.#ident.consume(__field__, Some(__rest__), __state__).await;
                         }
                     }

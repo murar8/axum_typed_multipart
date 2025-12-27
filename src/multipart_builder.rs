@@ -64,7 +64,6 @@ where
             Some(v) => v,
             None => return Ok(Some(field)), // No index - cannot consume
         };
-        let rest = rest.strip_prefix('.').unwrap_or(rest);
         self.resize_with(idx + 1, Default::default);
         self[idx].consume(field, Some(rest), state).await
     }
