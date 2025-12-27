@@ -16,13 +16,10 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let ident = &input.ident;
     let generic = input.generic();
     let state_ty = input.state_ty();
-    let builder_ident = input.builder_ident();
 
-    let nameless_check_body = if input.strict {
-        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField); }
-    } else {
-        quote! { continue; }
-    };
+    let builder_ident = input.builder_ident();
+    let builder_ident =
+        quote! { <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>> };
 
     quote! {
         #builder
@@ -33,19 +30,15 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 multipart: &mut axum::extract::multipart::Multipart,
                 state: &#state_ty,
             ) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
-                let mut __builder__ = #builder_ident::default();
+                let mut __builder__ = Default::default();
 
                 while let Some(__field__) = multipart.next_field().await? {
-                    match __field__.name() {
-                        None | Some("") => { #nameless_check_body }
-                        Some(_) => {
-                            // Ignore unmatched fields - they are handled by the builder's strict mode
-                            let _ = <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::consume(&mut __builder__, __field__, state).await?;
-                        }
-                    }
+                    let __name__ = __field__.name().map(str::to_owned);
+                    // Ignore unmatched fields - they are handled by the builder's strict mode
+                    let _ = #builder_ident::consume(&mut __builder__, __field__, __name__.as_deref(), state).await?;
                 }
 
-                <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>>::finalize(__builder__)
+                #builder_ident::finalize(__builder__)
             }
         }
     }.into()

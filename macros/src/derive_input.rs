@@ -1,6 +1,6 @@
 use crate::case_conversion::RenameCase;
 use crate::limit_bytes::LimitBytes;
-use crate::util::strip_leading_rawlit;
+use crate::util::{extract_vec_inner_type, matches_vec_signature, strip_leading_rawlit};
 use darling::{FromDeriveInput, FromField};
 use quote::{quote, ToTokens};
 
@@ -23,7 +23,7 @@ pub(crate) struct InputData {
 
 impl InputData {
     pub(crate) fn builder_ident(&self) -> syn::Ident {
-        syn::Ident::new(&format!("{}Builder", self.ident), self.ident.span())
+        builder_ident(&self.ident)
     }
 
     pub(crate) fn generic(&self) -> Option<impl ToTokens> {
@@ -49,6 +49,9 @@ pub(crate) struct FieldData {
 
     #[darling(default)]
     pub(crate) default: bool,
+
+    #[darling(default)]
+    pub(crate) nested: bool,
 }
 
 impl FieldData {
@@ -66,4 +69,17 @@ impl FieldData {
             field_in_struct
         }
     }
+
+    pub(crate) fn inner_ty(&self) -> &syn::Type {
+        if matches_vec_signature(&self.ty) {
+            extract_vec_inner_type(&self.ty)
+        } else {
+            &self.ty
+        }
+    }
+}
+
+pub fn builder_ident(ty: &impl quote::ToTokens) -> syn::Ident {
+    use syn::spanned::Spanned;
+    syn::Ident::new(&format!("{}Builder", ty.to_token_stream()), ty.span())
 }

@@ -1,3 +1,14 @@
+use proc_macro_error2::abort;
+
+/// Strips leading r# from the ident. Used to convert idents to string literals.
+pub fn strip_leading_rawlit(s: &str) -> String {
+    if s.starts_with("r#") {
+        s.chars().skip(2).collect()
+    } else {
+        s.to_owned()
+    }
+}
+
 /// Check if the supplied type matches at least one of the provided signatures.
 ///
 /// Note that this method is not guaranteed to work on every possible input
@@ -16,15 +27,6 @@ pub fn matches_signature(ty: &syn::Type, signatures: &[&str]) -> bool {
     signatures.contains(&signature.as_ref())
 }
 
-/// Strips leading r# from the ident. Used to convert idents to string literals.
-pub fn strip_leading_rawlit(s: &str) -> String {
-    if s.starts_with("r#") {
-        s.chars().skip(2).collect()
-    } else {
-        s.to_owned()
-    }
-}
-
 /// Check if the supplied type matches the [Option] signature.
 pub fn matches_option_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Option", "std::option::Option", "core::option::Option"])
@@ -33,4 +35,26 @@ pub fn matches_option_signature(ty: &syn::Type) -> bool {
 /// Check if the supplied type matches the [Vec] signature.
 pub fn matches_vec_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Vec", "std::vec::Vec"])
+}
+
+/// Extract the inner type from a `Vec<T>` type.
+///
+/// Aborts with an error if the type is not a valid `Vec<T>`.
+pub fn extract_vec_inner_type(ty: &syn::Type) -> &syn::Type {
+    let path = match ty {
+        syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
+        _ => abort!(ty, "expected a path type, found complex type"),
+    };
+    let last_segment = match path.segments.first() {
+        Some(segment) => segment,
+        None => abort!(ty, "empty type path"),
+    };
+    let args = match &last_segment.arguments {
+        syn::PathArguments::AngleBracketed(args) => args,
+        _ => abort!(ty, "Vec requires a type parameter"),
+    };
+    match args.args.first() {
+        Some(syn::GenericArgument::Type(inner)) => inner,
+        _ => abort!(ty, "Vec type parameter must be a type"),
+    }
 }
