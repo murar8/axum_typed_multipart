@@ -36,6 +36,15 @@ pub trait MultipartBuilder<S>: Default {
     fn finalize(self) -> Result<Self::Target, TypedMultipartError>;
 }
 
+/// Parses `[index]` from the start of name.
+/// Returns the index and remainder after `]`.
+fn parse_index(name: &str) -> Option<(usize, &str)> {
+    let rest = name.strip_prefix('[')?;
+    let end = rest.find(']')?;
+    let idx = rest[..end].parse::<usize>().ok()?;
+    Some((idx, &rest[end + 1..]))
+}
+
 /// Blanket impl for `Vec<B>` - parses indexed field names like `[0].field`.
 #[async_trait]
 impl<S, B> MultipartBuilder<S> for Vec<B>
@@ -51,22 +60,13 @@ where
         name: Option<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        let Some(name) = name.filter(|n| !n.is_empty()) else {
-            return Ok(Some(field));
+        let (idx, rest) = match name.and_then(parse_index) {
+            Some(v) => v,
+            None => return Ok(Some(field)), // No index - cannot consume
         };
-        if let Some(rest) = name.strip_prefix('[') {
-            if let Some(end) = rest.find(']') {
-                if let Ok(idx) = rest[..end].parse::<usize>() {
-                    let rest = &rest[end + 1..];
-                    let rest = rest.strip_prefix('.').unwrap_or(rest);
-                    if self.len() <= idx {
-                        self.resize_with(idx + 1, Default::default);
-                    }
-                    return self[idx].consume(field, Some(rest), state).await;
-                }
-            }
-        }
-        Ok(Some(field))
+        let rest = rest.strip_prefix('.').unwrap_or(rest);
+        self.resize_with(idx + 1, Default::default);
+        self[idx].consume(field, Some(rest), state).await
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
