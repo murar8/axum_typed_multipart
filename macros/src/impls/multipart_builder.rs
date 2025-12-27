@@ -86,33 +86,30 @@ pub mod gen {
         use super::*;
 
         /// Dispatches to simple or nested field generation.
-        pub fn field(field @ FieldData { nested, .. }: &FieldData) -> proc_macro2::TokenStream {
-            if !nested {
-                field::simple(field)
-            } else {
-                field::nested(field)
-            }
+        pub fn field(FieldData { ident, ty, nested, .. }: &FieldData) -> proc_macro2::TokenStream {
+            let ty = if *nested { field_ty::nested(ty) } else { field_ty::simple(ty) };
+            quote! { #ident: #ty }
         }
 
-        mod field {
+        mod field_ty {
             use super::*;
 
-            /// Generates builder field for simple types.
-            /// Example: `name: String` → `name: Option<String>`
-            /// Example: `names: Vec<String>` → `names: Vec<String>`
-            pub fn simple(FieldData { ident, ty, .. }: &FieldData) -> proc_macro2::TokenStream {
+            /// Returns builder field type for simple types.
+            /// Example: `String` → `Option<String>`
+            /// Example: `Vec<String>` → `Vec<String>`
+            pub fn simple(ty: &syn::Type) -> proc_macro2::TokenStream {
                 if matches_vec_signature(ty) || matches_option_signature(ty) {
-                    quote! { #ident: #ty }
+                    quote! { #ty }
                 } else {
-                    quote! { #ident: std::option::Option<#ty> }
+                    quote! { std::option::Option<#ty> }
                 }
             }
 
-            /// Generates builder field for nested structs.
-            /// Example: `addr: Address` → `addr: AddressMultipartBuilder`
-            /// Example: `addrs: Vec<Address>` → `addrs: Vec<AddressMultipartBuilder>`
-            /// Example: `addr: Option<Address>` → `addr: Option<AddressMultipartBuilder>`
-            pub fn nested(FieldData { ident, ty, .. }: &FieldData) -> proc_macro2::TokenStream {
+            /// Returns builder field type for nested structs.
+            /// Example: `Address` → `AddressMultipartBuilder`
+            /// Example: `Vec<Address>` → `Vec<AddressMultipartBuilder>`
+            /// Example: `Option<Address>` → `Option<AddressMultipartBuilder>`
+            pub fn nested(ty: &syn::Type) -> proc_macro2::TokenStream {
                 let inner_ty = if matches_vec_signature(ty) || matches_option_signature(ty) {
                     extract_inner_type(ty)
                 } else {
@@ -120,11 +117,11 @@ pub mod gen {
                 };
                 let field_builder_ident = builder_ident(inner_ty);
                 if matches_vec_signature(ty) {
-                    quote! { #ident: Vec<#field_builder_ident> }
+                    quote! { Vec<#field_builder_ident> }
                 } else if matches_option_signature(ty) {
-                    quote! { #ident: Option<#field_builder_ident> }
+                    quote! { Option<#field_builder_ident> }
                 } else {
-                    quote! { #ident: #field_builder_ident }
+                    quote! { #field_builder_ident }
                 }
             }
         }
@@ -203,10 +200,10 @@ pub mod gen {
 
             /// Dispatches to simple or nested branch generation.
             pub fn branch(name: &str, field: &FieldData, strict: bool) -> proc_macro2::TokenStream {
-                if !field.nested {
-                    branch::simple(name, field, strict)
-                } else {
+                if field.nested {
                     branch::nested(name, field)
+                } else {
+                    branch::simple(name, field, strict)
                 }
             }
 
@@ -296,10 +293,10 @@ pub mod gen {
                 input_state_ty: &impl quote::ToTokens,
             ) -> proc_macro2::TokenStream {
                 let ident = &field.ident;
-                let value = if !field.nested {
-                    value::simple(name, field)
-                } else {
+                let value = if field.nested {
                     value::nested(field, input_state_ty)
+                } else {
+                    value::simple(name, field)
                 };
                 quote! { #ident: #value }
             }
