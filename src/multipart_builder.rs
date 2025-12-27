@@ -1,6 +1,7 @@
 use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
+use std::collections::BTreeMap;
 
 /// A builder that incrementally consumes multipart fields.
 ///
@@ -45,9 +46,11 @@ fn parse_index(name: &str) -> Option<(usize, &str)> {
     Some((idx, &rest[end + 1..]))
 }
 
-/// Blanket impl for `Vec<B>` - parses indexed field names like `[0].field`.
+/// Blanket impl for `BTreeMap<usize, B>` - parses indexed field names like `[0].field`.
+///
+/// Uses a map instead of a vector to support sparse indices and prevent DoS via large indices.
 #[async_trait]
-impl<S, B> MultipartBuilder<S> for Vec<B>
+impl<S, B> MultipartBuilder<S> for BTreeMap<usize, B>
 where
     S: Sync,
     B: MultipartBuilder<S> + Send,
@@ -60,16 +63,16 @@ where
         name: Option<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        let (idx, rest) = match name.and_then(parse_index) {
-            Some(v) => v,
-            None => return Ok(Some(field)), // No index - cannot consume
-        };
-        self.resize_with(idx + 1, Default::default);
-        self[idx].consume(field, Some(rest), state).await
+        match name.and_then(parse_index) {
+            None => Ok(Some(field)), // No index - cannot consume
+            Some((idx, rest)) => {
+                self.entry(idx).or_default().consume(field, Some(rest), state).await
+            }
+        }
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
-        self.into_iter().map(MultipartBuilder::finalize).collect()
+        self.into_values().map(MultipartBuilder::finalize).collect()
     }
 }
 

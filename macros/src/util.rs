@@ -45,7 +45,7 @@ pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
         syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
         _ => abort!(ty, "expected a path type, found complex type"),
     };
-    let last_segment = match path.segments.first() {
+    let last_segment = match path.segments.last() {
         Some(segment) => segment,
         None => abort!(ty, "empty type path"),
     };
