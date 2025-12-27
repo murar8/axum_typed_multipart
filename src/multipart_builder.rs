@@ -70,7 +70,7 @@ where
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
-        self.into_iter().map(|b| b.finalize()).collect()
+        self.into_iter().map(MultipartBuilder::finalize).collect()
     }
 }
 
@@ -89,11 +89,10 @@ where
         name: Option<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        let builder = self.get_or_insert_with(Default::default);
-        builder.consume(field, name, state).await
+        self.get_or_insert_with(Default::default).consume(field, name, state).await
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
-        self.map(|b| b.finalize()).transpose()
+        self.map(MultipartBuilder::finalize).transpose()
     }
 }

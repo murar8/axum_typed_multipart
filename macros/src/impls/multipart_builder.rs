@@ -298,30 +298,31 @@ pub mod gen {
                 field: &FieldData,
                 input_state_ty: &impl quote::ToTokens,
             ) -> proc_macro2::TokenStream {
-                if !field.nested {
-                    field::simple(name, field)
+                let ident = &field.ident;
+                let value = if !field.nested {
+                    value::simple(name, field)
                 } else {
-                    field::nested(field, input_state_ty)
-                }
+                    value::nested(field, input_state_ty)
+                };
+                quote! { #ident: #value }
             }
 
-            mod field {
+            mod value {
                 use super::*;
 
-                /// Generates field assignment for finalize.
-                /// Example: `name: self.name.ok_or(MissingField { .. })?`
-                /// Example: `name: self.name.unwrap_or_default()` (if #[default])
+                /// Generates value expression for simple fields.
+                /// Example: `self.name.ok_or(MissingField { .. })?`
                 pub fn simple(
                     name: &str,
                     FieldData { ident, ty, default, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
                     if matches_vec_signature(ty) || matches_option_signature(ty) {
-                        quote! { #ident: self.#ident }
+                        quote! { self.#ident }
                     } else if *default {
-                        quote! { #ident: self.#ident.unwrap_or_default() }
+                        quote! { self.#ident.unwrap_or_default() }
                     } else {
                         quote! {
-                            #ident: self.#ident.ok_or(
+                            self.#ident.ok_or(
                                 axum_typed_multipart::TypedMultipartError::MissingField {
                                     field_name: String::from(#name)
                                 }
@@ -330,17 +331,17 @@ pub mod gen {
                     }
                 }
 
-                /// Generates field assignment that finalizes nested builder.
-                /// Example: `addr: MultipartBuilder::finalize(self.addr)?`
+                /// Generates value expression that finalizes nested builder.
+                /// Example: `MultipartBuilder::finalize(self.addr)?`
                 pub fn nested(
                     FieldData { ident, default, .. }: &FieldData,
                     input_state_ty: &impl quote::ToTokens,
                 ) -> proc_macro2::TokenStream {
                     let finalize = quote! { axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(self.#ident) };
                     if *default {
-                        quote! { #ident: #finalize.unwrap_or_default() }
+                        quote! { #finalize.unwrap_or_default() }
                     } else {
-                        quote! { #ident: #finalize? }
+                        quote! { #finalize? }
                     }
                 }
             }
