@@ -111,6 +111,7 @@ pub mod gen {
             /// Example: `Vec<Address>` → `BTreeMap<usize, AddressMultipartBuilder>`
             /// Example: `Option<Address>` → `Option<AddressMultipartBuilder>`
             /// Example: `Option<Vec<Address>>` → `Option<BTreeMap<usize, AddressMultipartBuilder>>`
+            /// Example: `Vec<Option<Address>>` → `BTreeMap<usize, Option<AddressMultipartBuilder>>`
             pub fn nested(ty: &syn::Type) -> proc_macro2::TokenStream {
                 if matches_option_signature(ty) {
                     let inner = extract_inner_type(ty);

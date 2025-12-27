@@ -575,6 +575,39 @@ async fn test_nested_with_default() {
 }
 
 // =============================================================================
+// Vec<Option<T>> - sparse optional elements
+// =============================================================================
+
+#[derive(TryFromMultipart)]
+struct FormWithVecOption {
+    title: String,
+    #[form_data(nested)]
+    items: Vec<Option<Inner>>,
+}
+
+#[tokio::test]
+async fn test_vec_option_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithVecOption>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.items.len(), 2);
+        assert_eq!(data.items[0], Some(Inner { value: "a".into() }));
+        assert_eq!(data.items[1], Some(Inner { value: "b".into() }));
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("items[0].value", "a")
+                .text("items[1].value", "b"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
 // Strict mode with nested structs - duplicate detection
 // =============================================================================
 
