@@ -181,6 +181,20 @@
 //! }
 //! ```
 //!
+//! ### Nested structs
+//!
+//! For complex forms with nested data structures, use the `nested` parameter to parse fields
+//! with dot notation (e.g., `address.city`) or indexed arrays (e.g., `users[0].name`).
+//!
+//! The nested struct must also derive [TryFromMultipart](crate::TryFromMultipart).
+//!
+//! Array indices can be sparse (e.g., `[0]`, `[5]` without `[1]-[4]`) and out-of-order.
+//! The resulting `Vec` contains elements sorted by index, with gaps removed.
+//!
+//! ```rust,no_run
+#![doc = include_str!("../examples/nested.rs")]
+//! ```
+//!
 //! ### Strict mode
 //!
 //! By default, the derive macro will store the last occurrence of a field, and it will ignore

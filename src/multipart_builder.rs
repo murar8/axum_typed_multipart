@@ -48,7 +48,15 @@ fn parse_index(name: &str) -> Option<(usize, &str)> {
 
 /// Blanket impl for `BTreeMap<usize, B>` - parses indexed field names like `[0].field`.
 ///
+/// This impl is used by macro-generated builder structs for `#[form_data(nested)]` fields
+/// with `Vec<T>` types. The macro generates `BTreeMap<usize, TMultipartBuilder>` fields,
+/// which use this impl to parse indexed field names and delegate to the inner builder.
+///
 /// Uses a map instead of a vector to support sparse indices and prevent DoS via large indices.
+/// A `Vec` would allocate memory proportional to the largest index (e.g., `[999999999]` would
+/// allocate a billion slots). With `BTreeMap`, memory is proportional to the number of entries.
+/// Since each multipart field has overhead (~80+ bytes for boundary and headers), Axum's body
+/// size limits naturally bound the number of entries that can be created.
 #[async_trait]
 impl<S, B> MultipartBuilder<S> for BTreeMap<usize, B>
 where
@@ -75,6 +83,10 @@ where
 }
 
 /// Blanket impl for `Option<B>` - creates inner builder on first field.
+///
+/// This impl is used by macro-generated builder structs for `#[form_data(nested)]` fields
+/// with `Option<T>` types. The macro generates `Option<TMultipartBuilder>` fields, which
+/// use this impl to lazily initialize the inner builder when the first field arrives.
 #[async_trait]
 impl<S, B> MultipartBuilder<S> for Option<B>
 where

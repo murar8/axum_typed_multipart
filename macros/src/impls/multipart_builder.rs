@@ -176,6 +176,12 @@ pub mod gen {
         }
 
         /// Helpers for generating consume method branches.
+        ///
+        /// Field names use a dot-prefix convention to prevent prefix collisions. For example,
+        /// with fields `user` (nested) and `username` (simple), incoming `username` becomes
+        /// `.username`. The nested `user` field strips `.user` via `strip_prefix`, leaving
+        /// `name` (no dot). The inner builder then checks for `.name`, which doesn't match
+        /// `name`, so the field falls through to correctly match the simple `.username` field.
         mod consume {
             use super::*;
 
