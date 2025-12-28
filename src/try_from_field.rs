@@ -126,7 +126,9 @@ mod tests {
         TestClient::new(Router::new().route("/", post(handler)))
             .post("/")
             .multipart(Form::new().text("data", input))
-            .await;
+            .send()
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -184,6 +186,8 @@ mod tests_with_state {
         TestClient::new(Router::new().route("/", post(handler)))
             .post("/")
             .multipart(Form::new().text("data", "world!"))
-            .await;
+            .send()
+            .await
+            .unwrap();
     }
 }

@@ -99,9 +99,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_request() {
-        let res = create_client().await.post("/").json(&"{}").await;
+        let res = create_client().await.post("/").json(&"{}").send().await.unwrap();
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-        assert!(res.text().await.contains("request is malformed"));
+        assert!(res.text().await.unwrap().contains("request is malformed"));
     }
 
     #[tokio::test]
@@ -111,10 +111,12 @@ mod tests {
             .post("/")
             .header(header::CONTENT_TYPE.as_str(), "multipart/form-data; boundary=BOUNDARY")
             .body("BOUNDARY\r\n\r\nBOUNDARY--\r\n")
-            .await;
+            .send()
+            .await
+            .unwrap();
 
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-        assert!(res.text().await.contains("request body is malformed"));
+        assert!(res.text().await.unwrap().contains("request body is malformed"));
     }
 
     #[tokio::test]

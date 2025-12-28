@@ -85,6 +85,8 @@ mod tests {
         TestClient::new(Router::new().route("/", post(handler)))
             .post("/")
             .multipart(Form::new().text("name", "Hello, world!"))
-            .await;
+            .send()
+            .await
+            .unwrap();
     }
 }

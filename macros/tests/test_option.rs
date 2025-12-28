@@ -27,7 +27,9 @@ async fn test_option() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("option_field", "John"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }

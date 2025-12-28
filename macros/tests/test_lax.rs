@@ -29,8 +29,12 @@ async fn test_field_order() {
         .text("unknown_field", "data") // should be ignored
         .text("", "data"); // should be ignored
 
-    let res =
-        TestClient::new(Router::new().route("/", post(handler))).post("/").multipart(form).await;
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(form)
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -44,8 +48,10 @@ async fn test_missing_field() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("unknown_field", "data"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'field' is required");
+    assert_eq!(res.text().await.unwrap(), "field 'field' is required");
 }
