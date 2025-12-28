@@ -187,10 +187,11 @@ pub mod gen {
 
             /// Dispatches to simple or nested branch generation.
             pub fn branch(name: &str, field: &FieldData, strict: bool) -> proc_macro2::TokenStream {
+                let prefixed_name = format!(".{}", name);
                 if field.nested {
-                    branch::nested(name, field)
+                    branch::nested(&prefixed_name, field)
                 } else {
-                    branch::simple(name, field, strict)
+                    branch::simple(&prefixed_name, field, strict)
                 }
             }
 
@@ -198,13 +199,11 @@ pub mod gen {
                 use super::*;
 
                 /// Generates match branch for simple field consumption.
-                /// Example: `if __name__ == ".name" { self.name = Some(value); return Ok(None); }`
                 pub fn simple(
-                    name: &str,
+                    prefixed_name: &str,
                     FieldData { ident, ty, limit, .. }: &FieldData,
                     strict: bool,
                 ) -> proc_macro2::TokenStream {
-                    let prefixed_name = format!(".{}", name);
                     let limit_bytes = limit.unwrap_or(LimitBytes(None));
 
                     let value = quote! {
@@ -239,12 +238,10 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if __segment__.starts_with("addr") { __field__ = match self.addr.consume(.., new_spanned, depth + 1).await? { .. } }`
                 pub fn nested(
-                    name: &str,
+                    prefixed_name: &str,
                     FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
-                    let prefixed_name = format!(".{}", name);
                     let prefix_len = prefixed_name.len();
                     quote! {
                         if __segment__.starts_with(&#prefixed_name[__offset__..]) {
