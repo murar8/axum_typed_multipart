@@ -166,9 +166,12 @@ pub mod gen {
                 async fn consume<'a>(
                     &mut self,
                     mut __field__: axum::extract::multipart::Field<'a>,
-                    __name__: &str,
+                    __name__: axum_typed_multipart::Spanned<&str>,
                     __state__: &#input_state_ty,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
+                    let __full__ = *__name__.as_ref();
+                    let __span__ = __name__.span();
+                    let __segment__ = &__full__[__span__.start..__span__.end];
                     #(#branches)*
                     Ok(Some(__field__))
                 }
@@ -231,7 +234,7 @@ pub mod gen {
                     };
 
                     quote! {
-                        if __name__ == #prefixed_name {
+                        if __segment__ == #prefixed_name {
                             #assignment
                             return Ok(None);
                         }
@@ -239,15 +242,17 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if let Some(__rest__) = name.strip_prefix(".addr") { __field__ = match self.addr.consume(.., __rest__).await? { .. } }`
+                /// Example: `if __segment__.starts_with(".addr") { __field__ = match self.addr.consume(.., new_spanned).await? { .. } }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
                     let prefixed_name = format!(".{}", name);
+                    let prefix_len = prefixed_name.len();
                     quote! {
-                        if let Some(__rest__) = __name__.strip_prefix(#prefixed_name) {
-                            __field__ = match self.#ident.consume(__field__, __rest__, __state__).await? {
+                        if __segment__.starts_with(#prefixed_name) {
+                            let __new_name__ = axum_typed_multipart::Spanned::new(__span__.start + #prefix_len..__span__.end, __full__);
+                            __field__ = match self.#ident.consume(__field__, __new_name__, __state__).await? {
                                 Some(__f__) => __f__,
                                 None => return Ok(None),
                             };

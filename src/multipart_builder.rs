@@ -1,6 +1,7 @@
 use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
+use serde_spanned::Spanned;
 use std::collections::BTreeMap;
 
 /// A builder that incrementally consumes multipart fields.
@@ -21,15 +22,16 @@ pub trait MultipartBuilder<S>: Default {
 
     /// Attempts to consume a field.
     ///
-    /// The `name` parameter is the effective field name to match against. For top-level
-    /// fields this is `field.name()`, for nested fields it's the name with prefix stripped.
+    /// The `name` parameter contains the full field name and a span indicating the current
+    /// segment to match. For top-level fields, the span covers the entire name. For nested
+    /// fields, the span covers only the suffix after the parent's prefix.
     ///
     /// Returns `Ok(None)` if the field was consumed, or `Ok(Some(field))` if the field
     /// was not recognized and should be passed to another handler.
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: &str,
+        name: Spanned<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError>;
 
@@ -37,13 +39,17 @@ pub trait MultipartBuilder<S>: Default {
     fn finalize(self) -> Result<Self::Target, TypedMultipartError>;
 }
 
-/// Parses `[index]` from the start of name.
-/// Returns the index and remainder after `]`.
-fn parse_index(name: &str) -> Option<(usize, &str)> {
-    let rest = name.strip_prefix('[')?;
+/// Parses `[index]` from the start of the current span.
+/// Returns the index and a new `Spanned` with span advanced past `]`.
+fn parse_index<'a>(name: &Spanned<&'a str>) -> Option<(usize, Spanned<&'a str>)> {
+    let full = *name.as_ref();
+    let span = name.span();
+
+    let rest = full[span.start..span.end].strip_prefix('[')?;
     let end = rest.find(']')?;
     let idx = rest[..end].parse::<usize>().ok()?;
-    Some((idx, &rest[end + 1..]))
+
+    Some((idx, Spanned::new(span.start + 1 + end + 1..span.end, full)))
 }
 
 /// Blanket impl for `BTreeMap<usize, B>` - parses indexed field names like `[0].field`.
@@ -68,10 +74,10 @@ where
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: &str,
+        name: Spanned<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        match parse_index(name) {
+        match parse_index(&name) {
             None => Ok(Some(field)), // No index - cannot consume
             Some((idx, rest)) => self.entry(idx).or_default().consume(field, rest, state).await,
         }
@@ -98,7 +104,7 @@ where
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: &str,
+        name: Spanned<&str>,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
         self.get_or_insert_with(Default::default).consume(field, name, state).await

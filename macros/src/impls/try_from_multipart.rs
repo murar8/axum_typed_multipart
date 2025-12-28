@@ -45,7 +45,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 None | Some("") => { #on_nameless_field }
                 Some(name) => format!(".{}", name), // Prefix with '.' so nested builders can require delimiter
             };
-            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state).await? {
+            let __spanned__ = axum_typed_multipart::Spanned::new(0..__name__.len(), __name__.as_str());
+            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, __spanned__, state).await? {
                 #on_unmatched_field
             }
         }

@@ -301,6 +301,8 @@
 
 pub use anyhow;
 pub use async_trait::async_trait;
+pub use serde_spanned::Spanned;
+
 pub use axum_typed_multipart_macros::{MultipartBuilder, TryFromField, TryFromMultipart};
 
 mod base_multipart;
