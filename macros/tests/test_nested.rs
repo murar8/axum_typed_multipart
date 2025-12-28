@@ -820,3 +820,241 @@ async fn test_strict_invalid_index_empty_brackets() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(res.text().await, "field 'users[].name' is not expected");
 }
+
+// =============================================================================
+// 4+ levels of deep nesting
+// =============================================================================
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct Level4 {
+    data: String,
+}
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct Level3Item {
+    label: String,
+    #[form_data(nested)]
+    entries: Vec<Level4>,
+}
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct Level2Section {
+    name: String,
+    #[form_data(nested)]
+    items: Vec<Level3Item>,
+}
+
+#[derive(TryFromMultipart)]
+struct Level1Form {
+    title: String,
+    #[form_data(nested)]
+    sections: Vec<Level2Section>,
+}
+
+#[tokio::test]
+async fn test_four_levels_of_nesting() {
+    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
+        assert_eq!(data.title, "Deep");
+        assert_eq!(data.sections.len(), 2);
+        assert_eq!(data.sections[0].name, "S0");
+        assert_eq!(data.sections[0].items.len(), 2);
+        assert_eq!(data.sections[0].items[0].label, "I0");
+        assert_eq!(data.sections[0].items[0].entries.len(), 2);
+        assert_eq!(data.sections[0].items[0].entries[0].data, "E0");
+        assert_eq!(data.sections[0].items[0].entries[1].data, "E1");
+        assert_eq!(data.sections[0].items[1].label, "I1");
+        assert_eq!(data.sections[1].name, "S1");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Deep")
+                .text("sections[0].name", "S0")
+                .text("sections[0].items[0].label", "I0")
+                .text("sections[0].items[0].entries[0].data", "E0")
+                .text("sections[0].items[0].entries[1].data", "E1")
+                .text("sections[0].items[1].label", "I1")
+                .text("sections[1].name", "S1"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_deep_sparse_indices() {
+    // Sparse indices at every level should be normalized
+    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
+        assert_eq!(data.sections.len(), 2);
+        assert_eq!(data.sections[0].name, "Sparse0");
+        assert_eq!(data.sections[0].items[0].label, "Item5");
+        assert_eq!(data.sections[0].items[0].entries[0].data, "Entry99");
+        assert_eq!(data.sections[1].name, "Sparse10");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Sparse")
+                .text("sections[0].name", "Sparse0")
+                .text("sections[0].items[5].label", "Item5")
+                .text("sections[0].items[5].entries[99].data", "Entry99")
+                .text("sections[10].name", "Sparse10"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_deep_out_of_order() {
+    // Fields sent in completely reversed order
+    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
+        assert_eq!(data.title, "Reversed");
+        assert_eq!(data.sections[0].name, "First");
+        assert_eq!(data.sections[0].items[0].label, "Item");
+        assert_eq!(data.sections[0].items[0].entries[0].data, "Deep");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                // Send deepest first, title last
+                .text("sections[0].items[0].entries[0].data", "Deep")
+                .text("sections[0].items[0].label", "Item")
+                .text("sections[0].name", "First")
+                .text("title", "Reversed"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
+// Multiple Vec fields at same level
+// =============================================================================
+
+#[derive(TryFromMultipart)]
+struct MultiVecForm {
+    #[form_data(nested)]
+    users: Vec<Inner>,
+    #[form_data(nested)]
+    admins: Vec<Inner>,
+    #[form_data(nested)]
+    guests: Vec<Inner>,
+}
+
+#[tokio::test]
+async fn test_multiple_vec_fields() {
+    let handler = |TypedMultipart(data): TypedMultipart<MultiVecForm>| async move {
+        assert_eq!(data.users.len(), 2);
+        assert_eq!(data.users[0].value, "User1");
+        assert_eq!(data.users[1].value, "User2");
+        assert_eq!(data.admins.len(), 1);
+        assert_eq!(data.admins[0].value, "Admin1");
+        assert_eq!(data.guests.len(), 3);
+        assert_eq!(data.guests[2].value, "Guest3");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("users[0].value", "User1")
+                .text("admins[0].value", "Admin1")
+                .text("guests[0].value", "Guest1")
+                .text("users[1].value", "User2")
+                .text("guests[1].value", "Guest2")
+                .text("guests[2].value", "Guest3"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_multiple_vec_some_empty() {
+    let handler = |TypedMultipart(data): TypedMultipart<MultiVecForm>| async move {
+        assert_eq!(data.users.len(), 1);
+        assert!(data.admins.is_empty());
+        assert!(data.guests.is_empty());
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("users[0].value", "OnlyUser"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
+// Unicode and special characters
+// =============================================================================
+
+#[tokio::test]
+async fn test_unicode_values() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedSingle>| async move {
+        assert_eq!(data.title, "日本語");
+        assert_eq!(data.owner.name, "Алексей");
+        assert_eq!(data.owner.age, 25);
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "日本語")
+                .text("owner.name", "Алексей")
+                .text("owner.age", "25"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
+// Duplicate fields at nested levels (non-strict: last wins)
+// =============================================================================
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct LaxPerson {
+    name: String,
+    age: u32,
+}
+
+#[allow(dead_code)]
+#[derive(TryFromMultipart)]
+struct LaxFormWithNestedVec {
+    title: String,
+    #[form_data(nested)]
+    users: Vec<LaxPerson>,
+}
+
+#[tokio::test]
+async fn test_duplicate_nested_last_wins() {
+    // In non-strict mode, last value should win
+    let handler = |TypedMultipart(data): TypedMultipart<LaxFormWithNestedVec>| async move {
+        assert_eq!(data.users.len(), 1);
+        assert_eq!(data.users[0].name, "Second"); // Last wins
+        assert_eq!(data.users[0].age, 99);
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Dups")
+                .text("users[0].name", "First")
+                .text("users[0].age", "1")
+                .text("users[0].name", "Second") // Overwrites
+                .text("users[0].age", "99"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
