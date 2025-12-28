@@ -30,7 +30,9 @@ async fn test_defaults() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("data", "bar"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }

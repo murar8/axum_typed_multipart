@@ -61,9 +61,11 @@ async fn test_limit() {
             TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async {})))
                 .post("/")
                 .multipart(Form::new().text(field, "x".repeat(size)))
-                .await;
+                .send()
+                .await
+                .unwrap();
 
         assert_eq!(res.status(), status);
-        assert_eq!(res.text().await, error.unwrap_or(""));
+        assert_eq!(res.text().await.unwrap(), error.unwrap_or(""));
     }
 }

@@ -25,7 +25,9 @@ async fn test_bool_true() {
         ))
         .post("/")
         .multipart(Form::new().text("bool_field", field))
-        .await;
+        .send()
+        .await
+        .unwrap();
         assert_eq!(res.status(), StatusCode::OK);
     }
 }
@@ -43,7 +45,9 @@ async fn test_bool_false() {
         ))
         .post("/")
         .multipart(Form::new().text("bool_field", field))
-        .await;
+        .send()
+        .await
+        .unwrap();
         assert_eq!(res.status(), StatusCode::OK);
     }
 }

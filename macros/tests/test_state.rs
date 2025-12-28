@@ -77,7 +77,7 @@ async fn test_state_valid() {
         .text("items", "cheese")
         .text("default_value", "default")
         .text("position", "20");
-    let res = create_test_client(handler, 0u32).post("/").multipart(form).await;
+    let res = create_test_client(handler, 0u32).post("/").multipart(form).send().await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
 }
 
@@ -92,7 +92,7 @@ async fn test_state_invalid() {
         .text("items", "cheese")
         .text("default_value", "default")
         .text("position", "5");
-    let res = create_test_client(handler, 10u32).post("/").multipart(form).await;
+    let res = create_test_client(handler, 10u32).post("/").multipart(form).send().await.unwrap();
     assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
-    assert_eq!(res.text().await, "position must be greater than or equal to 10");
+    assert_eq!(res.text().await.unwrap(), "position must be greater than or equal to 10");
 }

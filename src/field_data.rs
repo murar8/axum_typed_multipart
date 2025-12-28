@@ -126,7 +126,9 @@ mod tests {
         let res = TestClient::new(Router::new().route("/", post(handler)))
             .post("/")
             .multipart(Form::new().part("input_file", part))
-            .await;
+            .send()
+            .await
+            .unwrap();
 
         assert_eq!(res.status(), StatusCode::OK);
     }
