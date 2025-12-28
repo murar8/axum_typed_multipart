@@ -12,11 +12,8 @@ repository = "https://github.com/murar8/axum_typed_multipart"
 version = "0.0.0"
 
 [workspace.dependencies]
-async-trait = "0.1.84"
 axum = { version = "0.8.1", default-features = false }
-bytes = "1.7.1"
 reqwest = "0.12.12"
-serde = "1.0.193"
 tokio = "1.25.0"
 
 [package]
@@ -44,10 +41,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)
 
 [dependencies]
 anyhow = "1.0.72"
-async-trait = { workspace = true }
+async-trait = "0.1.84"
 axum = { workspace = true, features = ["multipart"] }
 axum_typed_multipart_macros = { path = "macros", version = "0.0.0" }
-bytes = { workspace = true }
+bytes = "1.7.1"
 futures-core = "0.3.31"
 futures-util = "0.3.31"
 thiserror = "2.0.0"
@@ -64,7 +61,7 @@ uuid_1 = { package = "uuid", version = "1.0.0", optional = true }
 axum = { workspace = true, default-features = true }
 axum_test_helper = { path = "test_helper" }
 reqwest = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { version = "1.0.193", features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 utoipa = "5.3.1"
 utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
