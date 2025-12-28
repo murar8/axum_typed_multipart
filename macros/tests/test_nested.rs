@@ -722,3 +722,101 @@ async fn test_whitespace_in_brackets_rejected() {
 
     assert_eq!(res.status(), StatusCode::OK);
 }
+
+// =============================================================================
+// Strict mode with nested Vec - invalid indices should be rejected
+// =============================================================================
+
+#[allow(dead_code)]
+#[derive(TryFromMultipart)]
+#[try_from_multipart(strict)]
+struct StrictFormWithNestedVec {
+    title: String,
+    #[form_data(nested)]
+    users: Vec<Person>,
+}
+
+#[tokio::test]
+async fn test_strict_invalid_index_non_numeric() {
+    // In strict mode, non-numeric index should be rejected as unknown field
+    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[abc].name", "Invalid")
+                .text("users[abc].age", "0"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'users[abc].name' is not expected");
+}
+
+#[tokio::test]
+async fn test_strict_invalid_index_negative() {
+    // In strict mode, negative index should be rejected as unknown field
+    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[-1].name", "Invalid")
+                .text("users[-1].age", "0"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'users[-1].name' is not expected");
+}
+
+#[tokio::test]
+async fn test_strict_invalid_index_whitespace() {
+    // In strict mode, whitespace in brackets should be rejected
+    // Note: reqwest converts spaces to empty field name in multipart encoding
+    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[  0  ].name", "Invalid")
+                .text("users[  0  ].age", "0"),
+        )
+        .await;
+
+    // Due to multipart encoding quirks, field name with spaces becomes empty
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_strict_invalid_index_empty_brackets() {
+    // In strict mode, empty brackets should be rejected
+    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[].name", "Invalid")
+                .text("users[].age", "0"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'users[].name' is not expected");
+}

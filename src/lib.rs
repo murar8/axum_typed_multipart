@@ -201,7 +201,8 @@
 //! unknown fields. This behavior can be changed by using the `strict` parameter in the derive
 //! macro. This will make the macro throw an error if the request contains multiple fields with the
 //! same name or if it contains unknown fields. In addition, when using strict mode sending fields
-//! with a missing or empty name will result in an error.
+//! with a missing or empty name will result in an error. For nested `Vec` fields, invalid array
+//! indices (non-numeric, negative, or malformed like `[abc]` or `[-1]`) are also rejected.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
