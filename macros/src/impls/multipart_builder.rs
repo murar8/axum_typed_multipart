@@ -169,10 +169,6 @@ pub mod gen {
                     __name__: &str,
                     __state__: &#input_state_ty,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
-                    let __name__ = match __name__.strip_prefix('.') {
-                        Some(__name__) => __name__,
-                        None => return Ok(Some(__field__)),
-                    };
                     #(#branches)*
                     Ok(Some(__field__))
                 }
@@ -196,12 +192,13 @@ pub mod gen {
                 use super::*;
 
                 /// Generates match branch for simple field consumption.
-                /// Example: `if __name__ == "name" { self.name = Some(value); return Ok(None); }`
+                /// Example: `if __name__ == ".name" { self.name = Some(value); return Ok(None); }`
                 pub fn simple(
                     name: &str,
                     FieldData { ident, ty, limit, .. }: &FieldData,
                     strict: bool,
                 ) -> proc_macro2::TokenStream {
+                    let prefixed_name = format!(".{}", name);
                     let limit_bytes = limit.unwrap_or(LimitBytes(None));
 
                     let value = quote! {
@@ -228,7 +225,7 @@ pub mod gen {
                     };
 
                     quote! {
-                        if __name__ == #name {
+                        if __name__ == #prefixed_name {
                             #assignment
                             return Ok(None);
                         }
@@ -236,13 +233,14 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if let Some(__rest__) = name.strip_prefix("addr") { __field__ = match self.addr.consume(.., __rest__).await? { .. } }`
+                /// Example: `if let Some(__rest__) = name.strip_prefix(".addr") { __field__ = match self.addr.consume(.., __rest__).await? { .. } }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
+                    let prefixed_name = format!(".{}", name);
                     quote! {
-                        if let Some(__rest__) = __name__.strip_prefix(#name) {
+                        if let Some(__rest__) = __name__.strip_prefix(#prefixed_name) {
                             __field__ = match self.#ident.consume(__field__, __rest__, __state__).await? {
                                 Some(__f__) => __f__,
                                 None => return Ok(None),
