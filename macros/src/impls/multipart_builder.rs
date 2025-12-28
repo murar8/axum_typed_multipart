@@ -217,7 +217,7 @@ pub mod gen {
                                     #assignment
                                 } else {
                                     return Err(axum_typed_multipart::TypedMultipartError::DuplicateField {
-                                        field_name: String::from(#name)
+                                        field_name: __field__.name().unwrap_or_default().to_string()
                                     });
                                 }
                             }

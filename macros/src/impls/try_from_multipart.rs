@@ -29,11 +29,11 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     };
 
     let on_unmatched_field = if !strict {
-        quote! { {} }
+        quote! { continue }
     } else {
         quote! {
             return Err(axum_typed_multipart::TypedMultipartError::UnknownField {
-                field_name: __name__.strip_prefix('.').unwrap_or(&__name__).to_string()
+                field_name: __field__.name().unwrap_or_default().to_string()
             })
         }
     };
@@ -55,7 +55,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                         None | Some("") => { #on_nameless_field }
                         Some(name) => format!(".{}", name),
                     };
-                    if let Some(_) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state).await? {
+                    if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state).await? {
                         #on_unmatched_field
                     }
                 }
