@@ -173,6 +173,8 @@ pub mod gen {
                     let __full__ = *__name__.as_ref();
                     let __span__ = __name__.span();
                     let __segment__ = &__full__[__span__.start..__span__.end];
+                    // At depth 0, no leading dot expected; at depth > 0, skip the leading dot in prefixed names
+                    let __offset__ = if __depth__ == 0 { 1 } else { 0 };
                     #(#branches)*
                     Ok(Some(__field__))
                 }
@@ -180,12 +182,6 @@ pub mod gen {
         }
 
         /// Helpers for generating consume method branches.
-        ///
-        /// Field names use a dot-prefix convention to prevent prefix collisions. For example,
-        /// with fields `user` (nested) and `username` (simple), incoming `username` becomes
-        /// `.username`. The nested `user` field strips `.user` via `strip_prefix`, leaving
-        /// `name` (no dot). The inner builder then checks for `.name`, which doesn't match
-        /// `name`, so the field falls through to correctly match the simple `.username` field.
         mod consume {
             use super::*;
 
@@ -235,7 +231,7 @@ pub mod gen {
                     };
 
                     quote! {
-                        if __segment__ == #prefixed_name {
+                        if __segment__ == &#prefixed_name[__offset__..] {
                             #assignment
                             return Ok(None);
                         }
@@ -243,7 +239,7 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if __segment__.starts_with(".addr") { __field__ = match self.addr.consume(.., new_spanned, depth + 1).await? { .. } }`
+                /// Example: `if __segment__.starts_with("addr") { __field__ = match self.addr.consume(.., new_spanned, depth + 1).await? { .. } }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
@@ -251,8 +247,8 @@ pub mod gen {
                     let prefixed_name = format!(".{}", name);
                     let prefix_len = prefixed_name.len();
                     quote! {
-                        if __segment__.starts_with(#prefixed_name) {
-                            let __new_name__ = axum_typed_multipart::Spanned::new(__span__.start + #prefix_len..__span__.end, __full__);
+                        if __segment__.starts_with(&#prefixed_name[__offset__..]) {
+                            let __new_name__ = axum_typed_multipart::Spanned::new(__span__.start + #prefix_len - __offset__..__span__.end, __full__);
                             __field__ = match self.#ident.consume(__field__, __new_name__, __state__, __depth__ + 1).await? {
                                 Some(__f__) => __f__,
                                 None => return Ok(None),
