@@ -19,14 +19,14 @@ repos:
           - id: destroyed-symlinks # Detects symlinks which are changed to regular files with a content of a path which that symlink was pointing to.
 
     - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-      rev: v9.22.0
+      rev: v9.23.0
       hooks:
           - id: commitlint
             stages: [commit-msg]
             additional_dependencies: ["@commitlint/config-conventional"]
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: "v0.45.0"
+      rev: "v0.47.0"
       hooks:
           - id: markdownlint
 
