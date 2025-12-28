@@ -36,7 +36,10 @@ pub trait MultipartBuilder<S>: Default {
     ) -> Result<Option<Field<'a>>, TypedMultipartError>;
 
     /// Finalizes the builder, returning the target or an error if required fields are missing.
-    fn finalize(self) -> Result<Self::Target, TypedMultipartError>;
+    ///
+    /// The `path` parameter contains the field path prefix for error messages (e.g., "person.address").
+    /// For top-level builders, pass an empty string. Nested builders receive the accumulated path.
+    fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError>;
 }
 
 /// Parses `[index]` from the start of the current span.
@@ -83,8 +86,8 @@ where
         }
     }
 
-    fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
-        self.into_values().map(MultipartBuilder::finalize).collect()
+    fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
+        self.into_iter().map(|(idx, builder)| builder.finalize(&format!("{path}[{idx}]"))).collect()
     }
 }
 
@@ -110,7 +113,7 @@ where
         self.get_or_insert_with(Default::default).consume(field, name, state).await
     }
 
-    fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
-        self.map(MultipartBuilder::finalize).transpose()
+    fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
+        self.map(|b| b.finalize(path)).transpose()
     }
 }

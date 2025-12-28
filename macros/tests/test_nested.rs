@@ -440,7 +440,7 @@ async fn test_invalid_index_empty_brackets() {
 
 #[tokio::test]
 async fn test_missing_required_nested_field() {
-    // Missing required field in nested struct should fail
+    // Missing required field in nested struct should fail with full path in error
     let handler = |TypedMultipart(_data): TypedMultipart<FormWithNestedSingle>| async move {};
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
@@ -451,13 +451,14 @@ async fn test_missing_required_nested_field() {
         )
         .await;
 
-    // Should fail because owner.age is missing
+    // Should fail because owner.age is missing - error should show full path
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'owner.age' is required");
 }
 
 #[tokio::test]
 async fn test_missing_entire_required_nested() {
-    // Missing entire required nested struct should fail
+    // Missing entire required nested struct should fail with full path
     let handler = |TypedMultipart(_data): TypedMultipart<FormWithNestedSingle>| async move {};
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
@@ -467,6 +468,8 @@ async fn test_missing_entire_required_nested() {
         .await;
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    // First missing field (alphabetically) in nested struct should show full path
+    assert_eq!(res.text().await, "field 'owner.age' is required");
 }
 
 // =============================================================================
@@ -1056,6 +1059,88 @@ async fn test_duplicate_nested_last_wins() {
                 .text("users[0].age", "1")
                 .text("users[0].name", "Second") // Overwrites
                 .text("users[0].age", "99"),
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
+// Error message path tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_error_path_vec_item() {
+    // Missing field in Vec item should show full path with index
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("title", "Test").text("users[0].name", "Alice"),
+            // Missing users[0].age!
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'users[0].age' is required");
+}
+
+#[tokio::test]
+async fn test_error_path_deep_nesting() {
+    // Vec fields are optional (default to empty), so this should succeed
+    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.sections[0].name, "Section");
+        assert!(data.sections[0].items.is_empty());
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("title", "Test").text("sections[0].name", "Section"))
+        .await;
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_error_path_deep_nesting_required() {
+    // Missing required field deep in nesting should show full path
+    async fn handler(_: TypedMultipart<Level1Form>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("title", "Test").text("sections[0].items[0].label", "Item"),
+            // Missing sections[0].name!
+        )
+        .await;
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await, "field 'sections[0].name' is required");
+}
+
+#[tokio::test]
+async fn test_error_path_four_levels() {
+    // Vec fields are optional (default to empty), so this should succeed
+    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.sections[0].name, "Section");
+        assert_eq!(data.sections[0].items[0].label, "Item");
+        assert!(data.sections[0].items[0].entries.is_empty());
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("sections[0].name", "Section")
+                .text("sections[0].items[0].label", "Item"),
         )
         .await;
 

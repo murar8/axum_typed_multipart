@@ -61,7 +61,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             ) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
                 let mut __builder__ = Default::default();
                 #consume_loop
-                #builder_ident::finalize(__builder__)
+                #builder_ident::finalize(__builder__, "")
             }
         }
     };

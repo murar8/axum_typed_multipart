@@ -272,7 +272,7 @@ pub mod gen {
                 fields.iter().map(|(name, field)| finalize::field(name, field, input_state_ty));
 
             quote! {
-                fn finalize(self) -> Result<Self::Target, axum_typed_multipart::TypedMultipartError> {
+                fn finalize(self, __path__: &str) -> Result<Self::Target, axum_typed_multipart::TypedMultipartError> {
                     Ok(#ident { #(#field_assignments),* })
                 }
             }
@@ -290,7 +290,7 @@ pub mod gen {
             ) -> proc_macro2::TokenStream {
                 let ident = &field.ident;
                 let value = if field.nested {
-                    value::nested(field, input_state_ty)
+                    value::nested(name, field, input_state_ty)
                 } else {
                     value::simple(name, field)
                 };
@@ -312,9 +312,11 @@ pub mod gen {
                         quote! { self.#ident.unwrap_or_default() }
                     } else {
                         quote! {
-                            self.#ident.ok_or(
+                            self.#ident.ok_or_else(||
                                 axum_typed_multipart::TypedMultipartError::MissingField {
-                                    field_name: String::from(#name)
+                                    field_name: format!("{}.{}", __path__, #name)
+                                        .trim_start_matches('.')
+                                        .to_string()
                                 }
                             )?
                         }
@@ -322,12 +324,18 @@ pub mod gen {
                 }
 
                 /// Generates value expression that finalizes nested builder.
-                /// Example: `MultipartBuilder::finalize(self.addr)?`
+                /// Example: `MultipartBuilder::finalize(self.addr, ".person.addr")?`
                 pub fn nested(
+                    name: &str,
                     FieldData { ident, default, .. }: &FieldData,
                     input_state_ty: &impl quote::ToTokens,
                 ) -> proc_macro2::TokenStream {
-                    let finalize = quote! { axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(self.#ident) };
+                    let finalize = quote! {
+                        axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(
+                            self.#ident,
+                            &format!("{}.{}", __path__, #name)
+                        )
+                    };
                     if *default {
                         quote! { #finalize.unwrap_or_default() }
                     } else {
