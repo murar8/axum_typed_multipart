@@ -162,38 +162,19 @@ pub mod gen {
         ) -> proc_macro2::TokenStream {
             let branches = fields.iter().map(|(name, field)| consume::branch(name, field, strict));
 
-            let on_nameless_field = if !strict {
-                quote! { Ok(Some(__field__)) }
-            } else {
-                quote! { Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
-            };
-
-            let on_unmatched_field = if !strict {
-                quote! { Ok(Some(__field__)) }
-            } else {
-                quote! {
-                    Err(axum_typed_multipart::TypedMultipartError::UnknownField {
-                        field_name: __name__.to_string()
-                    })
-                }
-            };
-
             quote! {
                 async fn consume<'a>(
                     &mut self,
                     mut __field__: axum::extract::multipart::Field<'a>,
-                    __name__: Option<&str>,
+                    __name__: &str,
                     __state__: &#input_state_ty,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
-                    let __name__ = match __name__ {
+                    let __name__ = match __name__.strip_prefix('.') {
+                        Some(__name__) => __name__,
                         None => return Ok(Some(__field__)),
-                        Some("") | Some(".") => return #on_nameless_field,
-                        Some(__name__) if __name__.starts_with('.') => &__name__[1..],
-                        Some(__name__) if __name__.starts_with('[') => __name__,
-                        Some(_) => return Ok(Some(__field__)), // No delimiter - not a valid nested path
                     };
                     #(#branches)*
-                    #on_unmatched_field
+                    Ok(Some(__field__))
                 }
             }
         }
@@ -255,16 +236,18 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `__field__ = match self.addr.consume(.., name.strip_prefix("addr")).await? { .. }`
+                /// Example: `if let Some(__rest__) = name.strip_prefix("addr") { __field__ = match self.addr.consume(.., __rest__).await? { .. } }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
                 ) -> proc_macro2::TokenStream {
                     quote! {
-                        __field__ = match self.#ident.consume(__field__, __name__.strip_prefix(#name), __state__).await? {
-                            Some(__f__) => __f__,
-                            None => return Ok(None),
-                        };
+                        if let Some(__rest__) = __name__.strip_prefix(#name) {
+                            __field__ = match self.#ident.consume(__field__, __rest__, __state__).await? {
+                                Some(__f__) => __f__,
+                                None => return Ok(None),
+                            };
+                        }
                     }
                 }
             }

@@ -14,12 +14,29 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let builder = crate::impls::multipart_builder::gen::output(input.clone());
 
     let ident = &input.ident;
+    let strict = input.strict;
     let generic = input.generic();
     let state_ty = input.state_ty();
 
     let builder_ident = input.builder_ident();
     let builder_ident =
         quote! { <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>> };
+
+    let on_nameless_field = if !strict {
+        quote! { continue }
+    } else {
+        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
+    };
+
+    let on_unmatched_field = if !strict {
+        quote! { {} }
+    } else {
+        quote! {
+            return Err(axum_typed_multipart::TypedMultipartError::UnknownField {
+                field_name: __name__.strip_prefix('.').unwrap_or(&__name__).to_string()
+            })
+        }
+    };
 
     quote! {
         #builder
@@ -34,8 +51,13 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
                 while let Some(__field__) = multipart.next_field().await? {
                     // Prefix with '.' so nested builders can require delimiter
-                    let __name__ = __field__.name().map(|n| format!(".{}", n));
-                    let _ = #builder_ident::consume(&mut __builder__, __field__, __name__.as_deref(), state).await?;
+                    let __name__ = match __field__.name() {
+                        None | Some("") => { #on_nameless_field }
+                        Some(name) => format!(".{}", name),
+                    };
+                    if let Some(_) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state).await? {
+                        #on_unmatched_field
+                    }
                 }
 
                 #builder_ident::finalize(__builder__)

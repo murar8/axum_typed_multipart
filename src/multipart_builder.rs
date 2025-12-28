@@ -29,7 +29,7 @@ pub trait MultipartBuilder<S>: Default {
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: Option<&str>,
+        name: &str,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError>;
 
@@ -60,14 +60,12 @@ where
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: Option<&str>,
+        name: &str,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        match name.and_then(parse_index) {
+        match parse_index(name) {
             None => Ok(Some(field)), // No index - cannot consume
-            Some((idx, rest)) => {
-                self.entry(idx).or_default().consume(field, Some(rest), state).await
-            }
+            Some((idx, rest)) => self.entry(idx).or_default().consume(field, rest, state).await,
         }
     }
 
@@ -88,14 +86,10 @@ where
     async fn consume<'a>(
         &mut self,
         field: Field<'a>,
-        name: Option<&str>,
+        name: &str,
         state: &S,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        match name {
-            // Don't create inner builder if prefix didn't match
-            None => Ok(Some(field)),
-            Some(_) => self.get_or_insert_with(Default::default).consume(field, name, state).await,
-        }
+        self.get_or_insert_with(Default::default).consume(field, name, state).await
     }
 
     fn finalize(self) -> Result<Self::Target, TypedMultipartError> {
