@@ -26,6 +26,8 @@ pub trait MultipartBuilder<S>: Default {
     /// segment to match. For top-level fields, the span covers the entire name. For nested
     /// fields, the span covers only the suffix after the parent's prefix.
     ///
+    /// The `depth` parameter indicates the current nesting depth (0 for top-level).
+    ///
     /// Returns `Ok(None)` if the field was consumed, or `Ok(Some(field))` if the field
     /// was not recognized and should be passed to another handler.
     async fn consume<'a>(
@@ -33,6 +35,7 @@ pub trait MultipartBuilder<S>: Default {
         field: Field<'a>,
         name: Spanned<&str>,
         state: &S,
+        depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError>;
 
     /// Finalizes the builder, returning the target or an error if required fields are missing.
@@ -79,10 +82,13 @@ where
         field: Field<'a>,
         name: Spanned<&str>,
         state: &S,
+        depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
         match parse_index(&name) {
             None => Ok(Some(field)), // No index - cannot consume
-            Some((idx, rest)) => self.entry(idx).or_default().consume(field, rest, state).await,
+            Some((idx, rest)) => {
+                self.entry(idx).or_default().consume(field, rest, state, depth + 1).await
+            }
         }
     }
 
@@ -109,8 +115,9 @@ where
         field: Field<'a>,
         name: Spanned<&str>,
         state: &S,
+        depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        self.get_or_insert_with(Default::default).consume(field, name, state).await
+        self.get_or_insert_with(Default::default).consume(field, name, state, depth).await
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {

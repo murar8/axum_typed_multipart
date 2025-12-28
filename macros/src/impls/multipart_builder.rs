@@ -154,7 +154,7 @@ pub mod gen {
     mod impl_block {
         use super::*;
 
-        /// Generates: `async fn consume(&mut self, field, name, state) -> Result<Option<Field>, _> { .. }`
+        /// Generates: `async fn consume(&mut self, field, name, state, depth) -> Result<Option<Field>, _> { .. }`
         pub fn consume(
             input_state_ty: &impl quote::ToTokens,
             fields: &BTreeMap<String, &FieldData>,
@@ -168,6 +168,7 @@ pub mod gen {
                     mut __field__: axum::extract::multipart::Field<'a>,
                     __name__: axum_typed_multipart::Spanned<&str>,
                     __state__: &#input_state_ty,
+                    __depth__: usize,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
                     let __full__ = *__name__.as_ref();
                     let __span__ = __name__.span();
@@ -242,7 +243,7 @@ pub mod gen {
                 }
 
                 /// Generates match branch that delegates to nested builder.
-                /// Example: `if __segment__.starts_with(".addr") { __field__ = match self.addr.consume(.., new_spanned).await? { .. } }`
+                /// Example: `if __segment__.starts_with(".addr") { __field__ = match self.addr.consume(.., new_spanned, depth + 1).await? { .. } }`
                 pub fn nested(
                     name: &str,
                     FieldData { ident, .. }: &FieldData,
@@ -252,7 +253,7 @@ pub mod gen {
                     quote! {
                         if __segment__.starts_with(#prefixed_name) {
                             let __new_name__ = axum_typed_multipart::Spanned::new(__span__.start + #prefix_len..__span__.end, __full__);
-                            __field__ = match self.#ident.consume(__field__, __new_name__, __state__).await? {
+                            __field__ = match self.#ident.consume(__field__, __new_name__, __state__, __depth__ + 1).await? {
                                 Some(__f__) => __f__,
                                 None => return Ok(None),
                             };
