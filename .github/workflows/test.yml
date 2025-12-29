@@ -73,10 +73,11 @@ jobs:
                   fetch-depth: 0
             - uses: actions-rust-lang/setup-rust-toolchain@v1
               with:
-                  toolchain: nightly
+                  # Pinned due to LLVM crash with --branch in newer nightlies
+                  toolchain: nightly-2025-06-01
                   components: llvm-tools-preview # needed for llvm-cov
             - uses: taiki-e/install-action@cargo-llvm-cov
-            - run: cargo llvm-cov --workspace --all-features --all-targets --lcov --output-path target/coverage.lcov
+            - run: cargo llvm-cov --workspace --all-features --all-targets --branch --lcov --output-path target/coverage.lcov
             - uses: codecov/codecov-action@v5
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

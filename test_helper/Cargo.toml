@@ -5,6 +5,9 @@ tokio = { workspace = true }
 tower = { version = "0.5.2", features = ["make"], default-features = false }
 tower-service = "0.3.3"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+
 [package]
 description = "Test helper for axum_typed_multipart."
 name = "axum_test_helper"
