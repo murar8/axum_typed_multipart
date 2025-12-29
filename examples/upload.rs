@@ -39,6 +39,7 @@ pub fn app() -> Router {
 
 #[tokio::main]
 async fn main() {
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:0").await.unwrap();
+    println!("Listening on http://{}", listener.local_addr().unwrap());
     axum::serve(listener, app()).await.unwrap();
 }
