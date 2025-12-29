@@ -206,7 +206,7 @@
 //!
 //! #[derive(TryFromField)]
 //! // Using the `#[try_from_field(rename_all = "...")]` renaming attribute.
-//! // It works the same as way as the `TryFromMultipart` implementation.
+//! // Works the same way as the `TryFromMultipart` implementation.
 //! #[try_from_field(rename_all = "snake_case")]
 //! enum AccountType {
 //!     // Or using the `#[field(rename = "...")]` attribute.
@@ -223,9 +223,8 @@
 //! [TryFromField](crate::TryFromField) trait for your type. This will allow the derive macro to
 //! generate the [TryFromMultipart](crate::TryFromMultipart) implementation automatically. Instead
 //! of implementing the trait directly, it is recommended to implement the
-//! [TryFromChunks](TryFromChunks) trait and the [TryFromField](crate::TryFromField) trait
-//! will be implemented automatically. This is recommended since you won't need to manually
-//! implement the size limit logic.
+//! [TryFromChunks](TryFromChunks) trait, which will automatically provide a [TryFromField](crate::TryFromField)
+//! implementation with proper size limit handling.
 //!
 //! To implement the [TryFromChunks](TryFromChunks) trait for external types you will need
 //! to create a newtype wrapper and implement the trait for the wrapper.
@@ -251,23 +250,19 @@
 //!
 //! ### Usage with utoipa
 //!
-//! If you would like to use `axum_typed_multipart` as part of a documented API then
-//! [`utoipa`](https://github.com/juhaku/utoipa) can provide a simple way to add documentation to
-//! an API and automatically generate `openapi.json` specifications. `axum_typed_multipart` can
-//! be used in conjunction with `utoipa` easily. An example implementation is included.
+//! [`utoipa`](https://github.com/juhaku/utoipa) can be used to add documentation and automatically
+//! generate `openapi.json` specifications. See the [utoipa example](https://github.com/murar8/axum_typed_multipart/tree/main/examples/utoipa.rs)
+//! for integration details.
 //!
-//! Note: File uploads in `utoipa` require a type of `Vec<u8>` which is incompatible with
-//! `axum_typed_multipart` which uses either `Bytes` or [tempfile::NamedTempFile](tempfile_3::NamedTempFile)
-//! as above. It is possible to get the best of both worlds as shown in the example.
-//!
-//! The example can be found in the [example directory](https://github.com/murar8/axum_typed_multipart/tree/main/examples/utoipa.rs).
+//! Note: File uploads in `utoipa` require `Vec<u8>` which differs from this crate's `Bytes` or
+//! [tempfile::NamedTempFile](tempfile_3::NamedTempFile). The example shows how to handle this.
 //!
 //! ### Validation
 //!
-//! In order to perform validation on the various attributes of a field, I would recommend using
-//! the [validator](https://crates.io/crates/validator) crate together with the
-//! [axum-valid](https://crates.io/crates/axum-valid) crate. A nice example can be found at
-//! [docs.rs](https://docs.rs/axum-valid/0.19.0/axum_valid/#-validatede-modifiede-validifiede-and-validifiedbyrefe).
+//! For field validation, consider using the [validator](https://crates.io/crates/validator) crate
+//! with [axum-valid](https://crates.io/crates/axum-valid). See the
+//! [axum-valid docs](https://docs.rs/axum-valid/0.19.0/axum_valid/#-validatede-modifiede-validifiede-and-validifiedbyrefe)
+//! for examples.
 
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 

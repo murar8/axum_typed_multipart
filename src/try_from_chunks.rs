@@ -262,8 +262,7 @@ where
 }
 
 fn get_field_name(name: &Option<String>) -> String {
-    // Theoretically, the name should always be present, but it's better to be
-    // safe than sorry.
+    // Name should always be present, but handle the edge case.
     name.clone().unwrap_or("<unknown>".into())
 }
 
