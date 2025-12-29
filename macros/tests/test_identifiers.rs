@@ -39,3 +39,25 @@ async fn test_identifiers() {
 
     assert_eq!(res.status(), StatusCode::OK);
 }
+
+#[derive(TryFromMultipart)]
+#[try_from_multipart(rename_all = "camelCase")]
+struct CamelCaseData {
+    my_field: String,
+}
+
+#[tokio::test]
+async fn test_rename_all() {
+    let handler = |TypedMultipart(data): TypedMultipart<CamelCaseData>| async move {
+        assert_eq!(data.my_field, "value");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("myField", "value"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}

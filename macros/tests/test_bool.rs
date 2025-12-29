@@ -51,3 +51,15 @@ async fn test_bool_false() {
         assert_eq!(res.status(), StatusCode::OK);
     }
 }
+
+#[tokio::test]
+async fn test_bool_invalid() {
+    let res =
+        TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async move {})))
+            .post("/")
+            .multipart(Form::new().text("bool_field", "invalid"))
+            .send()
+            .await
+            .unwrap();
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
