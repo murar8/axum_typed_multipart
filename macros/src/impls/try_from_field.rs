@@ -69,11 +69,13 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 field: ::axum::extract::multipart::Field<'_>,
                 limit_bytes: ::core::option::Option<usize>,
             ) -> ::core::result::Result<Self, ::axum_typed_multipart::TypedMultipartError> {
-                let string: String = ::axum_typed_multipart::TryFromField::try_from_field(field, limit_bytes).await?;
-                match string.as_str() {
+                let field_name = field.name().unwrap_or_default().to_string();
+                let value: String = ::axum_typed_multipart::TryFromField::try_from_field(field, limit_bytes).await?;
+                match value.as_str() {
                     #(#match_arms),*,
-                    _ => Err(::axum_typed_multipart::TypedMultipartError::UnknownField {
-                        field_name: string
+                    _ => Err(::axum_typed_multipart::TypedMultipartError::InvalidEnumValue {
+                        field_name,
+                        value,
                     })
                 }
             }
