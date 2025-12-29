@@ -15,7 +15,8 @@ struct CustomError {
 // Step 2: Implement `IntoResponse` for the custom error type.
 impl IntoResponse for CustomError {
     fn into_response(self) -> Response {
-        Json(self).into_response()
+        let status = StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        (status, Json(self)).into_response()
     }
 }
 
@@ -43,9 +44,12 @@ async fn update_position(data: CustomMultipart<UpdatePositionRequest>) -> Status
     StatusCode::OK
 }
 
+pub fn app() -> Router {
+    Router::new().route("/position/update", post(update_position))
+}
+
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/position/update", post(update_position)).into_make_service();
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app()).await.unwrap();
 }

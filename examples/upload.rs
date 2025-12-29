@@ -3,7 +3,6 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
 use axum_typed_multipart::{FieldData, TryFromMultipart, TypedMultipart};
-use std::path::Path;
 use tempfile_3::NamedTempFile;
 
 #[derive(TryFromMultipart)]
@@ -21,8 +20,9 @@ struct UploadAssetRequest {
 async fn upload_asset(
     TypedMultipart(UploadAssetRequest { image, author }): TypedMultipart<UploadAssetRequest>,
 ) -> StatusCode {
+    let dir = tempfile_3::tempdir().unwrap();
     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
-    let path = Path::new("/tmp").join(author).join(file_name);
+    let path = dir.path().join(format!("{author}_{file_name}"));
 
     match image.contents.persist(path) {
         Ok(_) => StatusCode::CREATED,
@@ -30,14 +30,15 @@ async fn upload_asset(
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let app = Router::new()
+pub fn app() -> Router {
+    Router::new()
         .route("/", post(upload_asset))
         // The default axum body size limit is 2MiB, so we increase it to 1GiB.
         .layer(DefaultBodyLimit::max(1024 * 1024 * 1024))
-        .into_make_service();
+}
 
+#[tokio::main]
+async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app()).await.unwrap();
 }

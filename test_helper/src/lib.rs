@@ -38,6 +38,11 @@ impl TestClient {
         TestClient { addr, client }
     }
 
+    pub fn get(&self, url: &str) -> reqwest::RequestBuilder {
+        let url = format!("http://{}{}", self.addr, url);
+        self.client.get(&url)
+    }
+
     pub fn post(&self, url: &str) -> reqwest::RequestBuilder {
         let url = format!("http://{}{}", self.addr, url);
         self.client.post(&url)

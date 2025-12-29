@@ -56,14 +56,15 @@ async fn file_upload(
     (StatusCode::OK, Json(Status { status: "ok".into(), error: None })).into_response()
 }
 
-#[tokio::main]
-async fn main() {
-    let app = Router::new()
+pub fn app() -> Router {
+    Router::new()
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/"))
         .route("/upload", post(file_upload))
-        .into_make_service();
+}
 
+#[tokio::main]
+async fn main() {
     println!("Listening on http://0.0.0.0:3000");
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app()).await.unwrap();
 }
