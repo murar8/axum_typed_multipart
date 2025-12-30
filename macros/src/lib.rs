@@ -1,6 +1,6 @@
 //! Macros for axum-typed-multipart.
 
-#![cfg_attr(all(coverage_nightly), feature(coverage_attribute))]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod case_conversion;
 mod impls;
