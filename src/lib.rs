@@ -36,8 +36,10 @@
 //! - [String]
 //! - [axum::body::Bytes]
 //! - [chrono::DateTime](chrono_0_4::DateTime) (feature: `chrono_0_4`)
+//! - [chrono::NaiveDate](chrono_0_4::NaiveDate) (feature: `chrono_0_4`)
 //! - [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (feature: `tempfile_3`)
 //! - [uuid::Uuid](uuid_1::Uuid) (feature: `uuid_1`)
+//! - [rust_decimal::Decimal](rust_decimal_1::Decimal) (feature: `rust_decimal_1`)
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
@@ -87,7 +89,7 @@
 //! - `UPPERCASE`
 //! - `lowercase`
 //!
-//!  ```rust
+//! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
 //! #[derive(TryFromMultipart)]
@@ -128,6 +130,23 @@
 //! }
 //! ```
 //!
+//! ### Field size limits
+//!
+//! By default, there are no size limits on individual fields. You can set a limit using the
+//! `limit` parameter of the `form_data` attribute. The limit accepts human-readable byte units
+//! (e.g., `"1MB"`, `"512KB"`, `"1GiB"`) or `"unlimited"` to explicitly disable limits.
+//! ```rust
+//! use axum_typed_multipart::TryFromMultipart;
+//!
+//! #[derive(TryFromMultipart)]
+//! struct RequestData {
+//!     #[form_data(limit = "1MB")]
+//!     small_file: Vec<u8>,
+//!     #[form_data(limit = "unlimited")]
+//!     large_file: Vec<u8>,
+//! }
+//! ```
+//!
 //! ### Large uploads
 //!
 //! For large uploads you can save the contents of the field to the file system using
@@ -138,8 +157,7 @@
 //!
 //! #### **Note**
 //! When handling large uploads you will need to increase the request body size limit using the
-//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware. Field size limits are disabled by default,
-//! but can be enabled using the `limit` parameter of the `form_data` attribute if desired.
+//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware.
 //! ```rust,no_run
 #![doc = include_str!("../examples/upload.rs")]
 //! ```
