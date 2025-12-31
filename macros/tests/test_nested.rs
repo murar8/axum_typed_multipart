@@ -65,7 +65,9 @@ async fn test_nested_single() {
                 .text("owner.name", "Alice")
                 .text("owner.age", "30"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -91,7 +93,9 @@ async fn test_nested_vec() {
                 .text("users[1].name", "Bob")
                 .text("users[1].age", "25"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -119,7 +123,9 @@ async fn test_deep_nesting() {
                 .text("users[1].name", "Bob")
                 .text("users[1].phones[0].number", "333"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -146,7 +152,9 @@ async fn test_nested_option_some() {
                 .text("owner.name", "Alice")
                 .text("owner.age", "30"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -161,7 +169,9 @@ async fn test_nested_option_none() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("title", "Test Form"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -176,7 +186,9 @@ async fn test_nested_vec_empty() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("title", "Empty List"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -202,7 +214,9 @@ async fn test_nested_vec_sparse_indices() {
                 .text("users[5].name", "Fifth")
                 .text("users[5].age", "5"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -232,7 +246,9 @@ async fn test_nested_vec_out_of_order() {
                 .text("users[1].name", "One")
                 .text("users[1].age", "1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -265,7 +281,9 @@ async fn test_prefix_no_false_match() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("user.value", "nested_value").text("username", "simple_value"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -301,7 +319,9 @@ async fn test_prefix_collision_with_nested_field() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("user.name", "nested_value").text("username", "simple_value"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -328,7 +348,9 @@ async fn test_option_vec_none() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("title", "No Items"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -352,7 +374,9 @@ async fn test_option_vec_some() {
                 .text("items[0].value", "a")
                 .text("items[1].value", "b"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -381,7 +405,9 @@ async fn test_invalid_index_negative() {
                 .text("users[0].name", "Valid")
                 .text("users[0].age", "1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -405,7 +431,9 @@ async fn test_invalid_index_non_numeric() {
                 .text("users[0].name", "Valid")
                 .text("users[0].age", "1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -429,7 +457,9 @@ async fn test_invalid_index_empty_brackets() {
                 .text("users[0].name", "Valid")
                 .text("users[0].age", "1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -449,11 +479,13 @@ async fn test_missing_required_nested_field() {
             Form::new().text("title", "Test").text("owner.name", "Alice"),
             // Missing owner.age!
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     // Should fail because owner.age is missing - error should show full path
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'owner.age' is required");
+    assert_eq!(res.text().await.unwrap(), "field 'owner.age' is required");
 }
 
 #[tokio::test]
@@ -465,11 +497,13 @@ async fn test_missing_entire_required_nested() {
         .post("/")
         .multipart(Form::new().text("title", "Test"))
         // Missing owner entirely!
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     // First missing field (alphabetically) in nested struct should show full path
-    assert_eq!(res.text().await, "field 'owner.age' is required");
+    assert_eq!(res.text().await.unwrap(), "field 'owner.age' is required");
 }
 
 // =============================================================================
@@ -517,7 +551,9 @@ async fn test_three_levels_of_nesting() {
                 .text("groups[1].name", "Group B")
                 .text("groups[1].items[0].data", "B1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -542,7 +578,9 @@ async fn test_nested_with_field_name_rename() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("p.name", "Alice").text("p.age", "30"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -575,7 +613,9 @@ async fn test_nested_with_default() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("title", "Test"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -614,7 +654,9 @@ async fn test_indirect_vec_in_nested() {
                 .text("person.tags", "user")
                 .text("person.nickname", "Ali"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -630,7 +672,9 @@ async fn test_indirect_option_none_in_nested() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("person.name", "Bob"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -663,7 +707,9 @@ async fn test_vec_option_nested() {
                 .text("items[0].value", "a")
                 .text("items[1].value", "b"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -694,7 +740,9 @@ async fn test_strict_nested_duplicate_field() {
                 .text("owner.name", "Bob") // Duplicate!
                 .text("owner.age", "30"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     // Should fail with duplicate field error
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
@@ -724,7 +772,9 @@ async fn test_whitespace_in_brackets_rejected() {
                 .text("users[0].name", "Valid")
                 .text("users[0].age", "1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -757,10 +807,12 @@ async fn test_strict_invalid_index_non_numeric() {
                 .text("users[abc].name", "Invalid")
                 .text("users[abc].age", "0"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'users[abc].name' is not expected");
+    assert_eq!(res.text().await.unwrap(), "field 'users[abc].name' is not expected");
 }
 
 #[tokio::test]
@@ -778,10 +830,12 @@ async fn test_strict_invalid_index_negative() {
                 .text("users[-1].name", "Invalid")
                 .text("users[-1].age", "0"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'users[-1].name' is not expected");
+    assert_eq!(res.text().await.unwrap(), "field 'users[-1].name' is not expected");
 }
 
 #[tokio::test]
@@ -800,7 +854,9 @@ async fn test_strict_invalid_index_whitespace() {
                 .text("users[  0  ].name", "Invalid")
                 .text("users[  0  ].age", "0"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     // Due to multipart encoding quirks, field name with spaces becomes empty
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
@@ -821,10 +877,12 @@ async fn test_strict_invalid_index_empty_brackets() {
                 .text("users[].name", "Invalid")
                 .text("users[].age", "0"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'users[].name' is not expected");
+    assert_eq!(res.text().await.unwrap(), "field 'users[].name' is not expected");
 }
 
 // =============================================================================
@@ -884,7 +942,9 @@ async fn test_four_levels_of_nesting() {
                 .text("sections[0].items[1].label", "I1")
                 .text("sections[1].name", "S1"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -910,7 +970,9 @@ async fn test_deep_sparse_indices() {
                 .text("sections[0].items[5].entries[99].data", "Entry99")
                 .text("sections[10].name", "Sparse10"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -935,7 +997,9 @@ async fn test_deep_out_of_order() {
                 .text("sections[0].name", "First")
                 .text("title", "Reversed"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -977,7 +1041,9 @@ async fn test_multiple_vec_fields() {
                 .text("guests[1].value", "Guest2")
                 .text("guests[2].value", "Guest3"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -993,7 +1059,9 @@ async fn test_multiple_vec_some_empty() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("users[0].value", "OnlyUser"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -1018,7 +1086,9 @@ async fn test_unicode_values() {
                 .text("owner.name", "Алексей")
                 .text("owner.age", "25"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -1060,7 +1130,9 @@ async fn test_duplicate_nested_last_wins() {
                 .text("users[0].name", "Second") // Overwrites
                 .text("users[0].age", "99"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -1082,10 +1154,12 @@ async fn test_error_path_vec_item() {
             Form::new().text("title", "Test").text("users[0].name", "Alice"),
             // Missing users[0].age!
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'users[0].age' is required");
+    assert_eq!(res.text().await.unwrap(), "field 'users[0].age' is required");
 }
 
 #[tokio::test]
@@ -1100,7 +1174,9 @@ async fn test_error_path_deep_nesting() {
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(Form::new().text("title", "Test").text("sections[0].name", "Section"))
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
@@ -1118,10 +1194,12 @@ async fn test_error_path_deep_nesting_required() {
             Form::new().text("title", "Test").text("sections[0].items[0].label", "Item"),
             // Missing sections[0].name!
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await, "field 'sections[0].name' is required");
+    assert_eq!(res.text().await.unwrap(), "field 'sections[0].name' is required");
 }
 
 #[tokio::test]
@@ -1142,7 +1220,9 @@ async fn test_error_path_four_levels() {
                 .text("sections[0].name", "Section")
                 .text("sections[0].items[0].label", "Item"),
         )
-        .await;
+        .send()
+        .await
+        .unwrap();
 
     assert_eq!(res.status(), StatusCode::OK);
 }
