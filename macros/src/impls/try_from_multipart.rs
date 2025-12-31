@@ -11,7 +11,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         Err(err) => return err.write_errors().into(),
     };
 
-    let builder = crate::impls::multipart_builder::gen::output(input.clone());
+    let builder = crate::impls::multipart_builder::expand(input.clone());
 
     let ident = &input.ident;
     let strict = input.strict;

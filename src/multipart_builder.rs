@@ -117,7 +117,7 @@ where
         state: &S,
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        self.get_or_insert_with(Default::default).consume(field, name, state, depth).await
+        self.get_or_insert_default().consume(field, name, state, depth).await
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {

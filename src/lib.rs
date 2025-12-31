@@ -88,7 +88,6 @@
 //! - `kebab-case`
 //! - `UPPERCASE`
 //! - `lowercase`
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -190,7 +189,6 @@
 //!
 //! Array indices can be sparse (e.g., `[0]`, `[5]` without `[1]-[4]`) and out-of-order.
 //! The resulting `Vec` contains elements sorted by index, with gaps removed.
-//!
 //! ```rust,no_run
 #![doc = include_str!("../examples/nested.rs")]
 //! ```
@@ -301,9 +299,8 @@
 
 pub use anyhow;
 pub use async_trait::async_trait;
-pub use serde_spanned::Spanned;
-
 pub use axum_typed_multipart_macros::{MultipartBuilder, TryFromField, TryFromMultipart};
+pub use serde_spanned::Spanned;
 
 mod base_multipart;
 mod field_data;

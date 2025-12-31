@@ -22,7 +22,7 @@ pub(crate) struct InputData {
 
 impl InputData {
     pub(crate) fn builder_ident(&self) -> syn::Ident {
-        crate::impls::multipart_builder::gen::builder_ident(&self.ident)
+        crate::impls::multipart_builder::builder_ident(&self.ident)
     }
 
     pub(crate) fn generic(&self) -> Option<impl ToTokens> {

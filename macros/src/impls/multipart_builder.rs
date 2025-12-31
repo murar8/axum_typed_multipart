@@ -12,198 +12,64 @@ use std::collections::BTreeMap;
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match InputData::from_derive_input(&input) {
-        Ok(input) => gen::output(input).into(),
+        Ok(input) => expand(input).into(),
         Err(err) => return err.write_errors().into(),
     }
 }
 
-/// Generates `FooMultipartBuilder` struct and its `MultipartBuilder` impl.
-pub mod gen {
-    use super::*;
+pub fn expand(input: InputData) -> proc_macro2::TokenStream {
+    let input_generic = input.generic();
+    let input_state_ty = input.state_ty();
+    let input_builder_ident = input.builder_ident();
 
-    // Generates builder ident: `Foo` → `FooMultipartBuilder`
-    pub fn builder_ident(ty: &impl quote::ToTokens) -> syn::Ident {
-        use syn::spanned::Spanned;
-        syn::Ident::new(&format!("{}MultipartBuilder", ty.to_token_stream()), ty.span())
-    }
+    let InputData { ident, data, strict, rename_all, .. } = input;
+    let fields = data.take_struct().unwrap();
 
-    // Computes field name with optional case conversion.
-    fn field_name(field: &FieldData, rename_all: Option<RenameCase>) -> String {
-        if let Some(name) = &field.field_name {
-            return name.to_string();
-        }
-        let ident = field.ident.as_ref().unwrap().to_string();
-        let name = strip_leading_rawlit(&ident);
-        match rename_all {
-            Some(case) => case.convert_case(&name),
-            None => name,
-        }
-    }
+    // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
+    let fields: BTreeMap<_, _> = fields.iter().map(|f| (form_name(f, rename_all), f)).collect();
 
-    pub fn output(input: InputData) -> proc_macro2::TokenStream {
-        let input_generic = input.generic();
-        let input_state_ty = input.state_ty();
-        let input_builder_ident = input.builder_ident();
-
-        let InputData { ident, data, strict, rename_all, .. } = input;
-        let fields = data.take_struct().unwrap();
-
-        // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
-        let fields: BTreeMap<_, _> =
-            fields.iter().map(|f| (field_name(f, rename_all), f)).collect();
-
-        let struct_def = struct_def(&input_builder_ident, &fields);
-        let impl_block = impl_block(
-            &ident,
-            &input_generic,
-            &input_state_ty,
-            &input_builder_ident,
-            &fields,
-            strict,
-        );
-
-        quote! {
-            #struct_def
-            #impl_block
-        }
-    }
-
-    /// Generates: `#[derive(Default)] struct FooMultipartBuilder { .. }`
-    fn struct_def(
-        input_builder_ident: &syn::Ident,
-        fields: &BTreeMap<String, &FieldData>,
-    ) -> proc_macro2::TokenStream {
-        let builder_fields = fields.values().map(|f| struct_def::field(f));
+    let struct_def = {
+        let builder_fields = fields.values().map(|FieldData { ident, ty, nested, .. }| {
+            let ty = if *nested {
+                nested_builder_type(ty)
+            } else if matches_vec_signature(ty) || matches_option_signature(ty) {
+                quote! { #ty }
+            } else {
+                quote! { std::option::Option<#ty> }
+            };
+            quote! { #ident: #ty }
+        });
         quote! {
             #[derive(Default)]
             struct #input_builder_ident {
                 #(#builder_fields),*
             }
         }
-    }
+    };
 
-    /// Helpers for generating builder struct fields.
-    mod struct_def {
-        use super::*;
-
-        /// Dispatches to simple or nested field generation.
-        pub fn field(FieldData { ident, ty, nested, .. }: &FieldData) -> proc_macro2::TokenStream {
-            let ty = if *nested { field_ty::nested(ty) } else { field_ty::simple(ty) };
-            quote! { #ident: #ty }
-        }
-
-        mod field_ty {
-            use super::*;
-
-            /// Returns builder field type for simple types.
-            /// Example: `String` → `Option<String>`
-            /// Example: `Vec<String>` → `Vec<String>`
-            pub fn simple(ty: &syn::Type) -> proc_macro2::TokenStream {
-                if matches_vec_signature(ty) || matches_option_signature(ty) {
-                    quote! { #ty }
-                } else {
-                    quote! { std::option::Option<#ty> }
-                }
-            }
-
-            /// Returns builder field type for nested structs (recursive for container types).
-            /// Example: `Address` → `AddressMultipartBuilder`
-            /// Example: `Vec<Address>` → `BTreeMap<usize, AddressMultipartBuilder>`
-            /// Example: `Option<Address>` → `Option<AddressMultipartBuilder>`
-            /// Example: `Option<Vec<Address>>` → `Option<BTreeMap<usize, AddressMultipartBuilder>>`
-            /// Example: `Vec<Option<Address>>` → `BTreeMap<usize, Option<AddressMultipartBuilder>>`
-            pub fn nested(ty: &syn::Type) -> proc_macro2::TokenStream {
-                if matches_option_signature(ty) {
-                    let inner = extract_inner_type(ty);
-                    let inner_builder = nested(inner); // recurse
-                    quote! { Option<#inner_builder> }
-                } else if matches_vec_signature(ty) {
-                    let inner = extract_inner_type(ty);
-                    let inner_builder = nested(inner); // recurse
-                    quote! { std::collections::BTreeMap<usize, #inner_builder> }
-                } else {
-                    let field_builder_ident = builder_ident(ty);
-                    quote! { #field_builder_ident }
-                }
-            }
-        }
-    }
-
-    /// Generates: `impl MultipartBuilder<S> for FooMultipartBuilder { .. }`
-    fn impl_block(
-        ident: &syn::Ident,
-        input_generic: &impl quote::ToTokens,
-        input_state_ty: &impl quote::ToTokens,
-        input_builder_ident: &syn::Ident,
-        fields: &BTreeMap<String, &FieldData>,
-        strict: bool,
-    ) -> proc_macro2::TokenStream {
-        let consume_method = impl_block::consume(input_state_ty, fields, strict);
-        let finalize_method = impl_block::finalize(ident, fields, input_state_ty);
-        quote! {
-            #[axum_typed_multipart::async_trait]
-            impl #input_generic axum_typed_multipart::MultipartBuilder<#input_state_ty> for #input_builder_ident {
-                type Target = #ident;
-                #consume_method
-                #finalize_method
-            }
-        }
-    }
-
-    /// Helpers for generating MultipartBuilder impl methods.
-    mod impl_block {
-        use super::*;
-
-        /// Generates: `async fn consume(&mut self, field, name, state, depth) -> Result<Option<Field>, _> { .. }`
-        pub fn consume(
-            input_state_ty: &impl quote::ToTokens,
-            fields: &BTreeMap<String, &FieldData>,
-            strict: bool,
-        ) -> proc_macro2::TokenStream {
-            let branches = fields.iter().map(|(name, field)| consume::branch(name, field, strict));
-
-            quote! {
-                async fn consume<'a>(
-                    &mut self,
-                    mut __field__: axum::extract::multipart::Field<'a>,
-                    __name__: axum_typed_multipart::Spanned<&str>,
-                    __state__: &#input_state_ty,
-                    __depth__: usize,
-                ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
-                    let __full__ = *__name__.as_ref();
-                    let __span__ = __name__.span();
-                    let __segment__ = &__full__[__span__.start..__span__.end];
-                    // At depth 0, no leading dot expected; at depth > 0, skip the leading dot in prefixed names
-                    let __offset__ = if __depth__ == 0 { 1 } else { 0 };
-                    #(#branches)*
-                    Ok(Some(__field__))
-                }
-            }
-        }
-
-        /// Helpers for generating consume method branches.
-        mod consume {
-            use super::*;
-
-            /// Dispatches to simple or nested branch generation.
-            pub fn branch(name: &str, field: &FieldData, strict: bool) -> proc_macro2::TokenStream {
+    let impl_block = {
+        let consume_method = {
+            let branches = fields.iter().map(|(name, FieldData { ident, ty, limit, nested, .. })| {
                 let prefixed_name = format!(".{}", name);
-                if field.nested {
-                    branch::nested(&prefixed_name, field)
+                let prefix_len = prefixed_name.len();
+                if *nested {
+                    quote! {
+                        if __segment__.starts_with(&#prefixed_name[__offset__..]) {
+                            let __new_name__ = axum_typed_multipart::Spanned::new(
+                                __span__.start + #prefix_len - __offset__..__span__.end,
+                                __full__,
+                            );
+                            __field__ = match self
+                                .#ident
+                                .consume(__field__, __new_name__, __state__, __depth__ + 1)
+                                .await?
+                            {
+                                Some(__f__) => __f__,
+                                None => return Ok(None),
+                            };
+                        }
+                    }
                 } else {
-                    branch::simple(&prefixed_name, field, strict)
-                }
-            }
-
-            mod branch {
-                use super::*;
-
-                /// Generates match branch for simple field consumption.
-                pub fn simple(
-                    prefixed_name: &str,
-                    FieldData { ident, ty, limit, .. }: &FieldData,
-                    strict: bool,
-                ) -> proc_macro2::TokenStream {
                     let limit_bytes = limit.unwrap_or(LimitBytes(None));
 
                     let value = quote! {
@@ -236,71 +102,43 @@ pub mod gen {
                         }
                     }
                 }
-
-                /// Generates match branch that delegates to nested builder.
-                pub fn nested(
-                    prefixed_name: &str,
-                    FieldData { ident, .. }: &FieldData,
-                ) -> proc_macro2::TokenStream {
-                    let prefix_len = prefixed_name.len();
-                    quote! {
-                        if __segment__.starts_with(&#prefixed_name[__offset__..]) {
-                            let __new_name__ = axum_typed_multipart::Spanned::new(__span__.start + #prefix_len - __offset__..__span__.end, __full__);
-                            __field__ = match self.#ident.consume(__field__, __new_name__, __state__, __depth__ + 1).await? {
-                                Some(__f__) => __f__,
-                                None => return Ok(None),
-                            };
-                        }
-                    }
-                }
-            }
-        }
-
-        /// Generates: `fn finalize(self) -> Result<Foo, _> { Ok(Foo { .. }) }`
-        pub fn finalize(
-            ident: &syn::Ident,
-            fields: &BTreeMap<String, &FieldData>,
-            input_state_ty: &impl quote::ToTokens,
-        ) -> proc_macro2::TokenStream {
-            let field_assignments =
-                fields.iter().map(|(name, field)| finalize::field(name, field, input_state_ty));
+            });
 
             quote! {
-                fn finalize(self, __path__: &str) -> Result<Self::Target, axum_typed_multipart::TypedMultipartError> {
-                    Ok(#ident { #(#field_assignments),* })
+                async fn consume<'a>(
+                    &mut self,
+                    mut __field__: axum::extract::multipart::Field<'a>,
+                    __name__: axum_typed_multipart::Spanned<&str>,
+                    __state__: &#input_state_ty,
+                    __depth__: usize,
+                ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
+                    let __full__ = *__name__.as_ref();
+                    let __span__ = __name__.span();
+                    let __segment__ = &__full__[__span__.start..__span__.end];
+                    // At depth 0, no leading dot expected; at depth > 0, skip the leading dot in prefixed names
+                    let __offset__ = if __depth__ == 0 { 1 } else { 0 };
+                    #(#branches)*
+                    Ok(Some(__field__))
                 }
             }
-        }
+        };
 
-        /// Helpers for generating finalize method field assignments.
-        mod finalize {
-            use super::*;
-
-            /// Dispatches to simple or nested field assignment.
-            pub fn field(
-                name: &str,
-                field: &FieldData,
-                input_state_ty: &impl quote::ToTokens,
-            ) -> proc_macro2::TokenStream {
-                let ident = &field.ident;
-                let value = if field.nested {
-                    value::nested(name, field, input_state_ty)
-                } else {
-                    value::simple(name, field)
-                };
-                quote! { #ident: #value }
-            }
-
-            mod value {
-                use super::*;
-
-                /// Generates value expression for simple fields.
-                /// Example: `self.name.ok_or(MissingField { .. })?`
-                pub fn simple(
-                    name: &str,
-                    FieldData { ident, ty, default, .. }: &FieldData,
-                ) -> proc_macro2::TokenStream {
-                    if matches_vec_signature(ty) || matches_option_signature(ty) {
+        let finalize_method = {
+            let field_assignments =
+                fields.iter().map(|(name, FieldData { ident, ty, default, nested, .. })| {
+                    let value = if *nested {
+                        let finalize = quote! {
+                            axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(
+                                self.#ident,
+                                &format!("{}.{}", __path__, #name)
+                            )
+                        };
+                        if *default {
+                            quote! { #finalize.unwrap_or_default() }
+                        } else {
+                            quote! { #finalize? }
+                        }
+                    } else if matches_vec_signature(ty) || matches_option_signature(ty) {
                         quote! { self.#ident }
                     } else if *default {
                         quote! { self.#ident.unwrap_or_default() }
@@ -314,29 +152,65 @@ pub mod gen {
                                 }
                             )?
                         }
-                    }
-                }
-
-                /// Generates value expression that finalizes nested builder.
-                /// Example: `MultipartBuilder::finalize(self.addr, ".person.addr")?`
-                pub fn nested(
-                    name: &str,
-                    FieldData { ident, default, .. }: &FieldData,
-                    input_state_ty: &impl quote::ToTokens,
-                ) -> proc_macro2::TokenStream {
-                    let finalize = quote! {
-                        axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(
-                            self.#ident,
-                            &format!("{}.{}", __path__, #name)
-                        )
                     };
-                    if *default {
-                        quote! { #finalize.unwrap_or_default() }
-                    } else {
-                        quote! { #finalize? }
+                    quote! {
+                        #ident: #value
                     }
+                });
+
+            quote! {
+                fn finalize(self, __path__: &str) -> Result<Self::Target, axum_typed_multipart::TypedMultipartError> {
+                    Ok(#ident { #(#field_assignments),* })
                 }
             }
+        };
+
+        quote! {
+            #[axum_typed_multipart::async_trait]
+            impl #input_generic axum_typed_multipart::MultipartBuilder<#input_state_ty> for #input_builder_ident {
+                type Target = #ident;
+                #consume_method
+                #finalize_method
+            }
         }
+    };
+
+    quote! {
+        #struct_def
+        #impl_block
+    }
+}
+
+/// Generates builder ident: `Foo` → `FooMultipartBuilder`
+pub fn builder_ident(ty: &impl quote::ToTokens) -> syn::Ident {
+    use syn::spanned::Spanned;
+    syn::Ident::new(&format!("{}MultipartBuilder", ty.to_token_stream()), ty.span())
+}
+
+// Computes field name with optional case conversion.
+fn form_name(field: &FieldData, rename_all: Option<RenameCase>) -> String {
+    if let Some(name) = &field.field_name {
+        return name.to_string();
+    }
+    let ident = field.ident.as_ref().unwrap().to_string();
+    let name = strip_leading_rawlit(&ident);
+    match rename_all {
+        Some(case) => case.convert_case(&name),
+        None => name,
+    }
+}
+
+fn nested_builder_type(ty: &syn::Type) -> proc_macro2::TokenStream {
+    if matches_option_signature(ty) {
+        let inner = extract_inner_type(ty);
+        let inner_builder = nested_builder_type(inner);
+        quote! { Option<#inner_builder> }
+    } else if matches_vec_signature(ty) {
+        let inner = extract_inner_type(ty);
+        let inner_builder = nested_builder_type(inner);
+        quote! { std::collections::BTreeMap<usize, #inner_builder> }
+    } else {
+        let field_builder_ident = builder_ident(ty);
+        quote! { #field_builder_ident }
     }
 }
