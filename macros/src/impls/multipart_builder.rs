@@ -56,8 +56,10 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                 if *nested {
                     quote! {
                         if __segment__.starts_with(&#prefixed_name[__offset__..]) {
+                            let __new_start__ = __span__.start + #prefix_len - __offset__;
+                            let __new_end__ = __span__.end;
                             let __new_name__ = axum_typed_multipart::Spanned::new(
-                                __span__.start + #prefix_len - __offset__..__span__.end,
+                                __new_start__..__new_end__,
                                 __full__,
                             );
                             __field__ = match self
