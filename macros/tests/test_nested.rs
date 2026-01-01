@@ -1226,3 +1226,497 @@ async fn test_error_path_four_levels() {
 
     assert_eq!(res.status(), StatusCode::OK);
 }
+
+// =============================================================================
+// Type coercion errors in nested fields - error path should include full path
+// =============================================================================
+
+#[tokio::test]
+async fn test_error_type_coercion_nested_single() {
+    // Invalid type in nested field should show full path in error
+    async fn handler(_: TypedMultipart<FormWithNestedSingle>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("owner.name", "Alice")
+                .text("owner.age", "not_a_number"), // Invalid!
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    let body = res.text().await.unwrap();
+    // Error should mention the full path "owner.age"
+    assert!(body.contains("owner.age"), "Error should contain 'owner.age', got: {}", body);
+}
+
+#[tokio::test]
+async fn test_error_type_coercion_nested_vec() {
+    // Invalid type in Vec item should show full path with index
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[0].name", "Alice")
+                .text("users[0].age", "thirty"), // Invalid!
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    let body = res.text().await.unwrap();
+    // Error should mention the full path "users[0].age"
+    assert!(body.contains("users[0].age"), "Error should contain 'users[0].age', got: {}", body);
+}
+
+// =============================================================================
+// Partial optional nested struct - sending some but not all required fields
+// =============================================================================
+
+#[tokio::test]
+async fn test_partial_optional_nested_fails() {
+    // When Option<Person> receives some fields, inner validation should still apply
+    // Sending owner.name but not owner.age should fail (age is required in Person)
+    async fn handler(_: TypedMultipart<FormWithNestedOption>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("title", "Test").text("owner.name", "Alice"),
+            // Missing owner.age - Person requires both name and age
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'owner.age' is required");
+}
+
+#[tokio::test]
+async fn test_partial_optional_nested_vec_fails() {
+    // Option<Vec<Inner>> where inner struct is partially provided
+    #[derive(TryFromMultipart, Debug, PartialEq)]
+    struct PersonRequired {
+        name: String,
+        age: u32,
+    }
+
+    #[allow(dead_code)]
+    #[derive(TryFromMultipart)]
+    struct FormWithOptionalVecRequired {
+        title: String,
+        #[form_data(nested)]
+        people: Option<Vec<PersonRequired>>,
+    }
+
+    async fn handler(_: TypedMultipart<FormWithOptionalVecRequired>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("title", "Test").text("people[0].name", "Alice"),
+            // Missing people[0].age
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'people[0].age' is required");
+}
+
+// =============================================================================
+// Strict mode at different nesting levels
+// =============================================================================
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct LaxInner {
+    value: String,
+}
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+#[try_from_multipart(strict)]
+struct StrictInner {
+    value: String,
+}
+
+#[derive(TryFromMultipart)]
+struct LaxOuterWithStrictInner {
+    title: String,
+    #[form_data(nested)]
+    item: StrictInner,
+}
+
+#[derive(TryFromMultipart)]
+#[try_from_multipart(strict)]
+struct StrictOuterWithLaxInner {
+    title: String,
+    #[form_data(nested)]
+    item: LaxInner,
+}
+
+#[allow(dead_code)]
+#[derive(TryFromMultipart)]
+struct LaxOuterWithStrictInnerVec {
+    title: String,
+    #[form_data(nested)]
+    items: Vec<StrictInner>,
+}
+
+#[derive(TryFromMultipart)]
+#[try_from_multipart(strict)]
+struct StrictOuterWithLaxInnerVec {
+    title: String,
+    #[form_data(nested)]
+    items: Vec<LaxInner>,
+}
+
+#[tokio::test]
+async fn test_strict_inner_lax_outer_rejects_duplicate() {
+    // Inner is strict, outer is lax - duplicate in inner should be rejected
+    async fn handler(_: TypedMultipart<LaxOuterWithStrictInner>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("item.value", "First")
+                .text("item.value", "Second"), // Duplicate in strict inner
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_strict_inner_lax_outer_allows_outer_duplicate() {
+    // Inner is strict, outer is lax - duplicate at outer level should be allowed (last wins)
+    let handler = |TypedMultipart(data): TypedMultipart<LaxOuterWithStrictInner>| async move {
+        assert_eq!(data.title, "Second"); // Last wins at outer level
+        assert_eq!(data.item.value, "Value");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "First")
+                .text("title", "Second") // Duplicate at lax outer level
+                .text("item.value", "Value"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_lax_inner_strict_outer_allows_inner_duplicate() {
+    // Inner is lax, outer is strict - duplicate in inner should be allowed (last wins)
+    let handler = |TypedMultipart(data): TypedMultipart<StrictOuterWithLaxInner>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.item.value, "Second"); // Last wins at inner level
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("item.value", "First")
+                .text("item.value", "Second"), // Duplicate in lax inner
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_lax_inner_strict_outer_rejects_outer_duplicate() {
+    // Inner is lax, outer is strict - duplicate at outer level should be rejected
+    async fn handler(_: TypedMultipart<StrictOuterWithLaxInner>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "First")
+                .text("title", "Second") // Duplicate at strict outer level
+                .text("item.value", "Value"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_strict_inner_vec_lax_outer_rejects_duplicate() {
+    // Inner Vec items are strict - duplicate in Vec item should be rejected
+    async fn handler(_: TypedMultipart<LaxOuterWithStrictInnerVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("items[0].value", "First")
+                .text("items[0].value", "Second"), // Duplicate in strict inner
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_lax_inner_vec_strict_outer_allows_inner_duplicate() {
+    // Inner Vec items are lax - duplicate in Vec item should be allowed
+    let handler = |TypedMultipart(data): TypedMultipart<StrictOuterWithLaxInnerVec>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.items.len(), 1);
+        assert_eq!(data.items[0].value, "Second"); // Last wins
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("items[0].value", "First")
+                .text("items[0].value", "Second"), // Duplicate in lax inner
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_strict_outer_rejects_unknown_nested_field() {
+    // Strict outer should reject unknown fields that look like nested fields
+    async fn handler(_: TypedMultipart<StrictOuterWithLaxInner>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("item.value", "Value")
+                .text("item.unknown", "Bad"), // Unknown field in nested
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'item.unknown' is not expected");
+}
+
+// =============================================================================
+// Single nested struct within nested Vec
+// =============================================================================
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct Address {
+    street: String,
+    city: String,
+}
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct PersonWithAddress {
+    name: String,
+    #[form_data(nested)]
+    address: Address, // Single nested, not Vec
+}
+
+#[derive(TryFromMultipart)]
+struct FormWithVecOfNestedSingle {
+    title: String,
+    #[form_data(nested)]
+    people: Vec<PersonWithAddress>, // Vec of structs that have single nested
+}
+
+#[tokio::test]
+async fn test_vec_containing_single_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithVecOfNestedSingle>| async move {
+        assert_eq!(data.title, "People");
+        assert_eq!(data.people.len(), 2);
+        assert_eq!(data.people[0].name, "Alice");
+        assert_eq!(data.people[0].address.street, "123 Main St");
+        assert_eq!(data.people[0].address.city, "Springfield");
+        assert_eq!(data.people[1].name, "Bob");
+        assert_eq!(data.people[1].address.street, "456 Oak Ave");
+        assert_eq!(data.people[1].address.city, "Shelbyville");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "People")
+                .text("people[0].name", "Alice")
+                .text("people[0].address.street", "123 Main St")
+                .text("people[0].address.city", "Springfield")
+                .text("people[1].name", "Bob")
+                .text("people[1].address.street", "456 Oak Ave")
+                .text("people[1].address.city", "Shelbyville"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_vec_containing_single_nested_missing_inner_field() {
+    // Missing required field in the single nested struct within Vec item
+    async fn handler(_: TypedMultipart<FormWithVecOfNestedSingle>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("people[0].name", "Alice")
+                .text("people[0].address.street", "123 Main St"),
+            // Missing people[0].address.city
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'people[0].address.city' is required");
+}
+
+#[tokio::test]
+async fn test_vec_containing_single_nested_out_of_order() {
+    // Fields sent in arbitrary order should still work
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithVecOfNestedSingle>| async move {
+        assert_eq!(data.people.len(), 2);
+        assert_eq!(data.people[0].name, "First");
+        assert_eq!(data.people[0].address.city, "CityA");
+        assert_eq!(data.people[1].name, "Second");
+        assert_eq!(data.people[1].address.city, "CityB");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("people[1].address.city", "CityB")
+                .text("people[0].address.street", "StreetA")
+                .text("title", "Test")
+                .text("people[1].name", "Second")
+                .text("people[0].name", "First")
+                .text("people[1].address.street", "StreetB")
+                .text("people[0].address.city", "CityA"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[derive(TryFromMultipart, Debug, PartialEq)]
+struct PersonWithOptionalAddress {
+    name: String,
+    #[form_data(nested)]
+    address: Option<Address>, // Optional single nested
+}
+
+#[derive(TryFromMultipart)]
+struct FormWithVecOfOptionalNestedSingle {
+    #[form_data(nested)]
+    people: Vec<PersonWithOptionalAddress>,
+}
+
+#[tokio::test]
+async fn test_vec_containing_optional_single_nested_some() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithVecOfOptionalNestedSingle>| async move {
+        assert_eq!(data.people.len(), 2);
+        assert_eq!(data.people[0].name, "Alice");
+        assert_eq!(
+            data.people[0].address,
+            Some(Address { street: "Main St".into(), city: "Springfield".into() })
+        );
+        assert_eq!(data.people[1].name, "Bob");
+        assert_eq!(data.people[1].address, None);
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("people[0].name", "Alice")
+                .text("people[0].address.street", "Main St")
+                .text("people[0].address.city", "Springfield")
+                .text("people[1].name", "Bob"),
+            // No address for Bob
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_vec_containing_optional_single_nested_partial_fails() {
+    // Partial address (street but no city) should fail even though address is optional
+    async fn handler(_: TypedMultipart<FormWithVecOfOptionalNestedSingle>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new().text("people[0].name", "Alice").text("people[0].address.street", "Main St"),
+            // Missing people[0].address.city - partial optional nested
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'people[0].address.city' is required");
+}
