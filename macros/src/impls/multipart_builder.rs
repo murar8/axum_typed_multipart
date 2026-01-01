@@ -9,6 +9,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::BTreeMap;
 
+#[allow(dead_code)] // for now this macro is derived together with TryFromMultipart
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match InputData::from_derive_input(&input) {
