@@ -30,19 +30,22 @@ struct CreateTeamRequest {
 // - manager.name, manager.address.street, manager.address.city (optional)
 // - members[0].name, members[0].address.street, members[0].address.city
 // - members[1].name, members[1].address.street, members[1].address.city
-// - ...
 
-async fn create_team(data: TypedMultipart<CreateTeamRequest>) -> StatusCode {
+fn print_team(data: TypedMultipart<CreateTeamRequest>) {
     println!("Team: {}", data.team_name);
+    for member in &data.members {
+        println!("Member: {} ({}, {})", member.name, member.address.street, member.address.city);
+    }
     if let Some(ref manager) = data.manager {
         println!(
             "Manager: {} ({}, {})",
             manager.name, manager.address.street, manager.address.city
         );
     }
-    for member in &data.members {
-        println!("Member: {} ({}, {})", member.name, member.address.street, member.address.city);
-    }
+}
+
+async fn create_team(data: TypedMultipart<CreateTeamRequest>) -> StatusCode {
+    print_team(data);
     StatusCode::CREATED
 }
 
