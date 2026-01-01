@@ -127,11 +127,14 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
         let finalize_method = {
             let field_assignments =
                 fields.iter().map(|(name, FieldData { ident, ty, default, nested, .. })| {
+                    let field_path = quote! {
+                        if __path__.is_empty() { #name.to_string() } else { format!("{}.{}", __path__, #name) }
+                    };
                     let value = if *nested {
                         let finalize = quote! {
                             axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(
                                 self.#ident,
-                                &format!("{}.{}", __path__, #name)
+                                &#field_path
                             )
                         };
                         if *default {
@@ -147,9 +150,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                         quote! {
                             self.#ident.ok_or_else(||
                                 axum_typed_multipart::TypedMultipartError::MissingField {
-                                    field_name: format!("{}.{}", __path__, #name)
-                                        .trim_start_matches('.')
-                                        .to_string()
+                                    field_name: #field_path
                                 }
                             )?
                         }
