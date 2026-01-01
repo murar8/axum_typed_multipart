@@ -32,7 +32,7 @@ struct FieldData {
     field_name: Option<String>,
 
     #[darling(default)]
-    limit: Option<LimitBytes>,
+    limit: LimitBytes,
 
     #[darling(default)]
     default: bool,
@@ -83,9 +83,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         .iter()
         .map(|field @ FieldData { ident, ty, limit, .. }| {
             let name = field.name(rename_all);
-            let limit_bytes = limit.unwrap_or(LimitBytes(None));
             let value = quote! {
-                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, state).await?
+                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, state).await?
             };
 
             let assignment = if matches_vec_signature(ty) {

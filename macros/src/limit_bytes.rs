@@ -3,7 +3,7 @@ use ubyte::ByteUnit;
 
 /// Parsed byte limit from attribute (e.g., `limit = "1MB"` or `limit = "unlimited"`).
 /// `None` represents unlimited.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct LimitBytes(pub Option<ByteUnit>);
 
 impl darling::FromMeta for LimitBytes {
