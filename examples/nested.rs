@@ -31,7 +31,7 @@ struct CreateTeamRequest {
 // - members[0].name, members[0].address.street, members[0].address.city
 // - members[1].name, members[1].address.street, members[1].address.city
 
-fn print_team(data: TypedMultipart<CreateTeamRequest>) {
+fn print_team(data: &CreateTeamRequest) {
     println!("Team: {}", data.team_name);
     for member in &data.members {
         println!("Member: {} ({}, {})", member.name, member.address.street, member.address.city);
@@ -45,13 +45,18 @@ fn print_team(data: TypedMultipart<CreateTeamRequest>) {
 }
 
 async fn create_team(data: TypedMultipart<CreateTeamRequest>) -> StatusCode {
-    print_team(data);
+    print_team(&data);
     StatusCode::CREATED
+}
+
+pub fn app() -> Router {
+    Router::new().route("/teams", post(create_team))
 }
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/teams", post(create_team));
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app.into_make_service()).await.unwrap();
+    let port = std::env::var("PORT").unwrap_or("0".into());
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
+    println!("Listening on http://{}", listener.local_addr().unwrap());
+    axum::serve(listener, app()).await.unwrap();
 }
