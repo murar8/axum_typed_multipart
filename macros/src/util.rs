@@ -47,14 +47,14 @@ pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
     };
     let last_segment = match path.segments.last() {
         Some(segment) => segment,
-        None => abort!(ty, "empty type path"),
+        None => abort!(path.segments, "expected a non-empty path"),
     };
     let args = match &last_segment.arguments {
         syn::PathArguments::AngleBracketed(args) => args,
-        _ => abort!(ty, "type requires a type parameter"),
+        _ => abort!(&last_segment.arguments, "expected type parameter (e.g., <T>)"),
     };
     match args.args.first() {
         Some(syn::GenericArgument::Type(inner)) => inner,
-        _ => abort!(ty, "type parameter must be a type"),
+        _ => abort!(args.args, "expected a single type argument"),
     }
 }
