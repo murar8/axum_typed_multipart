@@ -4,6 +4,7 @@
 
 mod case_conversion;
 mod impls;
+mod limit_bytes;
 mod util;
 
 use proc_macro::TokenStream;

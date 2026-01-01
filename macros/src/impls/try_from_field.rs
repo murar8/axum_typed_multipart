@@ -2,7 +2,6 @@ use crate::case_conversion::RenameCase;
 use crate::util::strip_leading_rawlit;
 use darling::{FromDeriveInput, FromVariant};
 use proc_macro::TokenStream;
-use proc_macro_error2::abort;
 use quote::quote;
 use syn::{Lit, LitStr};
 
@@ -48,7 +47,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let TryFromFieldInputData { ident, data, rename_all } =
         match TryFromFieldInputData::from_derive_input(&input) {
             Ok(input) => input,
-            Err(err) => abort!(input, err.to_string()),
+            Err(err) => return err.write_errors().into(),
         };
     let fields = data.take_enum().unwrap();
 

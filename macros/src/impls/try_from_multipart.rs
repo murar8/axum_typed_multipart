@@ -1,10 +1,9 @@
 use crate::case_conversion::RenameCase;
+use crate::limit_bytes::LimitBytes;
 use crate::util::{matches_option_signature, matches_vec_signature, strip_leading_rawlit};
 use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
-use proc_macro_error2::abort;
 use quote::quote;
-use ubyte::ByteUnit;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
@@ -33,7 +32,7 @@ struct FieldData {
     field_name: Option<String>,
 
     #[darling(default)]
-    limit: Option<String>,
+    limit: Option<LimitBytes>,
 
     #[darling(default)]
     default: bool,
@@ -56,17 +55,6 @@ impl FieldData {
             field_in_struct
         }
     }
-
-    /// Parse the supplied human-readable size limit into a byte limit.
-    fn limit_bytes(&self) -> Option<usize> {
-        match self.limit.as_deref() {
-            None | Some("unlimited") => None,
-            Some(limit) => match limit.parse::<ByteUnit>() {
-                Ok(limit) => Some(limit.as_u64() as usize),
-                Err(_) => abort!(self.ident.as_ref().unwrap(), "limit must be a valid byte unit"),
-            },
-        }
-    }
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
@@ -76,7 +64,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let InputData { ident, data, strict, rename_all, state } =
         match InputData::from_derive_input(&input) {
             Ok(input) => input,
-            Err(err) => abort!(input, err.to_string()),
+            Err(err) => return err.write_errors().into(),
         };
 
     let fields = data.take_struct().unwrap();
@@ -93,10 +81,9 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let mut assignments = fields
         .iter()
-        .map(|field @ FieldData { ident, ty, .. }| {
+        .map(|field @ FieldData { ident, ty, limit, .. }| {
             let name = field.name(rename_all);
-            let limit_bytes =
-                field.limit_bytes().map(|limit| quote! { Some(#limit) }).unwrap_or(quote! { None });
+            let limit_bytes = limit.unwrap_or(LimitBytes(None));
             let value = quote! {
                 <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, state).await?
             };
