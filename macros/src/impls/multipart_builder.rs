@@ -14,7 +14,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match InputData::from_derive_input(&input) {
         Ok(input) => expand(input).into(),
-        Err(err) => return err.write_errors().into(),
+        Err(err) => err.write_errors().into(),
     }
 }
 
