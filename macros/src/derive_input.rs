@@ -3,7 +3,7 @@ use crate::limit_bytes::LimitBytes;
 use darling::{FromDeriveInput, FromField};
 use quote::{quote, ToTokens};
 
-#[derive(Debug, Clone, FromDeriveInput)]
+#[derive(Debug, FromDeriveInput)]
 #[darling(attributes(try_from_multipart), supports(struct_named))]
 pub(crate) struct InputData {
     pub(crate) ident: syn::Ident,
@@ -34,7 +34,7 @@ impl InputData {
     }
 }
 
-#[derive(Debug, Clone, FromField)]
+#[derive(Debug, FromField)]
 #[darling(attributes(form_data))]
 pub(crate) struct FieldData {
     pub(crate) ident: Option<syn::Ident>,
@@ -44,7 +44,7 @@ pub(crate) struct FieldData {
     pub(crate) field_name: Option<String>,
 
     #[darling(default)]
-    pub(crate) limit: Option<LimitBytes>,
+    pub(crate) limit: LimitBytes,
 
     #[darling(default)]
     pub(crate) default: bool,

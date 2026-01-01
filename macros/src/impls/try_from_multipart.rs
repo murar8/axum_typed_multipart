@@ -11,14 +11,14 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         Err(err) => return err.write_errors().into(),
     };
 
-    let builder = crate::impls::multipart_builder::expand(input.clone());
-
-    let ident = &input.ident;
+    // Extract values before passing ownership to expand()
+    let ident = input.ident.clone();
     let strict = input.strict;
     let generic = input.generic();
     let state_ty = input.state_ty();
-
     let builder_ident = input.builder_ident();
+
+    let builder = crate::impls::multipart_builder::expand(input);
     // cannot infer state type here, so we have to be explicit
     let builder_ident =
         quote! { <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>> };

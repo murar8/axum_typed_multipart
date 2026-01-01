@@ -1,6 +1,5 @@
 use crate::case_conversion::RenameCase;
 use crate::derive_input::{FieldData, InputData};
-use crate::limit_bytes::LimitBytes;
 use crate::util::{
     extract_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
 };
@@ -72,10 +71,8 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                         }
                     }
                 } else {
-                    let limit_bytes = limit.unwrap_or(LimitBytes(None));
-
                     let value = quote! {
-                        <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit_bytes, __state__).await?
+                        <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, __state__).await?
                     };
 
                     let assignment = if matches_vec_signature(ty) {
