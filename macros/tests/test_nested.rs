@@ -1,5 +1,11 @@
-//! NOTE: This test suite was largely AI-generated. The tests are functional and pass,
-//! but may not be worth in-depth human review. Focus review efforts elsewhere.
+//! # ============================================================================
+//! # AI-GENERATED TEST SUITE
+//! # ============================================================================
+//! #
+//! # This test suite was largely AI-generated. The tests are functional and pass,
+//! # but may not be worth in-depth human review. Focus review efforts elsewhere.
+//! #
+//! # ============================================================================
 
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
