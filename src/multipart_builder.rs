@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 /// Each call to [`consume`](Self::consume) either consumes the field and returns `None`,
 /// or returns `Some(field)` unchanged for other builders to handle.
 #[async_trait]
-pub trait MultipartBuilder<S>: Default {
+pub trait MultipartBuilder<S> {
     /// The type this builder produces.
     type Target;
 
@@ -73,7 +73,7 @@ fn parse_index<'a>(name: &Spanned<&'a str>) -> Option<(usize, Spanned<&'a str>)>
 impl<S, B> MultipartBuilder<S> for BTreeMap<usize, B>
 where
     S: Sync,
-    B: MultipartBuilder<S> + Send,
+    B: MultipartBuilder<S> + Send + Default,
 {
     type Target = Vec<B::Target>;
 
@@ -106,7 +106,7 @@ where
 impl<S, B> MultipartBuilder<S> for Option<B>
 where
     S: Sync,
-    B: MultipartBuilder<S> + Send,
+    B: MultipartBuilder<S> + Send + Default,
 {
     type Target = Option<B::Target>;
 
