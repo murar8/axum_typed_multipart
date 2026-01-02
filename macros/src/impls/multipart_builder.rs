@@ -178,7 +178,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
 
             quote! {
                 fn finalize(self, __path__: &str) -> Result<Self::Target, axum_typed_multipart::TypedMultipartError> {
-                    Ok(#ident { #(#field_assignments),* })
+                    Ok(Self::Target { #(#field_assignments),* })
                 }
             }
         };
