@@ -1,3 +1,19 @@
+//! Generates `MultipartBuilder` impl for incremental multipart field accumulation.
+//!
+//! For a struct `Foo`, generates:
+//! - `FooMultipartBuilder` with fields wrapped for accumulation:
+//!   - `T` → `Option<T>` (track presence)
+//!   - `Option<T>` / `Vec<T>` (non-nested) → kept as-is
+//!   - `#[form_data(nested)] T` → `TMultipartBuilder`
+//!   - `#[form_data(nested)] Option<T>` → `Option<TMultipartBuilder>`
+//!   - `#[form_data(nested)] Vec<T>` → `BTreeMap<usize, TMultipartBuilder>` (sparse indices)
+//!
+//! - `impl MultipartBuilder<S>` with:
+//!   - `consume()`: Routes fields by name segment matching. Nested fields use prefix
+//!     matching and delegate to inner builders with adjusted span. Leaf fields use
+//!     exact matching. Uses `Spanned<&str>` to track current segment within full name.
+//!   - `finalize()`: Builds target struct, applying defaults or returning `MissingField`.
+
 use crate::case_conversion::RenameCase;
 use crate::derive_input::{FieldData, InputData};
 use crate::util::{

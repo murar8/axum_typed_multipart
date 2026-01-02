@@ -1,3 +1,11 @@
+//! Generates `TryFromMultipartWithState` impl as the top-level multipart parser.
+//!
+//! Iterates multipart fields and delegates to the generated `MultipartBuilder`:
+//! - Wraps each field name in `Spanned` (span = full name) for nested segment tracking
+//! - Calls `builder.consume()` at depth 0 for each field
+//! - Handles strict mode: rejects nameless fields and unknown fields (unmatched by builder)
+//! - Calls `builder.finalize()` to produce the target struct
+
 use crate::derive_input::InputData;
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
