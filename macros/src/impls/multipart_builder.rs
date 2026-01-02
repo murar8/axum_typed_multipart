@@ -57,7 +57,6 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
             quote! { #ident: #ty }
         });
         quote! {
-            /// Auto-generated builder for [`#ident`]. Do not use directly.
             #[doc(hidden)]
             #[derive(Default)]
             #vis struct #input_builder_ident {
