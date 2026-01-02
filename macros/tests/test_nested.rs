@@ -1726,3 +1726,81 @@ async fn test_vec_containing_optional_single_nested_partial_fails() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(res.text().await.unwrap(), "field 'people[0].address.city' is required");
 }
+
+// =============================================================================
+// Cross-module nested structs (same crate)
+// =============================================================================
+
+mod same_crate_module {
+    use axum_typed_multipart::TryFromMultipart;
+
+    #[derive(TryFromMultipart, Debug, PartialEq)]
+    pub struct ModuleAddress {
+        pub street: String,
+        pub city: String,
+    }
+}
+
+#[derive(TryFromMultipart)]
+struct FormWithSameCrateNested {
+    name: String,
+    #[form_data(nested)]
+    address: same_crate_module::ModuleAddress,
+}
+
+#[tokio::test]
+async fn test_cross_module_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithSameCrateNested>| async move {
+        assert_eq!(data.name, "Alice");
+        assert_eq!(data.address.street, "123 Main St");
+        assert_eq!(data.address.city, "Springfield");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("name", "Alice")
+                .text("address.street", "123 Main St")
+                .text("address.city", "Springfield"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+// =============================================================================
+// Cross-crate nested structs (different crate)
+// =============================================================================
+
+#[derive(TryFromMultipart)]
+struct FormWithExternalCrateNested {
+    name: String,
+    #[form_data(nested)]
+    address: test_external::ExternalAddress,
+}
+
+#[tokio::test]
+async fn test_cross_crate_nested() {
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithExternalCrateNested>| async move {
+        assert_eq!(data.name, "Bob");
+        assert_eq!(data.address.street, "456 Oak Ave");
+        assert_eq!(data.address.city, "Shelbyville");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("name", "Bob")
+                .text("address.street", "456 Oak Ave")
+                .text("address.city", "Shelbyville"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
+}

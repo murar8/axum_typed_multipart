@@ -8,6 +8,8 @@ use quote::{quote, ToTokens};
 pub struct InputData {
     pub ident: syn::Ident,
 
+    pub vis: syn::Visibility,
+
     pub data: darling::ast::Data<(), FieldData>,
 
     #[darling(default)]

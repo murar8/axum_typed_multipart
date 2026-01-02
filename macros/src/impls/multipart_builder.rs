@@ -21,6 +21,7 @@ use crate::util::{
 };
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
+use proc_macro_error2::abort;
 use quote::quote;
 use std::collections::BTreeMap;
 
@@ -38,7 +39,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
     let input_state_ty = input.state_ty();
     let input_builder_ident = input.builder_ident();
 
-    let InputData { ident, data, strict, rename_all, .. } = input;
+    let InputData { ident, vis, data, strict, rename_all, .. } = input;
     let fields = data.take_struct().unwrap();
 
     // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
@@ -56,8 +57,10 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
             quote! { #ident: #ty }
         });
         quote! {
+            /// Auto-generated builder for [`#ident`]. Do not use directly.
+            #[doc(hidden)]
             #[derive(Default)]
-            struct #input_builder_ident {
+            #vis struct #input_builder_ident {
                 #(#builder_fields),*
             }
         }
@@ -198,9 +201,21 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
 }
 
 /// Generates builder ident: `Foo` → `FooMultipartBuilder`
-pub fn builder_ident(ty: &impl quote::ToTokens) -> syn::Ident {
-    use syn::spanned::Spanned;
-    syn::Ident::new(&format!("{}MultipartBuilder", ty.to_token_stream()), ty.span())
+pub fn builder_ident(ident: &syn::Ident) -> syn::Ident {
+    syn::Ident::new(&format!("{ident}MultipartBuilder"), ident.span())
+}
+
+/// Converts type path to builder path: `foo::Bar` → `foo::BarMultipartBuilder`
+fn to_builder_type(mut ty: syn::Type) -> syn::Type {
+    let syn::Type::Path(ref mut tp) = ty else {
+        abort!(ty, "nested field must be a simple type path");
+    };
+    if let Some(last) = tp.path.segments.last_mut() {
+        last.ident = builder_ident(&last.ident);
+        ty
+    } else {
+        abort!(tp, "nested field type path cannot be empty");
+    }
 }
 
 // Computes field name with optional case conversion.
@@ -226,7 +241,7 @@ fn nested_builder_type(ty: &syn::Type) -> proc_macro2::TokenStream {
         let inner_builder = nested_builder_type(inner);
         quote! { std::collections::BTreeMap<usize, #inner_builder> }
     } else {
-        let field_builder_ident = builder_ident(ty);
-        quote! { #field_builder_ident }
+        let ty = to_builder_type(ty.clone());
+        quote! { #ty }
     }
 }

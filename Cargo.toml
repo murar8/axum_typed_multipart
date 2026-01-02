@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros", "test_helper"]
+members = ["macros", "test_external", "test_helper"]
 
 [workspace.package]
 authors = ["Lorenzo Murarotto <lnzmrr@gmail.com>"]
