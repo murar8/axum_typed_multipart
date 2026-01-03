@@ -260,7 +260,7 @@ async fn test_nested_vec_out_of_order() {
 }
 
 // =============================================================================
-// BUG #1: Prefix matching - "user" should NOT match "username"
+// Regression: Prefix matching - "user" should NOT match "username"
 // =============================================================================
 
 #[derive(TryFromMultipart, Debug, PartialEq)]
@@ -277,7 +277,7 @@ struct FormWithPrefixCollision {
 
 #[tokio::test]
 async fn test_prefix_no_false_match() {
-    // BUG: "user" prefix should NOT match "username" field
+    // Verify "user" prefix does NOT match "username" field
     // The field "username" should go to the simple `username` field, not to nested `user`
     let handler = |TypedMultipart(data): TypedMultipart<FormWithPrefixCollision>| async move {
         assert_eq!(data.user.value, "nested_value");
@@ -294,8 +294,8 @@ async fn test_prefix_no_false_match() {
     assert_eq!(res.status(), StatusCode::OK);
 }
 
-// This test triggers the actual bug: nested struct has a field that matches
-// the "leftover" after strip_prefix
+// This test verifies the fix: nested struct has a field that matches
+// the "leftover" after strip_prefix (which was incorrectly matched before)
 #[derive(TryFromMultipart, Debug, PartialEq)]
 struct InnerWithName {
     name: String, // "username" - "user" = "name" - COLLISION!
@@ -310,14 +310,14 @@ struct FormWithActualPrefixBug {
 
 #[tokio::test]
 async fn test_prefix_collision_with_nested_field() {
-    // This test exposes the prefix bug:
+    // This test verifies the prefix collision fix:
     // - "username" is a simple field
-    // - But strip_prefix("user") on "username" returns "name"
+    // - strip_prefix("user") on "username" returns "name"
     // - Nested InnerWithName has a "name" field
-    // - So "username" value gets incorrectly consumed as "user.name"!
+    // - Previously, "username" was incorrectly consumed as "user.name"
     let handler = |TypedMultipart(data): TypedMultipart<FormWithActualPrefixBug>| async move {
-        // If bug exists: user.name = "simple_value", username = missing
-        // Expected: user.name = "nested_value", username = "simple_value"
+        // Before fix: user.name = "simple_value", username = missing
+        // After fix: user.name = "nested_value", username = "simple_value"
         assert_eq!(data.user.name, "nested_value");
         assert_eq!(data.username, "simple_value");
     };
@@ -333,7 +333,7 @@ async fn test_prefix_collision_with_nested_field() {
 }
 
 // =============================================================================
-// BUG #2: Option<Vec<T>> should preserve the Option wrapper
+// Regression: Option<Vec<T>> should preserve the Option wrapper
 // =============================================================================
 
 #[derive(TryFromMultipart)]

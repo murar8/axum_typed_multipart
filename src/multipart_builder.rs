@@ -9,9 +9,9 @@ use std::collections::BTreeMap;
 /// This trait is primarily used as an implementation detail for [`TryFromMultipart`](crate::TryFromMultipart).
 /// For most use cases, derive `TryFromMultipart` instead of using this trait directly.
 ///
-/// The `MultipartBuilder` derive macro generates a builder struct (e.g., `FooBuilder` for `Foo`)
-/// that implements this trait. The generated builder is private to the module where the derive
-/// is applied.
+/// The `MultipartBuilder` derive macro generates a builder struct (e.g., `FooMultipartBuilder` for `Foo`)
+/// that implements this trait. The generated builder has the same visibility as the original struct
+/// (but is hidden from rustdoc with `#[doc(hidden)]`).
 ///
 /// Each call to [`consume`](Self::consume) either consumes the field and returns `None`,
 /// or returns `Some(field)` unchanged for other builders to handle.
