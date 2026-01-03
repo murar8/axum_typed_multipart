@@ -300,7 +300,6 @@
 pub use anyhow;
 pub use async_trait::async_trait;
 pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
-pub use serde_spanned::Spanned;
 
 mod base_multipart;
 mod field_data;

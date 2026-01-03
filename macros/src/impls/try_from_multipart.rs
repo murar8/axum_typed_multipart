@@ -1,7 +1,6 @@
 //! Generates `TryFromMultipartWithState` impl as the top-level multipart parser.
 //!
 //! Iterates multipart fields and delegates to the generated `MultipartBuilder`:
-//! - Wraps each field name in `Spanned` (span = full name) for nested segment tracking
 //! - Calls `builder.consume()` at depth 0 for each field
 //! - Handles strict mode: rejects nameless fields and unknown fields (unmatched by builder)
 //! - Calls `builder.finalize()` to produce the target struct
@@ -53,8 +52,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 None | Some("") => { #on_nameless_field }
                 Some(name) => name.to_string(),
             };
-            let __spanned__ = axum_typed_multipart::Spanned::new(0..__name__.len(), __name__.as_str());
-            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, __spanned__, state, 0).await? {
+            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state, 0).await? {
                 #on_unmatched_field
             }
         }

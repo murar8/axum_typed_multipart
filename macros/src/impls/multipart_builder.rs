@@ -10,8 +10,7 @@
 //!
 //! - `impl MultipartBuilder<S>` with:
 //!   - `consume()`: Routes fields by name segment matching. Nested fields use prefix
-//!     matching and delegate to inner builders with adjusted span. Leaf fields use
-//!     exact matching. Uses `Spanned<&str>` to track current segment within full name.
+//!     matching and delegate to inner builders. Leaf fields use exact matching.
 //!   - `finalize()`: Builds target struct, applying defaults or returning `MissingField`.
 
 use crate::case_conversion::RenameCase;
@@ -68,24 +67,24 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
     let impl_block = {
         let consume_method = {
             let branches = fields.iter().map(|(name, FieldData { ident, ty, limit, nested, .. })| {
-                let prefixed_name = format!(".{}", name);
-                let prefix_len = prefixed_name.len();
+                let dotted_name = format!(".{}", name);
                 if *nested {
-                    quote! {
-                        if __segment__.starts_with(&#prefixed_name[__offset__..]) {
-                            let __new_start__ = __span__.start + #prefix_len - __offset__;
-                            let __new_name__ = axum_typed_multipart::Spanned::new(
-                                __new_start__..(__span__.end),
-                                __full__,
-                            );
-                            __field__ = match self
-                                .#ident
-                                .consume(__field__, __new_name__, __state__, __depth__ + 1)
-                                .await?
-                            {
-                                Some(__f__) => __f__,
-                                None => return Ok(None),
+                    quote! { {
+                            let __rest__ = if __depth__ == 0 {
+                                __suffix__.strip_prefix(#name)
+                            } else {
+                                __suffix__.strip_prefix(#dotted_name)
                             };
+                            if let Some(__rest__) = __rest__ {
+                                __field__ = match self
+                                    .#ident
+                                    .consume(__field__, __rest__, __state__, __depth__ + 1)
+                                    .await?
+                                {
+                                    Some(__f__) => __f__,
+                                    None => return Ok(None),
+                                };
+                            }
                         }
                     }
                 } else {
@@ -113,9 +112,16 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                     };
 
                     quote! {
-                        if __segment__ == &#prefixed_name[__offset__..] {
-                            #assignment
-                            return Ok(None);
+                        {
+                            let __matches__ = if __depth__ == 0 {
+                                __suffix__ == #name
+                            } else {
+                                __suffix__ == #dotted_name
+                            };
+                            if __matches__ {
+                                #assignment
+                                return Ok(None);
+                            }
                         }
                     }
                 }
@@ -125,15 +131,10 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                 async fn consume<'a>(
                     &mut self,
                     mut __field__: axum::extract::multipart::Field<'a>,
-                    __name__: axum_typed_multipart::Spanned<&str>,
+                    __suffix__: &str,
                     __state__: &#input_state_ty,
                     __depth__: usize,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
-                    let __full__ = *__name__.as_ref();
-                    let __span__ = __name__.span();
-                    let __segment__ = &__full__[__span__.start..__span__.end];
-                    // At depth 0, no leading dot expected; at depth > 0, skip the leading dot in prefixed names
-                    let __offset__ = if __depth__ == 0 { 1 } else { 0 };
                     #(#branches)*
                     Ok(Some(__field__))
                 }
