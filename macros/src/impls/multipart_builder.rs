@@ -67,24 +67,21 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
     let impl_block = {
         let consume_method = {
             let branches = fields.iter().map(|(name, FieldData { ident, ty, limit, nested, .. })| {
-                let dotted_name = format!(".{}", name);
+                let dotted_name = format!(".{name}");
+                let prefix = quote! {
+                    if __depth__ == 0 { #name } else { #dotted_name }
+                };
                 if *nested {
-                    quote! { {
-                            let __rest__ = if __depth__ == 0 {
-                                __suffix__.strip_prefix(#name)
-                            } else {
-                                __suffix__.strip_prefix(#dotted_name)
+                    quote! {
+                        if let Some(__rest__) = __suffix__.strip_prefix(#prefix) {
+                            __field__ = match self
+                                .#ident
+                                .consume(__field__, __rest__, __state__, __depth__ + 1)
+                                .await?
+                            {
+                                Some(__f__) => __f__,
+                                None => return Ok(None),
                             };
-                            if let Some(__rest__) = __rest__ {
-                                __field__ = match self
-                                    .#ident
-                                    .consume(__field__, __rest__, __state__, __depth__ + 1)
-                                    .await?
-                                {
-                                    Some(__f__) => __f__,
-                                    None => return Ok(None),
-                                };
-                            }
                         }
                     }
                 } else {
@@ -113,12 +110,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
 
                     quote! {
                         {
-                            let __matches__ = if __depth__ == 0 {
-                                __suffix__ == #name
-                            } else {
-                                __suffix__ == #dotted_name
-                            };
-                            if __matches__ {
+                            if __suffix__ == #prefix {
                                 #assignment
                                 return Ok(None);
                             }
