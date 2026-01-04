@@ -201,14 +201,13 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
         };
 
         let was_consumed_method = {
-            let all_checks = std::iter::once(quote! { self.__consumed__ }).chain(
-                fields
+            let nested_checks = fields
                     .values()
                     .filter(|f| f.nested)
                     .map(|FieldData { ident, .. }| {
                         quote! { axum_typed_multipart::MultipartBuilder::<#input_state_ty>::was_consumed(&self.#ident) }
-                    }),
-            );
+                    });
+            let all_checks = std::iter::once(quote! { self.__consumed__ }).chain(nested_checks);
 
             quote! {
                 fn was_consumed(&self) -> bool {
