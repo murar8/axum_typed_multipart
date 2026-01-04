@@ -4,7 +4,6 @@
 /// since we don't have access to type information in the AST representation.
 ///
 /// Adapted from https://stackoverflow.com/a/56264023
-#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn matches_signature(ty: &syn::Type, signatures: &[&str]) -> bool {
     let path = match ty {
         syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,

@@ -1,0 +1,5 @@
+error: Unknown value: `invalid_case`
+ --> tests/ui/multipart_invalid_rename_all.rs:4:35
+  |
+4 | #[try_from_multipart(rename_all = "invalid_case")]
+  |                                   ^^^^^^^^^^^^^^

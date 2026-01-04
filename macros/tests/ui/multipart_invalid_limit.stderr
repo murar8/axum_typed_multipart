@@ -1,0 +1,5 @@
+error: must be a valid byte unit (e.g., "1MB", "500KB")
+ --> tests/ui/multipart_invalid_limit.rs:5:25
+  |
+5 |     #[form_data(limit = "invalid")]
+  |                         ^^^^^^^^^

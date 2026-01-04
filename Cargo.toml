@@ -61,7 +61,7 @@ uuid_1 = { package = "uuid", version = "1.0.0", optional = true }
 axum = { workspace = true, default-features = true }
 axum_test_helper = { path = "test_helper" }
 reqwest = { workspace = true }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.194", features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 utoipa = "5.3.1"
 utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
