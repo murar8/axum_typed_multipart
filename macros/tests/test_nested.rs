@@ -199,66 +199,6 @@ async fn test_nested_vec_empty() {
     assert_eq!(res.status(), StatusCode::OK);
 }
 
-#[tokio::test]
-async fn test_nested_vec_sparse_indices() {
-    // Test that sparse indices work (e.g., [0], [5] without [1]-[4])
-    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Sparse List");
-        // With BTreeMap, we only get the indices that were actually provided
-        assert_eq!(data.users.len(), 2);
-        assert_eq!(data.users[0].name, "First");
-        assert_eq!(data.users[1].name, "Fifth");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Sparse List")
-                .text("users[0].name", "First")
-                .text("users[0].age", "1")
-                .text("users[5].name", "Fifth")
-                .text("users[5].age", "5"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn test_nested_vec_out_of_order() {
-    // Test that out-of-order indices are sorted correctly
-    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Out of Order");
-        assert_eq!(data.users.len(), 3);
-        // BTreeMap ensures sorted order by index
-        assert_eq!(data.users[0].name, "Zero");
-        assert_eq!(data.users[1].name, "One");
-        assert_eq!(data.users[2].name, "Two");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Out of Order")
-                // Send in reverse order
-                .text("users[2].name", "Two")
-                .text("users[2].age", "2")
-                .text("users[0].name", "Zero")
-                .text("users[0].age", "0")
-                .text("users[1].name", "One")
-                .text("users[1].age", "1"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
 // =============================================================================
 // Regression: Prefix matching - "user" should NOT match "username"
 // =============================================================================
@@ -393,50 +333,79 @@ async fn test_option_vec_some() {
 
 #[tokio::test]
 async fn test_invalid_index_negative() {
-    // Negative index should be rejected (field ignored in non-strict mode)
-    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Negative Index");
-        // Negative index field should be ignored, only valid index processed
-        assert_eq!(data.users.len(), 1);
-        assert_eq!(data.users[0].name, "Valid");
-    };
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Negative Index")
-                .text("users[-1].name", "Invalid")
-                .text("users[-1].age", "0")
-                .text("users[0].name", "Valid")
-                .text("users[0].age", "1"),
-        )
+        .multipart(Form::new().text("title", "Test").text("users[-1].name", "Invalid"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[-1].name' has invalid index: '-1' is not a valid number"
+    );
 }
 
 #[tokio::test]
 async fn test_invalid_index_non_numeric() {
-    // Non-numeric index should be rejected (field ignored in non-strict mode)
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("title", "Test").text("users[abc].name", "Invalid"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[abc].name' has invalid index: 'abc' is not a valid number"
+    );
+}
+
+#[tokio::test]
+async fn test_invalid_index_empty_brackets() {
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(Form::new().text("title", "Test").text("users[].name", "Invalid"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[].name' has invalid index: '' is not a valid number"
+    );
+}
+
+#[tokio::test]
+async fn test_invalid_index_whitespace_quirk() {
+    // NOTE: This documents a reqwest multipart encoding quirk where field names
+    // containing whitespace in brackets (e.g., "users[  0  ].name") are not
+    // properly matched. The field ends up being ignored in lax mode rather than
+    // returning an InvalidIndexFormat error. This is due to how reqwest encodes
+    // the multipart field name, not a bug in axum_typed_multipart.
     let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Non-numeric Index");
-        assert_eq!(data.users.len(), 1);
-        assert_eq!(data.users[0].name, "Valid");
+        assert_eq!(data.title, "Test");
+        assert!(data.users.is_empty()); // Field was ignored due to encoding quirk
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Non-numeric Index")
-                .text("users[abc].name", "Invalid")
-                .text("users[abc].age", "0")
-                .text("users[0].name", "Valid")
-                .text("users[0].age", "1"),
-        )
+        .multipart(Form::new().text("title", "Test").text("users[  0  ].name", "Invalid"))
         .send()
         .await
         .unwrap();
@@ -444,24 +413,81 @@ async fn test_invalid_index_non_numeric() {
     assert_eq!(res.status(), StatusCode::OK);
 }
 
+// =============================================================================
+// Non-contiguous and out-of-order indices - error cases
+// =============================================================================
+
 #[tokio::test]
-async fn test_invalid_index_empty_brackets() {
-    // Empty brackets should be rejected
+async fn test_non_contiguous_indices_error() {
+    // Sparse indices (e.g., [0] then [5]) should return InvalidIndex error
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Sparse")
+                .text("users[0].name", "First")
+                .text("users[0].age", "1")
+                .text("users[5].name", "Fifth")
+                .text("users[5].age", "5"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'users[5].name' has invalid index (expected 1)");
+}
+
+#[tokio::test]
+async fn test_out_of_order_indices_error() {
+    // Out-of-order indices (e.g., [1] before [0]) should return InvalidIndex error
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Out of Order")
+                .text("users[1].name", "Second")
+                .text("users[1].age", "2"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(res.text().await.unwrap(), "field 'users[1].name' has invalid index (expected 0)");
+}
+
+#[tokio::test]
+async fn test_fields_within_same_index_any_order() {
+    // Fields for the same index can arrive in any order
     let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Empty Brackets");
-        assert_eq!(data.users.len(), 1);
-        assert_eq!(data.users[0].name, "Valid");
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.users.len(), 2);
+        assert_eq!(data.users[0].name, "Alice");
+        assert_eq!(data.users[0].age, 30);
+        assert_eq!(data.users[1].name, "Bob");
+        assert_eq!(data.users[1].age, 25);
     };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
         .multipart(
             Form::new()
-                .text("title", "Empty Brackets")
-                .text("users[].name", "Invalid")
-                .text("users[].age", "0")
-                .text("users[0].name", "Valid")
-                .text("users[0].age", "1"),
+                .text("title", "Test")
+                // Index 0 fields in reverse order
+                .text("users[0].age", "30")
+                .text("users[0].name", "Alice")
+                // Index 1 fields in reverse order
+                .text("users[1].age", "25")
+                .text("users[1].name", "Bob"),
         )
         .send()
         .await
@@ -755,38 +781,7 @@ async fn test_strict_nested_duplicate_field() {
 }
 
 // =============================================================================
-// Whitespace in brackets should be rejected
-// =============================================================================
-
-#[tokio::test]
-async fn test_whitespace_in_brackets_rejected() {
-    // Whitespace in brackets like [  0  ] should be rejected
-    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
-        assert_eq!(data.title, "Test");
-        // Only the valid index should be parsed
-        assert_eq!(data.users.len(), 1);
-        assert_eq!(data.users[0].name, "Valid");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Test")
-                .text("users[  0  ].name", "Invalid") // Whitespace - should be rejected
-                .text("users[  0  ].age", "0")
-                .text("users[0].name", "Valid")
-                .text("users[0].age", "1"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-// =============================================================================
-// Strict mode with nested Vec - invalid indices should be rejected
+// Strict mode with nested Vec
 // =============================================================================
 
 #[allow(dead_code)]
@@ -796,99 +791,6 @@ struct StrictFormWithNestedVec {
     title: String,
     #[form_data(nested)]
     users: Vec<Person>,
-}
-
-#[tokio::test]
-async fn test_strict_invalid_index_non_numeric() {
-    // In strict mode, non-numeric index should be rejected as unknown field
-    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
-        panic!("should not be called");
-    }
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Test")
-                .text("users[abc].name", "Invalid")
-                .text("users[abc].age", "0"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await.unwrap(), "field 'users[abc].name' is not expected");
-}
-
-#[tokio::test]
-async fn test_strict_invalid_index_negative() {
-    // In strict mode, negative index should be rejected as unknown field
-    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
-        panic!("should not be called");
-    }
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Test")
-                .text("users[-1].name", "Invalid")
-                .text("users[-1].age", "0"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await.unwrap(), "field 'users[-1].name' is not expected");
-}
-
-#[tokio::test]
-async fn test_strict_invalid_index_whitespace() {
-    // In strict mode, whitespace in brackets should be rejected
-    // Note: reqwest converts spaces to empty field name in multipart encoding
-    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
-        panic!("should not be called");
-    }
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Test")
-                .text("users[  0  ].name", "Invalid")
-                .text("users[  0  ].age", "0"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    // Due to multipart encoding quirks, field name with spaces becomes empty
-    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-}
-
-#[tokio::test]
-async fn test_strict_invalid_index_empty_brackets() {
-    // In strict mode, empty brackets should be rejected
-    async fn handler(_: TypedMultipart<StrictFormWithNestedVec>) {
-        panic!("should not be called");
-    }
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Test")
-                .text("users[].name", "Invalid")
-                .text("users[].age", "0"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await.unwrap(), "field 'users[].name' is not expected");
 }
 
 // =============================================================================
@@ -947,61 +849,6 @@ async fn test_four_levels_of_nesting() {
                 .text("sections[0].items[0].entries[1].data", "E1")
                 .text("sections[0].items[1].label", "I1")
                 .text("sections[1].name", "S1"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn test_deep_sparse_indices() {
-    // Sparse indices at every level should be normalized
-    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
-        assert_eq!(data.sections.len(), 2);
-        assert_eq!(data.sections[0].name, "Sparse0");
-        assert_eq!(data.sections[0].items[0].label, "Item5");
-        assert_eq!(data.sections[0].items[0].entries[0].data, "Entry99");
-        assert_eq!(data.sections[1].name, "Sparse10");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("title", "Sparse")
-                .text("sections[0].name", "Sparse0")
-                .text("sections[0].items[5].label", "Item5")
-                .text("sections[0].items[5].entries[99].data", "Entry99")
-                .text("sections[10].name", "Sparse10"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn test_deep_out_of_order() {
-    // Fields sent in completely reversed order
-    let handler = |TypedMultipart(data): TypedMultipart<Level1Form>| async move {
-        assert_eq!(data.title, "Reversed");
-        assert_eq!(data.sections[0].name, "First");
-        assert_eq!(data.sections[0].items[0].label, "Item");
-        assert_eq!(data.sections[0].items[0].entries[0].data, "Deep");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                // Send deepest first, title last
-                .text("sections[0].items[0].entries[0].data", "Deep")
-                .text("sections[0].items[0].label", "Item")
-                .text("sections[0].name", "First")
-                .text("title", "Reversed"),
         )
         .send()
         .await
@@ -1631,36 +1478,6 @@ async fn test_vec_containing_single_nested_missing_inner_field() {
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(res.text().await.unwrap(), "field 'people[0].address.city' is required");
-}
-
-#[tokio::test]
-async fn test_vec_containing_single_nested_out_of_order() {
-    // Fields sent in arbitrary order should still work
-    let handler = |TypedMultipart(data): TypedMultipart<FormWithVecOfNestedSingle>| async move {
-        assert_eq!(data.people.len(), 2);
-        assert_eq!(data.people[0].name, "First");
-        assert_eq!(data.people[0].address.city, "CityA");
-        assert_eq!(data.people[1].name, "Second");
-        assert_eq!(data.people[1].address.city, "CityB");
-    };
-
-    let res = TestClient::new(Router::new().route("/", post(handler)))
-        .post("/")
-        .multipart(
-            Form::new()
-                .text("people[1].address.city", "CityB")
-                .text("people[0].address.street", "StreetA")
-                .text("title", "Test")
-                .text("people[1].name", "Second")
-                .text("people[0].name", "First")
-                .text("people[1].address.street", "StreetB")
-                .text("people[0].address.city", "CityA"),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[derive(TryFromMultipart, Debug, PartialEq)]

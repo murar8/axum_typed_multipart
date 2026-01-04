@@ -187,8 +187,9 @@
 //!
 //! The nested struct must also derive [TryFromMultipart](crate::TryFromMultipart).
 //!
-//! Array indices can be sparse (e.g., `[0]`, `[5]` without `[1]-[4]`) and out-of-order.
-//! The resulting `Vec` contains elements sorted by index, with gaps removed.
+//! Array indices must be consecutive starting from 0 and fields must arrive in index order.
+//! For example, `users[0].name`, `users[0].age`, `users[1].name` is valid. Fields for the
+//! same index can arrive in any order, but indices must not be skipped or out of order.
 //! ```rust,no_run
 #![doc = include_str!("../examples/nested.rs")]
 //! ```

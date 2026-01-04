@@ -270,7 +270,7 @@ fn nested_builder_type(ty: &syn::Type) -> proc_macro2::TokenStream {
     } else if matches_vec_signature(ty) {
         let inner = extract_inner_type(ty);
         let inner_builder = nested_builder_type(inner);
-        quote! { std::collections::BTreeMap<usize, #inner_builder> }
+        quote! { Vec<#inner_builder> }
     } else {
         let ty = to_builder_type(ty.clone());
         quote! { #ty }

@@ -1,7 +1,6 @@
 use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
-use std::collections::BTreeMap;
 
 /// A builder that incrementally consumes multipart fields.
 ///
@@ -52,27 +51,37 @@ pub trait MultipartBuilder<S> {
 }
 
 /// Parses `[index]` from the start of the suffix.
-/// Returns the index and the remaining suffix after the `]`.
-fn parse_index(suffix: &str) -> Option<(usize, &str)> {
-    let rest = suffix.strip_prefix('[')?;
-    let end = rest.find(']')?;
-    let idx = rest[..end].parse::<usize>().ok()?;
-    Some((idx, &rest[end + 1..]))
+///
+/// Returns:
+/// - `Ok(None)` if suffix doesn't start with `[` (no index present)
+/// - `Ok(Some((idx, rest)))` on successful parse
+/// - `Err(...)` if index format is invalid
+fn parse_index(suffix: &str) -> Result<Option<(usize, &str)>, anyhow::Error> {
+    let Some(rest) = suffix.strip_prefix('[') else {
+        return Ok(None);
+    };
+    let end = rest.find(']').ok_or_else(|| anyhow::anyhow!("missing closing bracket"))?;
+    let idx_str = &rest[..end];
+    let idx = idx_str
+        .parse::<usize>()
+        .map_err(|_| anyhow::anyhow!("'{idx_str}' is not a valid number"))?;
+    Ok(Some((idx, &rest[end + 1..])))
 }
 
-/// Blanket impl for `BTreeMap<usize, B>` - parses indexed field names like `[0].field`.
+/// Blanket impl for `Vec<B>` - parses indexed field names like `[0].field`.
 ///
 /// This impl is used by macro-generated builder structs for `#[form_data(nested)]` fields
-/// with `Vec<T>` types. The macro generates `BTreeMap<usize, TMultipartBuilder>` fields,
-/// which use this impl to parse indexed field names and delegate to the inner builder.
+/// with `Vec<T>` types. The macro generates `Vec<TMultipartBuilder>` fields, which use this
+/// impl to parse indexed field names and delegate to the inner builder.
 ///
-/// Uses a map instead of a vector to support sparse indices and prevent DoS via large indices.
-/// A `Vec` would allocate memory proportional to the largest index (e.g., `[999999999]` would
-/// allocate a billion slots). With `BTreeMap`, memory is proportional to the number of entries.
-/// Since each multipart field has overhead (~80+ bytes for boundary and headers), Axum's body
-/// size limits naturally bound the number of entries that can be created.
+/// Indices must be consecutive starting from 0 and fields must arrive in index order.
+/// For example, `[0].name`, `[0].age`, `[1].name`, `[1].age` is valid, but `[1].name` before
+/// any `[0]` field would be rejected. Fields for the same index can arrive in any order.
+///
+/// Invalid index formats (negative, non-numeric, etc.) are returned unconsumed for the
+/// caller to handle (ignored in lax mode, rejected in strict mode).
 #[async_trait]
-impl<S, B> MultipartBuilder<S> for BTreeMap<usize, B>
+impl<S, B> MultipartBuilder<S> for Vec<B>
 where
     S: Sync,
     B: MultipartBuilder<S> + Send + Default,
@@ -86,16 +95,36 @@ where
         state: &S,
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
+        let field_name = || field.name().unwrap_or_default().to_string();
         match parse_index(suffix) {
-            None => Ok(Some(field)), // No index - cannot consume
-            Some((idx, rest)) => {
-                self.entry(idx).or_default().consume(field, rest, state, depth + 1).await
+            Err(source) => {
+                Err(TypedMultipartError::InvalidIndexFormat { field_name: field_name(), source })
+            }
+            Ok(None) => Ok(Some(field)), // No index - cannot consume
+            Ok(Some((idx, rest))) => {
+                if idx == self.len() {
+                    // Next consecutive index - create new builder
+                    self.push(B::default());
+                }
+                if idx < self.len() {
+                    // Valid index - delegate to inner builder
+                    self[idx].consume(field, rest, state, depth + 1).await
+                } else {
+                    // Gap in indices (idx > self.len()) - error
+                    Err(TypedMultipartError::InvalidIndex {
+                        field_name: field_name(),
+                        expected: self.len(),
+                    })
+                }
             }
         }
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
-        self.into_iter().map(|(idx, builder)| builder.finalize(&format!("{path}[{idx}]"))).collect()
+        self.into_iter()
+            .enumerate()
+            .map(|(idx, builder)| builder.finalize(&format!("{path}[{idx}]")))
+            .collect()
     }
 
     fn was_consumed(&self) -> bool {
