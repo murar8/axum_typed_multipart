@@ -49,8 +49,11 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
         return err.write_errors();
     }
 
-    // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
-    let fields: BTreeMap<_, _> = fields.iter().map(|f| (form_name(f, rename_all), f)).collect();
+    // Compute field names, checking for duplicates
+    let fields = match build_field_map(rename_all, fields) {
+        Ok(value) => value,
+        Err(value) => return value,
+    };
 
     let struct_def = {
         let builder_fields = fields.values().map(|FieldData { ident, ty, nested, .. }| {
@@ -229,6 +232,23 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
         #struct_def
         #impl_block
     }
+}
+
+fn build_field_map(
+    rename_all: Option<RenameCase>,
+    fields: Vec<&FieldData>,
+) -> Result<BTreeMap<String, &FieldData>, proc_macro2::TokenStream> {
+    let mut map: BTreeMap<String, &FieldData> = BTreeMap::new();
+    for field in &fields {
+        let name = form_name(field, rename_all);
+        if let Some(prev) = map.insert(name.clone(), field) {
+            let err = darling::Error::custom(format!("duplicate field name `{name}`"))
+                .with_span(&field.ident)
+                .with_span(&prev.ident);
+            return Err(err.write_errors());
+        }
+    }
+    Ok(map)
 }
 
 /// Generates builder ident: `Foo` → `FooMultipartBuilder`

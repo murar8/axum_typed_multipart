@@ -78,8 +78,7 @@ fn parse_index(suffix: &str) -> Result<Option<(usize, &str)>, anyhow::Error> {
 /// For example, `[0].name`, `[0].age`, `[1].name`, `[1].age` is valid, but `[1].name` before
 /// any `[0]` field would be rejected. Fields for the same index can arrive in any order.
 ///
-/// Invalid index formats (negative, non-numeric, etc.) are returned unconsumed for the
-/// caller to handle (ignored in lax mode, rejected in strict mode).
+/// Invalid index formats (e.g., `[abc]`, `[-1]`, missing `]`) return an error.
 #[async_trait]
 impl<S, B> MultipartBuilder<S> for Vec<B>
 where
