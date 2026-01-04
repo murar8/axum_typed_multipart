@@ -1,0 +1,5 @@
+error: Unknown value: `invalid_case`
+ --> tests/ui/field_invalid_rename_all.rs:4:31
+  |
+4 | #[try_from_field(rename_all = "invalid_case")]
+  |                               ^^^^^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: Unknown field: `unknown_attr`. Available values: `rename_all`, `state`, `strict`
+ --> tests/ui/multipart_unknown_attribute.rs:4:22
+  |
+4 | #[try_from_multipart(unknown_attr)]
+  |                      ^^^^^^^^^^^^
