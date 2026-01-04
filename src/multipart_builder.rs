@@ -42,6 +42,13 @@ pub trait MultipartBuilder<S> {
     /// The `path` parameter contains the field path prefix for error messages (e.g., "person.address").
     /// For top-level builders, pass an empty string. Nested builders receive the accumulated path.
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError>;
+
+    /// Returns `true` if any field was consumed by this builder or its nested builders.
+    ///
+    /// Used to detect when an entire required nested struct is missing, allowing error messages
+    /// to report the parent field (e.g., "field 'owner' is required") instead of the first
+    /// missing leaf field (e.g., "field 'owner.name' is required").
+    fn was_consumed(&self) -> bool;
 }
 
 /// Parses `[index]` from the start of the suffix.
@@ -90,6 +97,10 @@ where
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
         self.into_iter().map(|(idx, builder)| builder.finalize(&format!("{path}[{idx}]"))).collect()
     }
+
+    fn was_consumed(&self) -> bool {
+        !self.is_empty()
+    }
 }
 
 /// Blanket impl for `Option<B>` - creates inner builder on first field.
@@ -117,5 +128,9 @@ where
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
         self.map(|b| b.finalize(path)).transpose()
+    }
+
+    fn was_consumed(&self) -> bool {
+        self.is_some()
     }
 }

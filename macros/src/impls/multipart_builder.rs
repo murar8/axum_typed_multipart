@@ -67,6 +67,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
             #[doc(hidden)]
             #[derive(Default)]
             #vis struct #input_builder_ident {
+                __consumed__: bool,
                 #(#builder_fields),*
             }
         }
@@ -119,6 +120,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                     quote! {
                         {
                             if __suffix__ == #prefix {
+                                self.__consumed__ = true;
                                 #assignment
                                 return Ok(None);
                             }
@@ -156,8 +158,19 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                         };
                         if *default {
                             quote! { #finalize.unwrap_or_default() }
-                        } else {
+                        } else if matches_vec_signature(ty) || matches_option_signature(ty) {
                             quote! { #finalize? }
+                        } else {
+                            // Required nested field: check was_consumed to report parent field
+                            quote! {
+                                if axum_typed_multipart::MultipartBuilder::<#input_state_ty>::was_consumed(&self.#ident) {
+                                    #finalize?
+                                } else {
+                                    return Err(axum_typed_multipart::TypedMultipartError::MissingField {
+                                        field_name: #field_path
+                                    });
+                                }
+                            }
                         }
                     } else if matches_vec_signature(ty) || matches_option_signature(ty) {
                         quote! { self.#ident }
@@ -184,12 +197,30 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
             }
         };
 
+        let was_consumed_method = {
+            let all_checks = std::iter::once(quote! { self.__consumed__ }).chain(
+                fields
+                    .values()
+                    .filter(|f| f.nested)
+                    .map(|FieldData { ident, .. }| {
+                        quote! { axum_typed_multipart::MultipartBuilder::<#input_state_ty>::was_consumed(&self.#ident) }
+                    }),
+            );
+
+            quote! {
+                fn was_consumed(&self) -> bool {
+                    #(#all_checks)||*
+                }
+            }
+        };
+
         quote! {
             #[axum_typed_multipart::async_trait]
             impl #input_generic axum_typed_multipart::MultipartBuilder<#input_state_ty> for #input_builder_ident {
                 type Target = #ident;
                 #consume_method
                 #finalize_method
+                #was_consumed_method
             }
         }
     };

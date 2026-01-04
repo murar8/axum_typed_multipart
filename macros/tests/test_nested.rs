@@ -508,8 +508,8 @@ async fn test_missing_entire_required_nested() {
         .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    // First missing field (alphabetically) in nested struct should show full path
-    assert_eq!(res.text().await.unwrap(), "field 'owner.age' is required");
+    // When entire required nested struct is missing, report parent field
+    assert_eq!(res.text().await.unwrap(), "field 'owner' is required");
 }
 
 // =============================================================================
