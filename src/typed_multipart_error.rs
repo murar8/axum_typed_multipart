@@ -36,7 +36,7 @@ pub enum TypedMultipartError {
     #[error("field name is empty")]
     NamelessField,
 
-    #[error("field '{field_name}' has invalid index (expected {expected})")]
+    #[error("field '{field_name}' has non-contiguous index (expected index {expected})")]
     InvalidIndex { field_name: String, expected: usize },
 
     #[error("field '{field_name}' has invalid index: {source}")]
@@ -187,7 +187,10 @@ mod tests {
         let expected = 2;
         let error = TypedMultipartError::InvalidIndex { field_name, expected };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
-        assert_eq!(error.to_string(), "field 'users[5].name' has invalid index (expected 2)");
+        assert_eq!(
+            error.to_string(),
+            "field 'users[5].name' has non-contiguous index (expected index 2)"
+        );
     }
 
     #[tokio::test]

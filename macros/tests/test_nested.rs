@@ -413,6 +413,31 @@ async fn test_invalid_index_whitespace_quirk() {
     assert_eq!(res.status(), StatusCode::OK);
 }
 
+#[tokio::test]
+async fn test_invalid_index_overflow() {
+    // Index that overflows usize should be rejected
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                .text("users[99999999999999999999999].name", "Invalid"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[99999999999999999999999].name' has invalid index: '99999999999999999999999' is not a valid number"
+    );
+}
+
 // =============================================================================
 // Non-contiguous and out-of-order indices - error cases
 // =============================================================================
@@ -439,7 +464,10 @@ async fn test_non_contiguous_indices_error() {
         .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await.unwrap(), "field 'users[5].name' has invalid index (expected 1)");
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[5].name' has non-contiguous index (expected index 1)"
+    );
 }
 
 #[tokio::test]
@@ -462,7 +490,10 @@ async fn test_out_of_order_indices_error() {
         .unwrap();
 
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(res.text().await.unwrap(), "field 'users[1].name' has invalid index (expected 0)");
+    assert_eq!(
+        res.text().await.unwrap(),
+        "field 'users[1].name' has non-contiguous index (expected index 0)"
+    );
 }
 
 #[tokio::test]

@@ -6,7 +6,7 @@
 //!   - `Option<T>` / `Vec<T>` (non-nested) → kept as-is
 //!   - `#[form_data(nested)] T` → `TMultipartBuilder`
 //!   - `#[form_data(nested)] Option<T>` → `Option<TMultipartBuilder>`
-//!   - `#[form_data(nested)] Vec<T>` → `BTreeMap<usize, TMultipartBuilder>` (sparse indices)
+//!   - `#[form_data(nested)] Vec<T>` → `Vec<TMultipartBuilder>`
 //!
 //! - `impl MultipartBuilder<S>` with:
 //!   - `consume()`: Routes fields by name segment matching. Nested fields use prefix
