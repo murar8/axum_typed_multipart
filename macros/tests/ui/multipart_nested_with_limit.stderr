@@ -1,0 +1,5 @@
+error: `limit` has no effect on `nested` fields
+  --> tests/ui/multipart_nested_with_limit.rs:11:5
+   |
+11 |     inner: Inner,
+   |     ^^^^^

@@ -18,22 +18,17 @@ use crate::derive_input::{FieldData, InputData};
 use crate::util::{
     extract_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
 };
-use proc_macro_error2::abort;
+use proc_macro_error2::{abort, abort_if_dirty, emit_error};
 use quote::quote;
 use std::collections::BTreeMap;
 
-fn validate_fields(fields: &[&FieldData]) -> darling::Result<()> {
-    let mut errors = darling::Error::accumulator();
+fn validate_fields(fields: &[&FieldData]) {
     for field in fields {
         // `limit` is ignored on nested fields since parsing is delegated to inner builders
         if field.nested && !field.limit.is_unlimited() {
-            errors.push(
-                darling::Error::custom("`limit` has no effect on `nested` fields")
-                    .with_span(&field.ident),
-            );
+            emit_error!(field.ident, "`limit` has no effect on `nested` fields");
         }
     }
-    errors.finish()
 }
 
 pub fn expand(input: InputData) -> proc_macro2::TokenStream {
@@ -45,15 +40,13 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
     let fields = data.take_struct().unwrap();
     let fields: Vec<_> = fields.iter().collect();
 
-    if let Err(err) = validate_fields(&fields) {
-        return err.write_errors();
-    }
+    validate_fields(&fields);
 
     // Compute field names, checking for duplicates
-    let fields = match build_field_map(rename_all, fields) {
-        Ok(value) => value,
-        Err(value) => return value,
-    };
+    let fields = build_field_map(rename_all, fields);
+
+    // Abort if any validation errors were emitted (prevents cascade errors)
+    abort_if_dirty();
 
     let struct_def = {
         let builder_fields = fields.values().map(|FieldData { ident, ty, nested, .. }| {
@@ -236,18 +229,16 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
 fn build_field_map(
     rename_all: Option<RenameCase>,
     fields: Vec<&FieldData>,
-) -> Result<BTreeMap<String, &FieldData>, proc_macro2::TokenStream> {
+) -> BTreeMap<String, &FieldData> {
     let mut map: BTreeMap<String, &FieldData> = BTreeMap::new();
     for field in &fields {
         let name = form_name(field, rename_all);
         if let Some(prev) = map.insert(name.clone(), field) {
-            let err = darling::Error::custom(format!("duplicate field name `{name}`"))
-                .with_span(&field.ident)
-                .with_span(&prev.ident);
-            return Err(err.write_errors());
+            emit_error!(field.ident, "duplicate field name `{}`", name);
+            emit_error!(prev.ident, "previous definition of `{}` here", name);
         }
     }
-    Ok(map)
+    map
 }
 
 /// Generates builder ident: `Foo` → `FooMultipartBuilder`

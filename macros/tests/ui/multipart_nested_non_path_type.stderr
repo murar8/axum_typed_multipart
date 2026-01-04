@@ -1,0 +1,5 @@
+error: nested field must be a simple type path
+ --> tests/ui/multipart_nested_non_path_type.rs:6:12
+  |
+6 |     inner: &'static str,
+  |            ^^^^^^^^^^^^

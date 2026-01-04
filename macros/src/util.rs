@@ -51,10 +51,7 @@ pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
     };
     let args = match &last_segment.arguments {
         syn::PathArguments::AngleBracketed(args) => args,
-        _ => abort!(
-            &last_segment.arguments,
-            "nested fields require a type parameter (e.g., `Vec<Person>`)"
-        ),
+        _ => abort!(last_segment, "nested fields require a type parameter (e.g., `Vec<Person>`)"),
     };
     match args.args.first() {
         Some(syn::GenericArgument::Type(inner)) => inner,
