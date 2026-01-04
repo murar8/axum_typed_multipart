@@ -18,19 +18,22 @@ use crate::derive_input::{FieldData, InputData};
 use crate::util::{
     extract_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
 };
-use darling::FromDeriveInput;
-use proc_macro::TokenStream;
 use proc_macro_error2::abort;
 use quote::quote;
 use std::collections::BTreeMap;
 
-#[allow(dead_code)] // for now this macro is derived together with TryFromMultipart
-pub fn macro_impl(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as syn::DeriveInput);
-    match InputData::from_derive_input(&input) {
-        Ok(input) => expand(input).into(),
-        Err(err) => err.write_errors().into(),
+fn validate_fields(fields: &[&FieldData]) -> darling::Result<()> {
+    let mut errors = darling::Error::accumulator();
+    for field in fields {
+        // `limit` is ignored on nested fields since parsing is delegated to inner builders
+        if field.nested && !field.limit.is_unlimited() {
+            errors.push(
+                darling::Error::custom("`limit` has no effect on `nested` fields")
+                    .with_span(&field.ident),
+            );
+        }
     }
+    errors.finish()
 }
 
 pub fn expand(input: InputData) -> proc_macro2::TokenStream {
@@ -40,6 +43,11 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
 
     let InputData { ident, vis, data, strict, rename_all, .. } = input;
     let fields = data.take_struct().unwrap();
+    let fields: Vec<_> = fields.iter().collect();
+
+    if let Err(err) = validate_fields(&fields) {
+        return err.write_errors();
+    }
 
     // Compute field names once, map name → field (BTreeMap for deterministic iteration order)
     let fields: BTreeMap<_, _> = fields.iter().map(|f| (form_name(f, rename_all), f)).collect();

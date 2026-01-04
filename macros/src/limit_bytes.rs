@@ -4,7 +4,7 @@ use ubyte::ByteUnit;
 /// Parsed byte limit from attribute (e.g., `limit = "1MB"` or `limit = "unlimited"`).
 /// `None` represents unlimited.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct LimitBytes(pub Option<ByteUnit>);
+pub struct LimitBytes(Option<ByteUnit>);
 
 impl darling::FromMeta for LimitBytes {
     fn from_string(value: &str) -> darling::Result<Self> {
@@ -27,6 +27,12 @@ impl ToTokens for LimitBytes {
                 quote! { Some(#n) }
             }
         });
+    }
+}
+
+impl LimitBytes {
+    pub fn is_unlimited(&self) -> bool {
+        self.0.is_none()
     }
 }
 

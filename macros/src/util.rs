@@ -43,18 +43,24 @@ pub fn matches_vec_signature(ty: &syn::Type) -> bool {
 pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
     let path = match ty {
         syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
-        _ => abort!(ty, "expected a path type, found complex type"),
+        _ => abort!(ty, "nested fields must use simple type paths like `Vec<T>` or `Option<T>`"),
     };
     let last_segment = match path.segments.last() {
         Some(segment) => segment,
-        None => abort!(path.segments, "expected a non-empty path"),
+        None => abort!(path.segments, "type path cannot be empty"),
     };
     let args = match &last_segment.arguments {
         syn::PathArguments::AngleBracketed(args) => args,
-        _ => abort!(&last_segment.arguments, "expected type parameter (e.g., <T>)"),
+        _ => abort!(
+            &last_segment.arguments,
+            "nested fields require a type parameter (e.g., `Vec<Person>`)"
+        ),
     };
     match args.args.first() {
         Some(syn::GenericArgument::Type(inner)) => inner,
-        _ => abort!(args.args, "expected a single type argument"),
+        _ => abort!(
+            args.args,
+            "nested fields require exactly one type parameter (e.g., `Vec<Person>`)"
+        ),
     }
 }
