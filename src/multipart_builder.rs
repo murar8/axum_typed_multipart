@@ -1,3 +1,4 @@
+use crate::parse_index::parse_index;
 use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
@@ -50,24 +51,6 @@ pub trait MultipartBuilder<S> {
     fn was_consumed(&self) -> bool;
 }
 
-/// Parses `[index]` from the start of the suffix.
-///
-/// Returns:
-/// - `Ok(None)` if suffix doesn't start with `[` (no index present)
-/// - `Ok(Some((idx, rest)))` on successful parse
-/// - `Err(...)` if index format is invalid
-fn parse_index(suffix: &str) -> Result<Option<(usize, &str)>, anyhow::Error> {
-    let Some(rest) = suffix.strip_prefix('[') else {
-        return Ok(None);
-    };
-    let end = rest.find(']').ok_or_else(|| anyhow::anyhow!("missing closing bracket"))?;
-    let idx_str = &rest[..end];
-    let idx = idx_str
-        .parse::<usize>()
-        .map_err(|_| anyhow::anyhow!("'{idx_str}' is not a valid number"))?;
-    Ok(Some((idx, &rest[end + 1..])))
-}
-
 /// Blanket impl for `Vec<B>` - parses indexed field names like `[0].field`.
 ///
 /// This impl is used by macro-generated builder structs for `#[form_data(nested)]` fields
@@ -95,27 +78,23 @@ where
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
         let field_name = || field.name().unwrap_or_default().to_string();
-        match parse_index(suffix) {
-            Err(source) => {
-                Err(TypedMultipartError::InvalidIndexFormat { field_name: field_name(), source })
-            }
-            Ok(None) => Ok(Some(field)), // No index - cannot consume
-            Ok(Some((idx, rest))) => {
-                if idx == self.len() {
-                    // Next consecutive index - create new builder
-                    self.push(B::default());
-                }
-                if idx < self.len() {
-                    // Valid index - delegate to inner builder
-                    self[idx].consume(field, rest, state, depth + 1).await
-                } else {
-                    // Gap in indices (idx > self.len()) - error
-                    Err(TypedMultipartError::InvalidIndex {
-                        field_name: field_name(),
-                        expected: self.len(),
-                    })
-                }
-            }
+        let (idx, rest) = parse_index(suffix).map_err(|source| {
+            TypedMultipartError::InvalidIndexFormat { field_name: field_name(), source }
+        })?;
+
+        if idx == self.len() {
+            // Next consecutive index - create new builder
+            self.push(B::default());
+        }
+        if idx < self.len() {
+            // Valid index - delegate to inner builder
+            self[idx].consume(field, rest, state, depth + 1).await
+        } else {
+            // Gap in indices (idx > self.len()) - error
+            Err(TypedMultipartError::InvalidIndex {
+                field_name: field_name(),
+                expected: self.len(),
+            })
         }
     }
 

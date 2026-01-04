@@ -305,6 +305,7 @@ pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 mod base_multipart;
 mod field_data;
 mod multipart_builder;
+mod parse_index;
 mod try_from_chunks;
 mod try_from_field;
 mod try_from_multipart;
