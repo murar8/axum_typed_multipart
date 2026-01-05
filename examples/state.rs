@@ -1,8 +1,7 @@
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::Router;
-use axum_typed_multipart::{TypedMultipart, TypedMultipartError};
-use axum_typed_multipart_macros::TryFromMultipart;
+use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
 
 /// A field that validates its value against application state.
 #[derive(Debug)]
