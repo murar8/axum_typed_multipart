@@ -1,4 +1,4 @@
-error: Unknown value: `invalid_case`
+error: Unknown value: `invalid_case`. Available values: `PascalCase`, `UPPERCASE`, `camelCase`, `kebab-case`, `lowercase`, `snake_case`
  --> tests/ui/field_invalid_rename_all.rs:4:31
   |
 4 | #[try_from_field(rename_all = "invalid_case")]
