@@ -10,7 +10,7 @@
 //!
 //! All features are enabled by default.
 //!
-//! - `chrono_0_4`: Enables support for [chrono::DateTime](chrono_0_4::DateTime) (v0.4)
+//! - `chrono_0_4`: Enables support for [chrono::DateTime](chrono_0_4::DateTime) and [chrono::NaiveDate](chrono_0_4::NaiveDate) (v0.4)
 //! - `tempfile_3`: Enables support for [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (v3)
 //! - `uuid_1`: Enables support for [uuid::Uuid](uuid_1::Uuid) (v1)
 //! - `rust_decimal_1`: Enables support for [rust_decimal::Decimal](rust_decimal_1::Decimal) (v1)
@@ -88,7 +88,6 @@
 //! - `kebab-case`
 //! - `UPPERCASE`
 //! - `lowercase`
-//!
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -181,13 +180,28 @@
 //! }
 //! ```
 //!
+//! ### Nested structs
+//!
+//! For complex forms with nested data structures, use the `nested` parameter to parse fields
+//! with dot notation (e.g., `address.city`) or indexed arrays (e.g., `users[0].name`).
+//!
+//! The nested struct must also derive [TryFromMultipart](crate::TryFromMultipart).
+//!
+//! Array indices must be consecutive starting from 0 and fields must arrive in index order.
+//! For example, `users[0].name`, `users[0].age`, `users[1].name` is valid. Fields for the
+//! same index can arrive in any order, but indices must not be skipped or out of order.
+//! ```rust,no_run
+#![doc = include_str!("../examples/nested.rs")]
+//! ```
+//!
 //! ### Strict mode
 //!
 //! By default, the derive macro will store the last occurrence of a field, and it will ignore
 //! unknown fields. This behavior can be changed by using the `strict` parameter in the derive
 //! macro. This will make the macro throw an error if the request contains multiple fields with the
 //! same name or if it contains unknown fields. In addition, when using strict mode sending fields
-//! with a missing or empty name will result in an error.
+//! with a missing or empty name will result in an error. For nested `Vec` fields, invalid array
+//! indices (non-numeric, negative, or malformed like `[abc]` or `[-1]`) are also rejected.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -290,6 +304,8 @@ pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
 mod field_data;
+mod multipart_builder;
+mod parse_index;
 mod try_from_chunks;
 mod try_from_field;
 mod try_from_multipart;
@@ -300,6 +316,7 @@ pub(crate) mod util;
 
 pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_data::{FieldData, FieldMetadata};
+pub use crate::multipart_builder::MultipartBuilder;
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::{TryFromField, TryFromFieldWithState};
 pub use crate::try_from_multipart::{TryFromMultipart, TryFromMultipartWithState};

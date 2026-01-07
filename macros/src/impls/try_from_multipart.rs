@@ -1,186 +1,80 @@
-use crate::case_conversion::RenameCase;
-use crate::limit_bytes::LimitBytes;
-use crate::util::{matches_option_signature, matches_vec_signature, strip_leading_rawlit};
-use darling::{FromDeriveInput, FromField};
+//! Generates `TryFromMultipartWithState` impl as the top-level multipart parser.
+//!
+//! Iterates multipart fields and delegates to the generated `MultipartBuilder`:
+//! - Calls `builder.consume()` at depth 0 for each field
+//! - Handles strict mode: rejects nameless fields and unknown fields (unmatched by builder)
+//! - Calls `builder.finalize()` to produce the target struct
+
+use crate::derive_input::InputData;
+use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::quote;
-
-#[derive(Debug, FromDeriveInput)]
-#[darling(attributes(try_from_multipart), supports(struct_named))]
-struct InputData {
-    ident: syn::Ident,
-
-    data: darling::ast::Data<(), FieldData>,
-
-    #[darling(default)]
-    strict: bool,
-
-    #[darling(default)]
-    rename_all: Option<RenameCase>,
-
-    #[darling(default)]
-    state: Option<syn::Path>,
-}
-
-#[derive(Debug, FromField)]
-#[darling(attributes(form_data))]
-struct FieldData {
-    ident: Option<syn::Ident>,
-
-    ty: syn::Type,
-
-    field_name: Option<String>,
-
-    #[darling(default)]
-    limit: LimitBytes,
-
-    #[darling(default)]
-    default: bool,
-}
-
-impl FieldData {
-    /// Get the name of the field from the `field_name` attribute, falling back
-    /// to the field identifier.
-    fn name(&self, rename_all: Option<RenameCase>) -> String {
-        if let Some(field_name) = &self.field_name {
-            return field_name.to_string();
-        }
-
-        let ident = self.ident.as_ref().unwrap().to_string();
-        let field_in_struct = strip_leading_rawlit(&ident);
-
-        if let Some(case_conversion) = rename_all {
-            case_conversion.convert_case(&field_in_struct)
-        } else {
-            field_in_struct
-        }
-    }
-}
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    let input = match InputData::from_derive_input(&input) {
+        Ok(input) => input,
+        Err(err) => return err.write_errors().into(),
+    };
 
-    let InputData { ident, data, strict, rename_all, state } =
-        match InputData::from_derive_input(&input) {
-            Ok(input) => input,
-            Err(err) => return err.write_errors().into(),
-        };
+    // Extract values before passing ownership to expand()
+    let ident = input.ident.clone();
+    let strict = input.strict;
+    let generic = input.generic();
+    let state_ty = input.state_ty();
+    let builder_ident = input.builder_ident();
 
-    let fields = data.take_struct().unwrap();
+    let builder = crate::impls::multipart_builder::expand(input);
+    // cannot infer state type here, so we have to be explicit
+    let builder_ident =
+        quote! { <#builder_ident as axum_typed_multipart::MultipartBuilder<#state_ty>> };
 
-    let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
-        if matches_vec_signature(ty) {
-            quote! { let mut #ident: #ty = std::vec::Vec::new(); }
-        } else if matches_option_signature(ty) {
-            quote! { let mut #ident: #ty = std::option::Option::None; }
-        } else {
-            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::None; }
-        }
-    });
-
-    let mut assignments = fields
-        .iter()
-        .map(|field @ FieldData { ident, ty, limit, .. }| {
-            let name = field.name(rename_all);
-            let value = quote! {
-                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, state).await?
-            };
-
-            let assignment = if matches_vec_signature(ty) {
-                quote! { #ident.push(#value); }
-            } else if strict {
-                quote! {
-                    if #ident.is_none() {
-                        #ident = Some(#value);
-                    } else {
-                        return Err(
-                            axum_typed_multipart::TypedMultipartError::DuplicateField {
-                                field_name: String::from(#name)
-                            }
-                        );
-                    }
-                }
-            } else {
-                quote! { #ident = Some(#value); }
-            };
-
-            quote! {
-                if __field_name__ == #name {
-                    #assignment
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    if strict {
-        assignments.push(quote! {
-            {
-                return Err(
-                    axum_typed_multipart::TypedMultipartError::UnknownField {
-                        field_name: __field_name__
-                    }
-                );
-            }
-        })
-    }
-
-    let required_fields = fields
-        .iter()
-        .filter(|FieldData { ty, .. }| !matches_option_signature(ty) && !matches_vec_signature(ty));
-    let default_fields = required_fields.clone().filter(|FieldData { default, .. }| *default);
-    let default_assignments = default_fields.map(|FieldData { ident, ty, .. }| {
-        quote! {
-            let #ident: Option<#ty> = #ident.or_else(|| Some(#ty::default()));
-        }
-    });
-
-    let checks = required_fields.map(|field @ FieldData { ident, .. }| {
-        let field_name = field.name(rename_all);
-        quote! {
-            let #ident = #ident.ok_or(
-                axum_typed_multipart::TypedMultipartError::MissingField {
-                    field_name: String::from(#field_name)
-                }
-            )?;
-        }
-    });
-
-    let idents = fields.iter().map(|FieldData { ident, .. }| ident);
-
-    let missing_field_name_fallback = if strict {
-        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
-    } else {
+    let on_nameless_field = if !strict {
         quote! { continue }
+    } else {
+        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
     };
 
-    let generic = state.is_none().then(|| quote! { <S: Sync> });
-    let state = state.map(|state| quote! { #state }).unwrap_or(quote! { S });
+    let on_unmatched_field = if !strict {
+        quote! { continue }
+    } else {
+        quote! {
+            return Err(axum_typed_multipart::TypedMultipartError::UnknownField {
+                field_name: __field__.name().unwrap_or_default().to_string()
+            })
+        }
+    };
 
-    let output = quote! {
-        #[axum_typed_multipart::async_trait]
-        impl #generic axum_typed_multipart::TryFromMultipartWithState<#state> for #ident {
-            async fn try_from_multipart_with_state(multipart: &mut axum::extract::multipart::Multipart, state: &#state) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
-                #(#declarations)*
-
-                while let Some(__field__) = multipart.next_field().await? {
-                    let __field_name__ = match __field__.name() {
-                        | Some("")
-                        | None => #missing_field_name_fallback,
-                        | Some(name) => name.to_string(),
-                    };
-
-                    #(#assignments) else *
-                }
-
-                #(#default_assignments)*
-
-                #(#checks)*
-
-                Ok(Self { #(#idents),* })
+    let consume_loop = quote! {
+        while let Some(__field__) = multipart.next_field().await? {
+            let __name__ = match __field__.name() {
+                None | Some("") => { #on_nameless_field }
+                Some(name) => name.to_string(),
+            };
+            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state, 0).await? {
+                #on_unmatched_field
             }
         }
     };
 
-    output.into()
+    let impl_block = quote! {
+        #[axum_typed_multipart::async_trait]
+        impl #generic axum_typed_multipart::TryFromMultipartWithState<#state_ty> for #ident {
+            async fn try_from_multipart_with_state(
+                multipart: &mut axum::extract::multipart::Multipart,
+                state: &#state_ty,
+            ) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
+                let mut __builder__ = Default::default();
+                #consume_loop
+                #builder_ident::finalize(__builder__, "")
+            }
+        }
+    };
+
+    quote! {
+        #builder
+        #impl_block
+    }
+    .into()
 }

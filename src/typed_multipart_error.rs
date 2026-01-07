@@ -36,6 +36,12 @@ pub enum TypedMultipartError {
     #[error("field name is empty")]
     NamelessField,
 
+    #[error("field '{field_name}' has non-contiguous index (expected index {expected})")]
+    InvalidIndex { field_name: String, expected: usize },
+
+    #[error("field '{field_name}' has invalid index: {source}")]
+    InvalidIndexFormat { field_name: String, source: anyhow::Error },
+
     #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
     FieldTooLarge { field_name: String, limit_bytes: usize },
 
@@ -54,7 +60,9 @@ impl TypedMultipartError {
             | Self::DuplicateField { .. }
             | Self::UnknownField { .. }
             | Self::InvalidEnumValue { .. }
-            | Self::NamelessField { .. } => StatusCode::BAD_REQUEST,
+            | Self::NamelessField { .. }
+            | Self::InvalidIndex { .. }
+            | Self::InvalidIndexFormat { .. } => StatusCode::BAD_REQUEST,
             | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),
@@ -171,6 +179,30 @@ mod tests {
         let error = TypedMultipartError::NamelessField;
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field name is empty");
+    }
+
+    #[tokio::test]
+    async fn test_invalid_index() {
+        let field_name = "users[5].name".to_string();
+        let expected = 2;
+        let error = TypedMultipartError::InvalidIndex { field_name, expected };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field 'users[5].name' has non-contiguous index (expected index 2)"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_invalid_index_format() {
+        let field_name = "users[abc].name".to_string();
+        let source = anyhow::anyhow!("'abc' is not a valid number");
+        let error = TypedMultipartError::InvalidIndexFormat { field_name, source };
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field 'users[abc].name' has invalid index: 'abc' is not a valid number"
+        );
     }
 
     #[tokio::test]

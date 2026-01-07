@@ -30,5 +30,6 @@ axum = { workspace = true }
 axum_test_helper = { path = "../test_helper" }
 axum_typed_multipart = { path = ".." }
 reqwest = { workspace = true }
+test_external = { path = "../test_external" }
 tokio = { workspace = true, features = ["macros"] }
 trybuild = "1.0.114"

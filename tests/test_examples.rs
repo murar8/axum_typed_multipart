@@ -28,6 +28,10 @@ mod upload;
 #[allow(dead_code)]
 mod utoipa_example;
 
+#[path = "../examples/nested.rs"]
+#[allow(dead_code)]
+mod nested;
+
 // basic.rs tests
 
 #[tokio::test]
@@ -135,4 +139,38 @@ async fn test_utoipa_openapi_schema() {
     let client = TestClient::new(utoipa_example::app());
     let res = client.get("/api-docs/openapi2.json").send().await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
+}
+
+// nested.rs tests
+
+#[tokio::test]
+async fn test_nested_success() {
+    let client = TestClient::new(nested::app());
+    let form = Form::new()
+        .text("team_name", "Engineering")
+        .text("members[0].name", "Alice")
+        .text("members[0].address.street", "123 Main St")
+        .text("members[0].address.city", "Springfield");
+    let res = client.post("/teams").multipart(form).send().await.unwrap();
+    assert_eq!(res.status(), StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn test_nested_missing_field() {
+    let client = TestClient::new(nested::app());
+    let form = Form::new().text("team_name", "Engineering");
+    let res = client.post("/teams").multipart(form).send().await.unwrap();
+    assert_eq!(res.status(), StatusCode::CREATED); // members is Vec, empty is valid
+}
+
+#[tokio::test]
+async fn test_nested_with_optional_manager() {
+    let client = TestClient::new(nested::app());
+    let form = Form::new()
+        .text("team_name", "Engineering")
+        .text("manager.name", "Bob")
+        .text("manager.address.street", "456 Oak Ave")
+        .text("manager.address.city", "Portland");
+    let res = client.post("/teams").multipart(form).send().await.unwrap();
+    assert_eq!(res.status(), StatusCode::CREATED);
 }

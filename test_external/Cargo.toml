@@ -1,0 +1,12 @@
+[package]
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+name = "test_external"
+publish = false
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+axum = { workspace = true, features = ["multipart"] }
+axum_typed_multipart = { path = ".." }

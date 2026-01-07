@@ -1,0 +1,11 @@
+error: duplicate field name `name`
+ --> tests/ui/multipart_duplicate_field_name.rs:8:5
+  |
+8 |     last_name: String,
+  |     ^^^^^^^^^
+
+error: previous definition of `name` here
+ --> tests/ui/multipart_duplicate_field_name.rs:6:5
+  |
+6 |     first_name: String,
+  |     ^^^^^^^^^^

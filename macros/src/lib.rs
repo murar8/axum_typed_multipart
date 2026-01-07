@@ -3,6 +3,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod case_conversion;
+mod derive_input;
 mod impls;
 mod limit_bytes;
 mod util;

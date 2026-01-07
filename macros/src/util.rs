@@ -1,3 +1,14 @@
+use proc_macro_error2::abort;
+
+/// Strips leading r# from the ident. Used to convert idents to string literals.
+pub fn strip_leading_rawlit(s: &str) -> String {
+    if s.starts_with("r#") {
+        s.chars().skip(2).collect()
+    } else {
+        s.to_owned()
+    }
+}
+
 /// Check if the supplied type matches at least one of the provided signatures.
 ///
 /// Note that this method is not guaranteed to work on every possible input
@@ -16,15 +27,6 @@ pub fn matches_signature(ty: &syn::Type, signatures: &[&str]) -> bool {
     signatures.contains(&signature.as_ref())
 }
 
-/// Strips leading r# from the ident. Used to convert idents to string literals.
-pub fn strip_leading_rawlit(s: &str) -> String {
-    if s.starts_with("r#") {
-        s.chars().skip(2).collect()
-    } else {
-        s.to_owned()
-    }
-}
-
 /// Check if the supplied type matches the [Option] signature.
 pub fn matches_option_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Option", "std::option::Option", "core::option::Option"])
@@ -33,4 +35,29 @@ pub fn matches_option_signature(ty: &syn::Type) -> bool {
 /// Check if the supplied type matches the [Vec] signature.
 pub fn matches_vec_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Vec", "std::vec::Vec"])
+}
+
+/// Extract the inner type from a generic type like `Vec<T>` or `Option<T>`.
+///
+/// Aborts with an error if the type doesn't have a single type parameter.
+pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
+    let path = match ty {
+        syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
+        _ => abort!(ty, "nested fields must use simple type paths like `Vec<T>` or `Option<T>`"),
+    };
+    let last_segment = match path.segments.last() {
+        Some(segment) => segment,
+        None => abort!(path.segments, "type path cannot be empty"),
+    };
+    let args = match &last_segment.arguments {
+        syn::PathArguments::AngleBracketed(args) => args,
+        _ => abort!(last_segment, "nested fields require a type parameter (e.g., `Vec<Person>`)"),
+    };
+    match args.args.first() {
+        Some(syn::GenericArgument::Type(inner)) => inner,
+        _ => abort!(
+            args.args,
+            "nested fields require exactly one type parameter (e.g., `Vec<Person>`)"
+        ),
+    }
 }
