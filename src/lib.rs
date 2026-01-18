@@ -187,9 +187,16 @@
 //!
 //! The nested struct must also derive [TryFromMultipart](crate::TryFromMultipart).
 //!
-//! Array indices must be consecutive starting from 0 and fields must arrive in index order.
-//! For example, `users[0].name`, `users[0].age`, `users[1].name` is valid. Fields for the
-//! same index can arrive in any order, but indices must not be skipped or out of order.
+//! For nested `Vec` fields, multiple indexing formats are supported:
+//! - Explicit indices: `users[0].name`, `users[1].name` (must be consecutive starting from 0)
+//! - Empty brackets: `users[]` (always creates a new element)
+//!
+//! When using explicit indices, fields must arrive in index order. For example,
+//! `users[0].name`, `users[0].age`, `users[1].name` is valid. Fields for the same index
+//! can arrive in any order, but indices must not be skipped or out of order.
+//!
+//! Empty brackets (`[]`) always push a new element to the vector. For nested structs
+//! with multiple fields, use explicit indices to group fields together.
 //! ```rust,no_run
 #![doc = include_str!("../examples/nested.rs")]
 //! ```
@@ -201,7 +208,7 @@
 //! macro. This will make the macro throw an error if the request contains multiple fields with the
 //! same name or if it contains unknown fields. In addition, when using strict mode sending fields
 //! with a missing or empty name will result in an error. For nested `Vec` fields, invalid array
-//! indices (non-numeric, negative, or malformed like `[abc]` or `[-1]`) are also rejected.
+//! indices (non-numeric or negative like `[abc]` or `[-1]`) are rejected.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!

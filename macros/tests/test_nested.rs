@@ -347,7 +347,7 @@ async fn test_invalid_index_negative() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(
         res.text().await.unwrap(),
-        "field 'users[-1].name' has invalid index: '-1' is not a valid number"
+        "field 'users[-1].name' has invalid index: '-1' is not a valid array index"
     );
 }
 
@@ -367,28 +367,92 @@ async fn test_invalid_index_non_numeric() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(
         res.text().await.unwrap(),
-        "field 'users[abc].name' has invalid index: 'abc' is not a valid number"
+        "field 'users[abc].name' has invalid index: 'abc' is not a valid array index"
     );
 }
 
 #[tokio::test]
-async fn test_invalid_index_empty_brackets() {
-    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
-        panic!("should not be called");
-    }
+async fn test_empty_brackets_always_push_new() {
+    // Empty brackets [] always create a new element (Rocket-style semantics)
+    // Each [] pushes a new item, so users[].name and users[].age create TWO users
+    // For nested structs with required fields, use explicit indices to group fields
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithNestedVec>| async move {
+        assert_eq!(data.title, "Test");
+        assert_eq!(data.users.len(), 2);
+        assert_eq!(data.users[0].name, "Alice");
+        assert_eq!(data.users[0].age, 30);
+        assert_eq!(data.users[1].name, "Bob");
+        assert_eq!(data.users[1].age, 25);
+    };
 
     let res = TestClient::new(Router::new().route("/", post(handler)))
         .post("/")
-        .multipart(Form::new().text("title", "Test").text("users[].name", "Invalid"))
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                // Use explicit indices to group fields for the same struct
+                .text("users[0].name", "Alice")
+                .text("users[0].age", "30")
+                .text("users[1].name", "Bob")
+                .text("users[1].age", "25"),
+        )
         .send()
         .await
         .unwrap();
 
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_empty_brackets_creates_incomplete_structs() {
+    // Demonstrates that [] always creates new elements
+    // Using [] for each field of a nested struct creates separate incomplete structs
+    async fn handler(_: TypedMultipart<FormWithNestedVec>) {
+        panic!("should not be called - structs are incomplete");
+    }
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("title", "Test")
+                // Each [] creates a new user, so this creates 2 incomplete users
+                .text("users[].name", "Alice") // user[0] with only name
+                .text("users[].age", "30"), // user[1] with only age
+        )
+        .send()
+        .await
+        .unwrap();
+
+    // Fails because user[0] is missing 'age' field
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(
-        res.text().await.unwrap(),
-        "field 'users[].name' has invalid index: '' is not a valid number"
-    );
+    assert!(res.text().await.unwrap().contains("age"));
+}
+
+#[tokio::test]
+async fn test_deep_nesting_with_explicit_indices() {
+    // For nested structures, use explicit indices to group related fields
+    let handler = |TypedMultipart(data): TypedMultipart<FormWithDeepNesting>| async move {
+        assert_eq!(data.users.len(), 1);
+        assert_eq!(data.users[0].name, "Alice");
+        assert_eq!(data.users[0].phones.len(), 2);
+        assert_eq!(data.users[0].phones[0].number, "111");
+        assert_eq!(data.users[0].phones[1].number, "222");
+    };
+
+    let res = TestClient::new(Router::new().route("/", post(handler)))
+        .post("/")
+        .multipart(
+            Form::new()
+                .text("users[0].name", "Alice")
+                .text("users[0].phones[0].number", "111")
+                .text("users[0].phones[1].number", "222"),
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[tokio::test]
@@ -434,7 +498,7 @@ async fn test_invalid_index_overflow() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     assert_eq!(
         res.text().await.unwrap(),
-        "field 'users[99999999999999999999999].name' has invalid index: '99999999999999999999999' is not a valid number"
+        "field 'users[99999999999999999999999].name' has invalid index: '99999999999999999999999' is not a valid array index"
     );
 }
 

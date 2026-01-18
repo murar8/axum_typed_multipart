@@ -1,4 +1,4 @@
-use crate::parse_index::parse_index;
+use crate::parse_index::{parse_vec_index, VecIndex};
 use crate::TypedMultipartError;
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
@@ -57,9 +57,15 @@ pub trait MultipartBuilder<S> {
 /// with `Vec<T>` types. The macro generates `Vec<TMultipartBuilder>` fields, which use this
 /// impl to parse indexed field names and delegate to the inner builder.
 ///
-/// Indices must be consecutive starting from 0 and fields must arrive in index order.
-/// For example, `[0].name`, `[0].age`, `[1].name`, `[1].age` is valid, but `[1].name` before
-/// any `[0]` field would be rejected. Fields for the same index can arrive in any order.
+/// Supports multiple indexing formats:
+/// - `[n]` - explicit numeric index (must be consecutive starting from 0)
+/// - `[]` - auto-append (always creates a new element)
+///
+/// For explicit indices, fields must arrive in index order. For example, `[0].name`,
+/// `[0].age`, `[1].name` is valid, but `[1].name` before any `[0]` field would be rejected.
+/// Fields for the same index can arrive in any order.
+///
+/// Empty brackets `[]` always push a new element to the vector (Rocket-style semantics).
 ///
 /// Invalid index formats (e.g., `[abc]`, `[-1]`, missing `]`) return an error.
 #[async_trait]
@@ -78,24 +84,34 @@ where
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
         let field_name = || field.name().unwrap_or_default().to_string();
-        let (idx, rest) = parse_index(suffix).map_err(|source| {
+        let (vec_idx, rest) = parse_vec_index(suffix).map_err(|source| {
             TypedMultipartError::InvalidIndexFormat { field_name: field_name(), source }
         })?;
 
-        if idx == self.len() {
-            // Next consecutive index - create new builder
-            self.push(B::default());
-        }
-        if idx < self.len() {
-            // Valid index - delegate to inner builder
-            self[idx].consume(field, rest, state, depth + 1).await
-        } else {
-            // Gap in indices (idx > self.len()) - error
-            Err(TypedMultipartError::InvalidIndex {
-                field_name: field_name(),
-                expected: self.len(),
-            })
-        }
+        let idx = match vec_idx {
+            VecIndex::Explicit(idx) => {
+                if idx == self.len() {
+                    // Next consecutive index - create new builder
+                    self.push(B::default());
+                }
+                if idx > self.len() {
+                    // Gap in indices - error
+                    return Err(TypedMultipartError::InvalidIndex {
+                        field_name: field_name(),
+                        expected: self.len(),
+                    });
+                }
+                idx
+            }
+            VecIndex::Auto => {
+                // Auto-append: always create new item
+                self.push(B::default());
+                self.len() - 1
+            }
+        };
+
+        // Delegate to inner builder
+        self[idx].consume(field, rest, state, depth + 1).await
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
