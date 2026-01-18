@@ -2,15 +2,15 @@
 //!
 //! For a struct `Foo`, generates:
 //! - `FooMultipartBuilder` with fields wrapped for accumulation:
-//!   - `T` → `Option<T>` (track presence)
-//!   - `Option<T>` / `Vec<T>` (non-nested) → kept as-is
+//!   - `T` → `Option<LeafBuilder<T>>` (track presence via Option, parse via LeafBuilder)
+//!   - `Option<T>` → `Option<LeafBuilder<T>>` (uses blanket `Option<B>` impl)
+//!   - `Vec<T>` → `Vec<LeafBuilder<T>>` (uses blanket `Vec<B>` impl)
 //!   - `#[form_data(nested)] T` → `TMultipartBuilder`
 //!   - `#[form_data(nested)] Option<T>` → `Option<TMultipartBuilder>`
 //!   - `#[form_data(nested)] Vec<T>` → `Vec<TMultipartBuilder>`
 //!
 //! - `impl MultipartBuilder<S>` with:
-//!   - `consume()`: Routes fields by name segment matching. Nested fields use prefix
-//!     matching and delegate to inner builders. Leaf fields use exact matching.
+//!   - `consume()`: Routes fields by name prefix matching, delegating to inner builders.
 //!   - `finalize()`: Builds target struct, applying defaults or returning `MissingField`.
 
 use crate::case_conversion::RenameCase;
@@ -52,8 +52,12 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
         let builder_fields = fields.values().map(|FieldData { ident, ty, nested, .. }| {
             let ty = if *nested {
                 nested_builder_type(ty)
-            } else if matches_vec_signature(ty) || matches_option_signature(ty) {
-                quote! { #ty }
+            } else if matches_vec_signature(ty) {
+                let inner = extract_inner_type(ty);
+                quote! { Vec<axum_typed_multipart::LeafBuilder<#inner>> }
+            } else if matches_option_signature(ty) {
+                let inner = extract_inner_type(ty);
+                quote! { Option<axum_typed_multipart::LeafBuilder<#inner>> }
             } else {
                 quote! { std::option::Option<#ty> }
             };
@@ -76,12 +80,13 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                 let prefix = quote! {
                     if __depth__ == 0 { #name } else { #dotted_name }
                 };
-                if *nested {
+                // Nested and Vec/Option fields use prefix matching and delegation
+                if *nested || matches_vec_signature(ty) || matches_option_signature(ty) {
                     quote! {
                         if let Some(__rest__) = __suffix__.strip_prefix(#prefix) {
                             __field__ = match self
                                 .#ident
-                                .consume(__field__, __rest__, __state__, __depth__ + 1)
+                                .consume(__field__, __rest__, __state__, #limit, __depth__ + 1)
                                 .await?
                             {
                                 Some(__f__) => __f__,
@@ -90,25 +95,22 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                         }
                     }
                 } else {
+                    // Scalar fields use exact matching
                     let value = quote! {
                         <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, __state__).await?
                     };
 
-                    let assignment = if matches_vec_signature(ty) {
-                        quote! { self.#ident.push(#value); }
+                    let assignment = quote! { self.#ident = Some(#value); };
+                    let assignment = if !strict {
+                        assignment
                     } else {
-                        let assignment = quote! { self.#ident = Some(#value); };
-                        if !strict {
-                            assignment
-                        } else {
-                            quote! {
-                                if self.#ident.is_none() {
-                                    #assignment
-                                } else {
-                                    return Err(axum_typed_multipart::TypedMultipartError::DuplicateField {
-                                        field_name: __field__.name().unwrap_or_default().to_string()
-                                    });
-                                }
+                        quote! {
+                            if self.#ident.is_none() {
+                                #assignment
+                            } else {
+                                return Err(axum_typed_multipart::TypedMultipartError::DuplicateField {
+                                    field_name: __field__.name().unwrap_or_default().to_string()
+                                });
                             }
                         }
                     };
@@ -131,6 +133,7 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                     mut __field__: axum::extract::multipart::Field<'a>,
                     __suffix__: &str,
                     __state__: &#input_state_ty,
+                    __limit_bytes__: Option<usize>,
                     __depth__: usize,
                 ) -> Result<Option<axum::extract::multipart::Field<'a>>, axum_typed_multipart::TypedMultipartError> {
                     #(#branches)*
@@ -145,7 +148,8 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                     let field_path = quote! {
                         if __path__.is_empty() { #name.to_string() } else { format!("{}.{}", __path__, #name) }
                     };
-                    let value = if *nested {
+                    // Nested and Vec/Option fields use builder finalization
+                    let value = if *nested || matches_vec_signature(ty) || matches_option_signature(ty) {
                         let finalize = quote! {
                             axum_typed_multipart::MultipartBuilder::<#input_state_ty>::finalize(
                                 self.#ident,
@@ -168,11 +172,11 @@ pub fn expand(input: InputData) -> proc_macro2::TokenStream {
                                 }
                             }
                         }
-                    } else if matches_vec_signature(ty) || matches_option_signature(ty) {
-                        quote! { self.#ident }
                     } else if *default {
+                        // Scalar with default
                         quote! { self.#ident.unwrap_or_default() }
                     } else {
+                        // Required scalar
                         quote! {
                             self.#ident.ok_or_else(||
                                 axum_typed_multipart::TypedMultipartError::MissingField {

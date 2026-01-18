@@ -52,7 +52,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 None | Some("") => { #on_nameless_field }
                 Some(name) => name.to_string(),
             };
-            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state, 0).await? {
+            if let Some(__field__) = #builder_ident::consume(&mut __builder__, __field__, &__name__, state, None, 0).await? {
                 #on_unmatched_field
             }
         }

@@ -311,6 +311,7 @@ pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
 mod field_data;
+mod leaf_builder;
 mod multipart_builder;
 mod parse_index;
 mod try_from_chunks;
@@ -323,6 +324,7 @@ pub(crate) mod util;
 
 pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_data::{FieldData, FieldMetadata};
+pub use crate::leaf_builder::LeafBuilder;
 pub use crate::multipart_builder::MultipartBuilder;
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::{TryFromField, TryFromFieldWithState};

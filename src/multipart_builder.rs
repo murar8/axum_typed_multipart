@@ -25,6 +25,9 @@ pub trait MultipartBuilder<S> {
     /// For top-level fields, this is the full name (e.g., `"users[0].name"`).
     /// For nested fields, this is the suffix after the parent's prefix (e.g., `"[0].name"` or `".name"`).
     ///
+    /// The `limit_bytes` parameter specifies the maximum bytes for this field.
+    /// At the top level this is `None`; per-field limits are specified via `#[form_data(limit = "...")]`.
+    ///
     /// The `depth` parameter indicates the current nesting depth (0 for top-level).
     ///
     /// Returns `Ok(None)` if the field was consumed, or `Ok(Some(field))` if the field
@@ -34,6 +37,7 @@ pub trait MultipartBuilder<S> {
         field: Field<'a>,
         suffix: &str,
         state: &S,
+        limit_bytes: Option<usize>,
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError>;
 
@@ -81,6 +85,7 @@ where
         field: Field<'a>,
         suffix: &str,
         state: &S,
+        limit_bytes: Option<usize>,
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
         let field_name = || field.name().unwrap_or_default().to_string();
@@ -110,8 +115,8 @@ where
             }
         };
 
-        // Delegate to inner builder
-        self[idx].consume(field, rest, state, depth + 1).await
+        // Delegate to inner builder with limit passed through
+        self[idx].consume(field, rest, state, limit_bytes, depth + 1).await
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
@@ -144,9 +149,10 @@ where
         field: Field<'a>,
         suffix: &str,
         state: &S,
+        limit_bytes: Option<usize>,
         depth: usize,
     ) -> Result<Option<Field<'a>>, TypedMultipartError> {
-        self.get_or_insert_default().consume(field, suffix, state, depth).await
+        self.get_or_insert_default().consume(field, suffix, state, limit_bytes, depth).await
     }
 
     fn finalize(self, path: &str) -> Result<Self::Target, TypedMultipartError> {
