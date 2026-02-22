@@ -1,6 +1,8 @@
 use crate::case_conversion::RenameCase;
 use crate::limit_bytes::LimitBytes;
-use crate::util::{matches_option_signature, matches_vec_signature, strip_leading_rawlit};
+use crate::util::{
+    extract_inner_type, matches_option_signature, matches_vec_signature, strip_leading_rawlit,
+};
 use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use quote::quote;
@@ -38,6 +40,15 @@ struct FieldData {
     default: bool,
 }
 
+/// Returns the token stream for the leaf builder wrapping the given type.
+fn leaf_builder(ty: &syn::Type, default: bool) -> proc_macro2::TokenStream {
+    if default {
+        quote! { axum_typed_multipart::DefaultBuilder<#ty> }
+    } else {
+        quote! { axum_typed_multipart::RequiredBuilder<#ty> }
+    }
+}
+
 impl FieldData {
     /// Get the name of the field from the `field_name` attribute, falling back
     /// to the field identifier.
@@ -55,6 +66,20 @@ impl FieldData {
             field_in_struct
         }
     }
+
+    /// Returns the token stream for the builder type used for this field.
+    fn builder_ty(&self) -> proc_macro2::TokenStream {
+        let ty = &self.ty;
+        if matches_option_signature(ty) {
+            let builder = leaf_builder(extract_inner_type(ty), self.default);
+            quote! { std::option::Option<#builder> }
+        } else if matches_vec_signature(ty) {
+            let builder = leaf_builder(extract_inner_type(ty), self.default);
+            quote! { std::vec::Vec<#builder> }
+        } else {
+            leaf_builder(ty, self.default)
+        }
+    }
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
@@ -69,31 +94,24 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let fields = data.take_struct().unwrap();
 
-    let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
-        if matches_vec_signature(ty) {
-            quote! { let mut #ident: #ty = std::vec::Vec::new(); }
-        } else if matches_option_signature(ty) {
-            quote! { let mut #ident: #ty = std::option::Option::None; }
-        } else {
-            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::None; }
-        }
+    let generic = state.is_none().then(|| quote! { <S: Sync> });
+    let state = state.map(|state| quote! { #state }).unwrap_or(quote! { S });
+
+    let declarations = fields.iter().map(|field @ FieldData { ident, .. }| {
+        let builder_ty = field.builder_ty();
+        quote! { let mut #ident: #builder_ty = std::default::Default::default(); }
     });
 
     let mut assignments = fields
         .iter()
-        .map(|field @ FieldData { ident, ty, limit, .. }| {
+        .map(|field @ FieldData { ident, limit, .. }| {
             let name = field.name(rename_all);
-            let value = quote! {
-                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, state).await?
-            };
 
-            let assignment = if matches_vec_signature(ty) {
-                quote! { #ident.push(#value); }
-            } else if strict {
+            let duplicate_check = if strict {
                 quote! {
-                    if #ident.is_none() {
-                        #ident = Some(#value);
-                    } else {
+                    if <_ as axum_typed_multipart::FieldBuilder<#state>>::has_value(&#ident)
+                        && !<_ as axum_typed_multipart::FieldBuilder<#state>>::allows_multiple(&#ident)
+                    {
                         return Err(
                             axum_typed_multipart::TypedMultipartError::DuplicateField {
                                 field_name: String::from(#name)
@@ -102,12 +120,13 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                     }
                 }
             } else {
-                quote! { #ident = Some(#value); }
+                quote! {}
             };
 
             quote! {
                 if __field_name__ == #name {
-                    #assignment
+                    #duplicate_check
+                    <_ as axum_typed_multipart::FieldBuilder<#state>>::push_field(&mut #ident, __field__, #limit, state).await?;
                 }
             }
         })
@@ -125,24 +144,10 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         })
     }
 
-    let required_fields = fields
-        .iter()
-        .filter(|FieldData { ty, .. }| !matches_option_signature(ty) && !matches_vec_signature(ty));
-    let default_fields = required_fields.clone().filter(|FieldData { default, .. }| *default);
-    let default_assignments = default_fields.map(|FieldData { ident, ty, .. }| {
+    let finalizations = fields.iter().map(|field @ FieldData { ident, .. }| {
+        let name = field.name(rename_all);
         quote! {
-            let #ident: Option<#ty> = #ident.or_else(|| Some(#ty::default()));
-        }
-    });
-
-    let checks = required_fields.map(|field @ FieldData { ident, .. }| {
-        let field_name = field.name(rename_all);
-        quote! {
-            let #ident = #ident.ok_or(
-                axum_typed_multipart::TypedMultipartError::MissingField {
-                    field_name: String::from(#field_name)
-                }
-            )?;
+            let #ident = <_ as axum_typed_multipart::FieldBuilder<#state>>::finalize(#ident, #name)?;
         }
     });
 
@@ -153,9 +158,6 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     } else {
         quote! { continue }
     };
-
-    let generic = state.is_none().then(|| quote! { <S: Sync> });
-    let state = state.map(|state| quote! { #state }).unwrap_or(quote! { S });
 
     let output = quote! {
         #[axum_typed_multipart::async_trait]
@@ -173,9 +175,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                     #(#assignments) else *
                 }
 
-                #(#default_assignments)*
-
-                #(#checks)*
+                #(#finalizations)*
 
                 Ok(Self { #(#idents),* })
             }

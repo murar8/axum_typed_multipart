@@ -289,6 +289,7 @@ pub use async_trait::async_trait;
 pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 
 mod base_multipart;
+mod field_builder;
 mod field_data;
 mod try_from_chunks;
 mod try_from_field;
@@ -299,6 +300,7 @@ mod typed_multipart_error;
 pub(crate) mod util;
 
 pub use crate::base_multipart::BaseMultipart;
+pub use crate::field_builder::{DefaultBuilder, FieldBuilder, RequiredBuilder};
 pub use crate::field_data::{FieldData, FieldMetadata};
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::{TryFromField, TryFromFieldWithState};
