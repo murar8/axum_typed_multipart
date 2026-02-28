@@ -28,9 +28,16 @@ pub trait FieldBuilder<S: Sync>: Default {
 
     /// Process a single field occurrence. The caller must verify
     /// [`matches`](Self::matches) returns `true` before calling this.
+    ///
+    /// `segments` is the same parsed field name that was passed to
+    /// [`matches`](Self::matches). Leaf builders can ignore it; nested
+    /// builders use it to dispatch to inner fields. `field_name` is
+    /// the original unparsed field name for error messages.
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        segments: &[Segment<'_>],
+        field_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError>;
@@ -72,9 +79,12 @@ where
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        segments: &[Segment<'_>],
+        _field_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
+        debug_assert!(matches!(segments, [Segment::Key(_)]));
         self.0 = Some(T::try_from_field_with_state(field, limit_bytes, state).await?);
         Ok(())
     }
@@ -118,9 +128,12 @@ where
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        segments: &[Segment<'_>],
+        _field_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
+        debug_assert!(matches!(segments, [Segment::Key(_)]));
         self.0 = Some(T::try_from_field_with_state(field, limit_bytes, state).await?);
         Ok(())
     }
@@ -153,10 +166,14 @@ where
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        segments: &[Segment<'_>],
+        field_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
-        self.get_or_insert_with(T::default).push_field(field, limit_bytes, state).await
+        self.get_or_insert_with(T::default)
+            .push_field(field, segments, field_name, limit_bytes, state)
+            .await
     }
 
     fn finalize(self, field_name: &str) -> Result<Self::Output, TypedMultipartError> {
@@ -187,11 +204,13 @@ where
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        segments: &[Segment<'_>],
+        field_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
         let mut builder = T::default();
-        builder.push_field(field, limit_bytes, state).await?;
+        builder.push_field(field, segments, field_name, limit_bytes, state).await?;
         self.push(builder);
         Ok(())
     }

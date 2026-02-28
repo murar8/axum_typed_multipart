@@ -61,3 +61,13 @@ pub fn extract_inner_type(ty: &syn::Type) -> &syn::Type {
 pub fn matches_vec_signature(ty: &syn::Type) -> bool {
     matches_signature(ty, &["Vec", "std::vec::Vec"])
 }
+
+/// Returns the builder ident for a type (e.g. `Foo` → `FooMultipartBuilder`).
+pub fn builder_ident(ty: &syn::Type) -> syn::Ident {
+    let path = match ty {
+        syn::Type::Path(type_path) if type_path.qself.is_none() => &type_path.path,
+        _ => abort!(ty, "expected a simple type name"),
+    };
+    let seg = path.segments.last().unwrap_or_else(|| abort!(ty, "type path cannot be empty"));
+    quote::format_ident!("{}MultipartBuilder", seg.ident)
+}
