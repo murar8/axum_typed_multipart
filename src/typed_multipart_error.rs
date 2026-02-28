@@ -36,6 +36,9 @@ pub enum TypedMultipartError {
     #[error("field name is empty")]
     NamelessField,
 
+    #[error("field name '{field_name}' is invalid: {source}")]
+    InvalidFieldName { field_name: String, source: crate::field_name::ParseError },
+
     #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
     FieldTooLarge { field_name: String, limit_bytes: usize },
 
@@ -54,7 +57,8 @@ impl TypedMultipartError {
             | Self::DuplicateField { .. }
             | Self::UnknownField { .. }
             | Self::InvalidEnumValue { .. }
-            | Self::NamelessField { .. } => StatusCode::BAD_REQUEST,
+            | Self::NamelessField { .. }
+            | Self::InvalidFieldName { .. } => StatusCode::BAD_REQUEST,
             | Self::FieldTooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE,
             | Self::InvalidRequest { source } => source.status(),
             | Self::InvalidRequestBody { source } => source.status(),
@@ -171,6 +175,53 @@ mod tests {
         let error = TypedMultipartError::NamelessField;
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field name is empty");
+    }
+
+    #[tokio::test]
+    async fn test_invalid_field_name_empty() {
+        let error = crate::field_name::parse("").unwrap_err();
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(error.to_string(), "field name '' is invalid: field name is empty");
+    }
+
+    #[tokio::test]
+    async fn test_invalid_field_name_empty_segment() {
+        let error = crate::field_name::parse("user..name").unwrap_err();
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field name 'user..name' is invalid: empty segment at position 5"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_invalid_field_name_unclosed_bracket() {
+        let error = crate::field_name::parse("user[addr").unwrap_err();
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field name 'user[addr' is invalid: unclosed bracket at position 4"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_invalid_field_name_unexpected_closing_bracket() {
+        let error = crate::field_name::parse("user]").unwrap_err();
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field name 'user]' is invalid: unexpected closing bracket at position 4"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_invalid_field_name_missing_separator() {
+        let error = crate::field_name::parse("user[addr]street").unwrap_err();
+        assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            error.to_string(),
+            "field name 'user[addr]street' is invalid: missing separator at position 10"
+        );
     }
 
     #[tokio::test]

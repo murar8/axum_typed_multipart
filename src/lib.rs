@@ -291,20 +291,24 @@ pub use axum_typed_multipart_macros::{TryFromField, TryFromMultipart};
 mod base_multipart;
 mod field_builder;
 mod field_data;
+mod field_name;
 mod try_from_chunks;
 mod try_from_field;
 mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
-pub(crate) mod field_name;
 pub(crate) mod util;
 
 pub use crate::base_multipart::BaseMultipart;
 pub use crate::field_builder::{DefaultBuilder, FieldBuilder, RequiredBuilder};
 pub use crate::field_data::{FieldData, FieldMetadata};
+pub use crate::field_name::{ParseError, Segment};
 pub use crate::try_from_chunks::TryFromChunks;
 pub use crate::try_from_field::{TryFromField, TryFromFieldWithState};
 pub use crate::try_from_multipart::{TryFromMultipart, TryFromMultipartWithState};
 pub use crate::typed_multipart::TypedMultipart;
 pub use crate::typed_multipart_error::TypedMultipartError;
+
+#[doc(hidden)]
+pub use crate::field_name::parse as parse_field_name;

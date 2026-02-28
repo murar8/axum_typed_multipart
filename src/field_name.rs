@@ -4,8 +4,6 @@
 //! interchangeably and can be mixed freely. Empty brackets (`[]`) represent an
 //! append operation and are only valid as the final segment.
 
-#![allow(dead_code)] // TODO: rm
-
 /// A single segment of a parsed field name.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment<'a> {
@@ -15,17 +13,22 @@ pub enum Segment<'a> {
     Append,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
     /// The input string is empty.
+    #[error("field name is empty")]
     Empty,
     /// A segment is empty (e.g. `user..name`, `user[].name`).
+    #[error("empty segment at position {position}")]
     EmptySegment { position: usize },
     /// A `[` was not closed with a matching `]`.
+    #[error("unclosed bracket at position {position}")]
     UnclosedBracket { position: usize },
     /// A `]` appeared without a preceding `[`.
+    #[error("unexpected closing bracket at position {position}")]
     UnexpectedClosingBracket { position: usize },
     /// Content follows `]` without a `.` or `[` separator.
+    #[error("missing separator at position {position}")]
     MissingSeparator { position: usize },
 }
 
@@ -112,11 +115,7 @@ fn finalize<'a>(
     }
 }
 
-/// Parse a field name into segments.
-///
-/// Both `.` and `[...]` are treated as interchangeable segment separators.
-/// `[]` (append) is only valid as the final segment.
-pub fn parse(input: &str) -> Result<Vec<Segment<'_>>, ParseError> {
+fn parse_raw(input: &str) -> Result<Vec<Segment<'_>>, ParseError> {
     if input.is_empty() {
         return Err(ParseError::Empty);
     }
@@ -133,20 +132,31 @@ pub fn parse(input: &str) -> Result<Vec<Segment<'_>>, ParseError> {
     Ok(segments)
 }
 
+/// Parse a field name into segments.
+///
+/// Both `.` and `[...]` are treated as interchangeable segment separators.
+/// `[]` (append) is only valid as the final segment.
+pub fn parse(input: &str) -> Result<Vec<Segment<'_>>, crate::TypedMultipartError> {
+    parse_raw(input).map_err(|source| crate::TypedMultipartError::InvalidFieldName {
+        field_name: input.to_owned(),
+        source,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{ParseError::*, Segment::*, *};
 
-    /// Shorthand: `ok("input", &[...])` asserts `parse` succeeds with the
+    /// Shorthand: `ok("input", &[...])` asserts `parse_raw` succeeds with the
     /// expected segments.
     fn ok(input: &str, expected: &[Segment<'_>]) {
-        assert_eq!(parse(input).unwrap(), expected, "input: {input:?}");
+        assert_eq!(parse_raw(input).unwrap(), expected, "input: {input:?}");
     }
 
-    /// Shorthand: `err("input", ParseError::...)` asserts `parse` fails with
-    /// the expected error.
+    /// Shorthand: `err("input", ParseError::...)` asserts `parse_raw` fails
+    /// with the expected error.
     fn err(input: &str, expected: ParseError) {
-        assert_eq!(parse(input).unwrap_err(), expected, "input: {input:?}");
+        assert_eq!(parse_raw(input).unwrap_err(), expected, "input: {input:?}");
     }
 
     #[test]

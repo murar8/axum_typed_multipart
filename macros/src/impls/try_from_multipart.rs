@@ -126,9 +126,9 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             let builder_ty = field.builder_ty();
 
             quote! {
-                if <#builder_ty as axum_typed_multipart::FieldBuilder<#state>>::matches(&__field_name__, #name) {
+                if <#builder_ty as axum_typed_multipart::FieldBuilder<#state>>::matches(&__segments__, #name) {
                     #duplicate_check
-                    <_ as axum_typed_multipart::FieldBuilder<#state>>::push_field(&mut #ident, __field__, &__field_name__, #name, #limit, state).await?;
+                    <_ as axum_typed_multipart::FieldBuilder<#state>>::push_field(&mut #ident, __field__, #limit, state).await?;
                 }
             }
         })
@@ -173,6 +173,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                         | None => #missing_field_name_fallback,
                         | Some(name) => name.to_string(),
                     };
+
+                    let __segments__ = axum_typed_multipart::parse_field_name(&__field_name__)?;
 
                     #(#assignments) else *
                 }
