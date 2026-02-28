@@ -123,10 +123,12 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                 quote! {}
             };
 
+            let builder_ty = field.builder_ty();
+
             quote! {
-                if __field_name__ == #name {
+                if <#builder_ty as axum_typed_multipart::FieldBuilder<#state>>::matches(&__field_name__, #name) {
                     #duplicate_check
-                    <_ as axum_typed_multipart::FieldBuilder<#state>>::push_field(&mut #ident, __field__, #limit, state).await?;
+                    <_ as axum_typed_multipart::FieldBuilder<#state>>::push_field(&mut #ident, __field__, &__field_name__, #name, #limit, state).await?;
                 }
             }
         })

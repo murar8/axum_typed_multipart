@@ -18,10 +18,19 @@ pub trait FieldBuilder<S: Sync>: Default {
     /// The type produced after all fields have been consumed.
     type Output;
 
-    /// Process a single occurrence of the field.
+    /// Check if this builder accepts the given field name.
+    ///
+    /// `base_name` is the name of the struct field this builder is responsible
+    /// for. `field_name` is the full field name from the incoming request.
+    fn matches(field_name: &str, base_name: &str) -> bool;
+
+    /// Process a single field occurrence. The caller must verify
+    /// [`matches`](Self::matches) returns `true` before calling this.
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        field_name: &str,
+        base_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError>;
@@ -56,12 +65,19 @@ where
 {
     type Output = T;
 
+    fn matches(field_name: &str, base_name: &str) -> bool {
+        field_name == base_name
+    }
+
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        field_name: &str,
+        base_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
+        debug_assert!(Self::matches(field_name, base_name));
         self.0 = Some(T::try_from_field_with_state(field, limit_bytes, state).await?);
         Ok(())
     }
@@ -98,12 +114,19 @@ where
 {
     type Output = T;
 
+    fn matches(field_name: &str, base_name: &str) -> bool {
+        field_name == base_name
+    }
+
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        field_name: &str,
+        base_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
+        debug_assert!(Self::matches(field_name, base_name));
         self.0 = Some(T::try_from_field_with_state(field, limit_bytes, state).await?);
         Ok(())
     }
@@ -129,13 +152,22 @@ where
 {
     type Output = Option<T::Output>;
 
+    fn matches(field_name: &str, base_name: &str) -> bool {
+        T::matches(field_name, base_name)
+    }
+
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        field_name: &str,
+        base_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
-        self.get_or_insert_with(T::default).push_field(field, limit_bytes, state).await
+        debug_assert!(Self::matches(field_name, base_name));
+        self.get_or_insert_with(T::default)
+            .push_field(field, field_name, base_name, limit_bytes, state)
+            .await
     }
 
     fn finalize(self, field_name: &str) -> Result<Self::Output, TypedMultipartError> {
@@ -159,14 +191,21 @@ where
 {
     type Output = Vec<T::Output>;
 
+    fn matches(field_name: &str, base_name: &str) -> bool {
+        T::matches(field_name, base_name)
+    }
+
     async fn push_field(
         &mut self,
         field: Field<'_>,
+        field_name: &str,
+        base_name: &str,
         limit_bytes: Option<usize>,
         state: &S,
     ) -> Result<(), TypedMultipartError> {
+        debug_assert!(Self::matches(field_name, base_name));
         let mut builder = T::default();
-        builder.push_field(field, limit_bytes, state).await?;
+        builder.push_field(field, field_name, base_name, limit_bytes, state).await?;
         self.push(builder);
         Ok(())
     }
