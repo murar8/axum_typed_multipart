@@ -297,6 +297,7 @@ mod try_from_multipart;
 mod typed_multipart;
 mod typed_multipart_error;
 
+pub(crate) mod field_name;
 pub(crate) mod util;
 
 pub use crate::base_multipart::BaseMultipart;
