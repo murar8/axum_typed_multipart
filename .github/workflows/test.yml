@@ -78,7 +78,7 @@ jobs:
                   components: llvm-tools-preview # needed for llvm-cov
             - uses: taiki-e/install-action@cargo-llvm-cov
             - run: cargo llvm-cov --workspace --all-features --all-targets --branch --lcov --output-path target/coverage.lcov
-            - uses: codecov/codecov-action@v5
+            - uses: codecov/codecov-action@v6
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
               with:
