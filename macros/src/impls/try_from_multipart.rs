@@ -71,11 +71,11 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
         if matches_vec_signature(ty) {
-            quote! { let mut #ident: #ty = std::vec::Vec::new(); }
+            quote! { let mut #ident: #ty = ::std::vec::Vec::new(); }
         } else if matches_option_signature(ty) {
-            quote! { let mut #ident: #ty = std::option::Option::None; }
+            quote! { let mut #ident: #ty = ::core::option::Option::None; }
         } else {
-            quote! { let mut #ident: std::option::Option<#ty> = std::option::Option::None; }
+            quote! { let mut #ident: ::core::option::Option<#ty> = ::core::option::Option::None; }
         }
     });
 
@@ -84,7 +84,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         .map(|field @ FieldData { ident, ty, limit, .. }| {
             let name = field.name(rename_all);
             let value = quote! {
-                <_ as axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, state).await?
+                <_ as ::axum_typed_multipart::TryFromFieldWithState<_>>::try_from_field_with_state(__field__, #limit, state).await?
             };
 
             let assignment = if matches_vec_signature(ty) {
@@ -92,17 +92,17 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             } else if strict {
                 quote! {
                     if #ident.is_none() {
-                        #ident = Some(#value);
+                        #ident = ::core::option::Option::Some(#value);
                     } else {
                         return Err(
-                            axum_typed_multipart::TypedMultipartError::DuplicateField {
+                            ::axum_typed_multipart::TypedMultipartError::DuplicateField {
                                 field_name: String::from(#name)
                             }
                         );
                     }
                 }
             } else {
-                quote! { #ident = Some(#value); }
+                quote! { #ident = ::core::option::Option::Some(#value); }
             };
 
             quote! {
@@ -117,7 +117,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         assignments.push(quote! {
             {
                 return Err(
-                    axum_typed_multipart::TypedMultipartError::UnknownField {
+                    ::axum_typed_multipart::TypedMultipartError::UnknownField {
                         field_name: __field_name__
                     }
                 );
@@ -131,7 +131,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let default_fields = required_fields.clone().filter(|FieldData { default, .. }| *default);
     let default_assignments = default_fields.map(|FieldData { ident, ty, .. }| {
         quote! {
-            let #ident: Option<#ty> = #ident.or_else(|| Some(#ty::default()));
+            let #ident: ::core::option::Option<#ty> = #ident.or_else(|| ::core::option::Option::Some(#ty::default()));
         }
     });
 
@@ -139,8 +139,8 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         let field_name = field.name(rename_all);
         quote! {
             let #ident = #ident.ok_or(
-                axum_typed_multipart::TypedMultipartError::MissingField {
-                    field_name: String::from(#field_name)
+                ::axum_typed_multipart::TypedMultipartError::MissingField {
+                    field_name: ::std::string::String::from(#field_name)
                 }
             )?;
         }
@@ -149,7 +149,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let idents = fields.iter().map(|FieldData { ident, .. }| ident);
 
     let missing_field_name_fallback = if strict {
-        quote! { return Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
+        quote! { return ::core::result::Result::Err(axum_typed_multipart::TypedMultipartError::NamelessField) }
     } else {
         quote! { continue }
     };
@@ -158,9 +158,9 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
     let state = state.map(|state| quote! { #state }).unwrap_or(quote! { S });
 
     let output = quote! {
-        #[axum_typed_multipart::async_trait]
-        impl #generic axum_typed_multipart::TryFromMultipartWithState<#state> for #ident {
-            async fn try_from_multipart_with_state(multipart: &mut axum::extract::multipart::Multipart, state: &#state) -> Result<Self, axum_typed_multipart::TypedMultipartError> {
+        #[::axum_typed_multipart::async_trait]
+        impl #generic ::axum_typed_multipart::TryFromMultipartWithState<#state> for #ident {
+            async fn try_from_multipart_with_state(multipart: &mut ::axum::extract::multipart::Multipart, state: &#state) -> ::core::result::Result<Self, ::axum_typed_multipart::TypedMultipartError> {
                 #(#declarations)*
 
                 while let Some(__field__) = multipart.next_field().await? {

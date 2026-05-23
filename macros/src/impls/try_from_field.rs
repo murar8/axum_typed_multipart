@@ -56,7 +56,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         let f_ident = &f.ident;
         let strlit = Lit::Str(LitStr::new(&name, f_ident.span()));
         quote! {
-            #strlit => Ok(Self::#f_ident)
+            #strlit => ::core::result::Result::Ok(Self::#f_ident)
         }
     });
 
