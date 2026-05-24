@@ -393,7 +393,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_from_chunks_f32() {
-        test_try_from_chunks_valid::<f32>("42.0", 42.0).await;
+        test_try_from_chunks_valid::<f32>("42.0", 42.0f32).await;
         test_try_from_chunks_invalid::<f32>("invalid").await;
     }
 
