@@ -56,22 +56,22 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
         let f_ident = &f.ident;
         let strlit = Lit::Str(LitStr::new(&name, f_ident.span()));
         quote! {
-            #strlit => Ok(Self::#f_ident)
+            #strlit => ::core::result::Result::Ok(Self::#f_ident)
         }
     });
 
     let res = quote! {
-        #[axum_typed_multipart::async_trait]
+        #[::axum_typed_multipart::async_trait]
         impl ::axum_typed_multipart::TryFromField for #ident {
             async fn try_from_field(
                 field: ::axum::extract::multipart::Field<'_>,
                 limit_bytes: ::core::option::Option<usize>,
             ) -> ::core::result::Result<Self, ::axum_typed_multipart::TypedMultipartError> {
-                let field_name = field.name().unwrap_or_default().to_string();
-                let value: String = ::axum_typed_multipart::TryFromField::try_from_field(field, limit_bytes).await?;
+                let field_name = <::std::string::String as ::core::convert::From<&str>>::from(field.name().unwrap_or_default());
+                let value: ::std::string::String = ::axum_typed_multipart::TryFromField::try_from_field(field, limit_bytes).await?;
                 match value.as_str() {
                     #(#match_arms),*,
-                    _ => Err(::axum_typed_multipart::TypedMultipartError::InvalidEnumValue {
+                    _ => ::core::result::Result::Err(::axum_typed_multipart::TypedMultipartError::InvalidEnumValue {
                         field_name,
                         value,
                     })
