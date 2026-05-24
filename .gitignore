@@ -21,3 +21,6 @@ Cargo.lock
 
 *.local.md
 *.local.json
+
+.direnv/
+.envrc
