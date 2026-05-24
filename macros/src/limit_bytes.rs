@@ -21,10 +21,10 @@ impl darling::FromMeta for LimitBytes {
 impl ToTokens for LimitBytes {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         tokens.extend(match self.0 {
-            None => quote! { None },
+            None => quote! { ::core::option::Option::None },
             Some(b) => {
                 let n = b.as_u64() as usize;
-                quote! { Some(#n) }
+                quote! { ::core::option::Option::Some(#n) }
             }
         });
     }

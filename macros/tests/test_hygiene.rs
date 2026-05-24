@@ -11,9 +11,7 @@
 
 // `#[async_trait]` (third-party) requires these in scope; our own macros
 // must not require anything beyond what they qualify themselves.
-extern crate alloc as __alloc;
-use ::core::option::Option::None;
-use __alloc::boxed::Box;
+use ::std::boxed::Box;
 
 #[derive(::axum_typed_multipart::TryFromMultipart)]
 struct Lax {
@@ -30,6 +28,21 @@ struct Strict {
     name: ::std::string::String,
     tags: ::std::vec::Vec<::std::string::String>,
     opt: ::core::option::Option<::std::string::String>,
+}
+
+#[derive(::axum_typed_multipart::TryFromMultipart)]
+struct WithLimitsAndFieldData {
+    #[form_data(limit = "1KB", field_name = "renamed")]
+    blob: ::std::vec::Vec<u8>,
+    file: ::axum_typed_multipart::FieldData<::axum::body::Bytes>,
+}
+
+struct MyState;
+
+#[derive(::axum_typed_multipart::TryFromMultipart)]
+#[try_from_multipart(state = MyState, strict)]
+struct WithState {
+    name: ::std::string::String,
 }
 
 #[derive(::axum_typed_multipart::TryFromField)]
