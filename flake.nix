@@ -22,7 +22,7 @@
       overlays.default = final: prev: {
         rustToolchain = fenix.packages.${prev.stdenv.hostPlatform.system}.fromToolchainFile {
           file = ./rust-toolchain.toml;
-          sha256 = "sha256-gh/xTkxKHL4eiRXzWv8KP7vfjSk61Iq48x47BEDFgfk=";
+          sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
         };
       };
     }
@@ -39,6 +39,7 @@
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             rustToolchain
+            cargo-expand
             nixfmt
             statix
             pre-commit
