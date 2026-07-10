@@ -22,7 +22,7 @@
       overlays.default = final: prev: {
         rustToolchain = fenix.packages.${prev.stdenv.hostPlatform.system}.fromToolchainFile {
           file = ./rust-toolchain.toml;
-          sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
+          sha256 = "sha256-OATSZm98Es5kIFuqaba+UvkQtFsVgJEBMmS+t6od5/U=";
         };
       };
     }
