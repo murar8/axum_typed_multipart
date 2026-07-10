@@ -1,10 +1,8 @@
 {
-  # Based on https://github.com/the-nix-way/dev-templates/blob/4eab4b7c62077d14773edc6abcb4bf7664bdcc1f/rust/flake.nix
-  description = "Nix-flake-based Rust development environment";
+  description = "A Nix-flake-based Rust development environment";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # tracks nixpkgs-unstable
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # unstable Nixpkgs
     fenix = {
       url = "https://flakehub.com/f/nix-community/fenix/0.1";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -12,45 +10,71 @@
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      fenix,
-    }:
+    { self, ... }@inputs:
+
+    let
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+      forEachSupportedSystem =
+        f:
+        inputs.nixpkgs.lib.genAttrs supportedSystems (
+          system:
+          f {
+            inherit system;
+            pkgs = import inputs.nixpkgs {
+              inherit system;
+              overlays = [
+                inputs.self.overlays.default
+              ];
+            };
+          }
+        );
+    in
     {
       overlays.default = final: prev: {
-        rustToolchain = fenix.packages.${prev.stdenv.hostPlatform.system}.fromToolchainFile {
-          file = ./rust-toolchain.toml;
-          sha256 = "sha256-OATSZm98Es5kIFuqaba+UvkQtFsVgJEBMmS+t6od5/U=";
-        };
+        rustToolchain =
+          with inputs.fenix.packages.${prev.stdenv.hostPlatform.system};
+          combine (
+            with stable;
+            [
+              clippy
+              rustc
+              cargo
+              rustfmt
+              rust-src
+            ]
+          );
       };
-    }
-    // flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        };
-      in
-      {
-        formatter = pkgs.nixfmt;
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            rustToolchain
-            cargo-expand
-            nixfmt
-            statix
-            pre-commit
-          ];
-          nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [ pkgs.openssl ];
-          # Required at test/runtime: openssl-sys links libssl.so.3 dynamically.
-          shellHook = ''
-            export LD_LIBRARY_PATH=${pkgs.openssl.out}/lib:''${LD_LIBRARY_PATH:-}
-          '';
-        };
-      }
-    );
+
+      devShells = forEachSupportedSystem (
+        { pkgs, system }:
+        {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              rustToolchain
+              cargo-expand
+              rust-analyzer
+              nixfmt
+              statix
+              pre-commit
+              openssl
+              pkg-config
+              self.formatter.${system}
+            ];
+
+            env = {
+              # Required by rust-analyzer
+              RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
+              # openssl-sys links libssl.so.3 dynamically; make it resolvable at test/runtime.
+              LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [ openssl ];
+            };
+          };
+        }
+      );
+
+      formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);
+    };
 }
