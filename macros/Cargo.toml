@@ -22,7 +22,7 @@ heck = "0.5.0"
 proc-macro-error2 = "2.0.1"
 proc-macro2 = "1.0.103"
 quote = "1.0.37"
-syn = "2.0.87"
+syn = "3.0.2"
 ubyte = "0.10.4"
 
 [dev-dependencies]
