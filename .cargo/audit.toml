@@ -1,0 +1,6 @@
+[advisories]
+ignore = [
+    # Drop this once rust_decimal moves to rkyv >= 0.8.17.
+    # https://github.com/murar8/axum_typed_multipart/issues/136
+    "RUSTSEC-2026-0235",
+]
