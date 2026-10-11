@@ -7,7 +7,6 @@
 
 #![no_implicit_prelude]
 #![allow(dead_code)]
-#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
 // `#[async_trait]` (third-party) requires these in scope; our own macros
 // must not require anything beyond what they qualify themselves.

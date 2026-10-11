@@ -1,4 +1,3 @@
-#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 use axum::extract::multipart::Field;
 use axum::handler::Handler;
 use axum::http::StatusCode;
