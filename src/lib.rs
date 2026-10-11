@@ -20,13 +20,13 @@
 //! ### Getting started
 //!
 //! To get started you will need to define a struct with the desired fields and implement the
-//! [TryFromMultipart](crate::TryFromMultipart) trait. In the vast majority of cases you will want
+//! [TryFromMultipart] trait. In the vast majority of cases you will want
 //! to use the derive macro to generate the implementation automatically.
 //!
-//! To be able to derive the [TryFromMultipart](crate::TryFromMultipart) trait every field in the
-//! struct must implement the [TryFromField](crate::TryFromField) trait.
+//! To be able to derive the [TryFromMultipart] trait every field in the
+//! struct must implement the [TryFromField] trait.
 //!
-//! The [TryFromField](crate::TryFromField) trait is implemented by default for the following
+//! The [TryFromField] trait is implemented by default for the following
 //! types:
 //! - [i8], [i16], [i32], [i64], [i128], [isize]
 //! - [u8], [u16], [u32], [u64], [u128], [usize]
@@ -119,7 +119,7 @@
 //! ### Field metadata
 //!
 //! If you need access to the field metadata (e.g. the field headers like file name or content
-//! type) you can use the [FieldData](FieldData) struct to wrap your field.
+//! type) you can use the [FieldData] struct to wrap your field.
 //! ```rust
 //! use axum::body::Bytes;
 //! use axum_typed_multipart::{FieldData, TryFromMultipart};
@@ -238,19 +238,19 @@
 //! ### Custom types
 //!
 //! If you would like to use a custom type for a field you need to implement the
-//! [TryFromField](crate::TryFromField) trait for your type. This will allow the derive macro to
-//! generate the [TryFromMultipart](crate::TryFromMultipart) implementation automatically. Instead
+//! [TryFromField] trait for your type. This will allow the derive macro to
+//! generate the [TryFromMultipart] implementation automatically. Instead
 //! of implementing the trait directly, it is recommended to implement the
-//! [TryFromChunks](TryFromChunks) trait, which will automatically provide a [TryFromField](crate::TryFromField)
+//! [TryFromChunks] trait, which will automatically provide a [TryFromField]
 //! implementation with proper size limit handling.
 //!
-//! To implement the [TryFromChunks](TryFromChunks) trait for external types you will need
+//! To implement the [TryFromChunks] trait for external types you will need
 //! to create a newtype wrapper and implement the trait for the wrapper.
 //!
 //! ### Custom error format
 //!
-//! When using [TypedMultipart](TypedMultipart) as an argument for your handlers, errors are
-//! serialized as strings. To customize the error format, use [BaseMultipart](BaseMultipart) instead.
+//! When using [TypedMultipart] as an argument for your handlers, errors are
+//! serialized as strings. To customize the error format, use [BaseMultipart] instead.
 //!
 //! To customize the error you will need to define a custom error type and implement
 //! [IntoResponse](axum::response::IntoResponse) and `From<TypedMultipartError>`.
@@ -261,7 +261,7 @@
 //! ### Injecting state into the parser
 //!
 //! Sometimes you may need to access application state during field parsing. This is supported
-//! through the [TryFromFieldWithState](crate::TryFromFieldWithState) trait.
+//! through the [TryFromFieldWithState] trait.
 //! ```rust,no_run
 #![doc = include_str!("../examples/state.rs")]
 //! ```

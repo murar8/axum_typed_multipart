@@ -1,5 +1,3 @@
-#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
-
 use axum::http::StatusCode;
 use axum_test_helper::TestClient;
 use reqwest::multipart::{Form, Part};

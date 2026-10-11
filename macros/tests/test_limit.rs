@@ -1,5 +1,3 @@
-#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
-
 use axum::body::Bytes;
 use axum::http::StatusCode;
 use axum::routing::post;
