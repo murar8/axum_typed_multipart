@@ -7,6 +7,7 @@ description.workspace = true
 edition.workspace = true
 keywords.workspace = true
 license.workspace = true
+readme = "../README.md"
 repository.workspace = true
 version.workspace = true
 

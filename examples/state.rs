@@ -51,7 +51,7 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
             Ok(ValidatedField(value))
         } else {
             Err(TypedMultipartError::Other {
-                source: anyhow::anyhow!("Value '{}' is not allowed", value),
+                source: anyhow::anyhow!("Value '{value}' is not allowed"),
             })
         }
     }

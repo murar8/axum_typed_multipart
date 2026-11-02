@@ -43,7 +43,7 @@ impl FieldData {
     /// to the field identifier.
     fn name(&self, rename_all: Option<RenameCase>) -> String {
         if let Some(field_name) = &self.field_name {
-            return field_name.to_string();
+            return field_name.clone();
         }
 
         let ident = self.ident.as_ref().unwrap().to_string();
@@ -58,6 +58,10 @@ impl FieldData {
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
+#[expect(
+    clippy::too_many_lines,
+    reason = "linear codegen pipeline, splitting only moves code around"
+)]
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
@@ -122,7 +126,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
                     }
                 );
             }
-        })
+        });
     }
 
     let required_fields = fields

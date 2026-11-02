@@ -133,10 +133,10 @@ mod tests {
 
         let mut data = Data { v0: "DATA".into(), v1: 12 };
         let mut tm = BaseMultipart { data: data.clone(), rejection: PhantomData::<()> };
-        assert_eq!(tm.deref(), &data);
+        assert_eq!(&*tm, &data);
 
         data.modify();
         tm.modify();
-        assert_eq!(tm.deref(), &data);
+        assert_eq!(&*tm, &data);
     }
 }
