@@ -14,11 +14,11 @@ struct ApiDoc;
 
 #[derive(Debug, TryFromMultipart, ToSchema)]
 pub struct FileUpload {
-    /// User's name
+    /// User's name.
     #[schema(example = "John Doe")]
     name: String,
 
-    /// File or files to upload
+    /// File or files to upload.
     #[form_data(limit = "2MiB")]
     #[schema(value_type = Vec<u8>)]
     file: Vec<FieldData<Bytes>>,
@@ -26,10 +26,10 @@ pub struct FileUpload {
 
 #[derive(Debug, Default, Serialize, ToSchema)]
 pub struct Status {
-    /// Status
+    /// Status.
     #[schema(example = "error")]
     pub status: String,
-    /// What went wrong
+    /// What went wrong.
     #[schema(example = "Could not open file")]
     pub error: Option<String>,
 }

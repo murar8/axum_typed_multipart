@@ -10,41 +10,41 @@
 //!
 //! All features are enabled by default.
 //!
-//! - `chrono_0_4`: Enables support for [chrono::DateTime](chrono_0_4::DateTime) (v0.4)
-//! - `tempfile_3`: Enables support for [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (v3)
-//! - `uuid_1`: Enables support for [uuid::Uuid](uuid_1::Uuid) (v1)
-//! - `rust_decimal_1`: Enables support for [rust_decimal::Decimal](rust_decimal_1::Decimal) (v1)
+//! - `chrono_0_4`: Enables support for [`chrono::DateTime`](chrono_0_4::DateTime) (v0.4)
+//! - `tempfile_3`: Enables support for [`tempfile::NamedTempFile`](tempfile_3::NamedTempFile) (v3)
+//! - `uuid_1`: Enables support for [`uuid::Uuid`](uuid_1::Uuid) (v1)
+//! - `rust_decimal_1`: Enables support for [`rust_decimal::Decimal`](rust_decimal_1::Decimal) (v1)
 //!
 //! ## Usage
 //!
 //! ### Getting started
 //!
 //! To get started you will need to define a struct with the desired fields and implement the
-//! [TryFromMultipart] trait. In the vast majority of cases you will want
+//! [`TryFromMultipart`] trait. In the vast majority of cases you will want
 //! to use the derive macro to generate the implementation automatically.
 //!
-//! To be able to derive the [TryFromMultipart] trait every field in the
-//! struct must implement the [TryFromField] trait.
+//! To be able to derive the [`TryFromMultipart`] trait every field in the
+//! struct must implement the [`TryFromField`] trait.
 //!
-//! The [TryFromField] trait is implemented by default for the following
+//! The [`TryFromField`] trait is implemented by default for the following
 //! types:
-//! - [i8], [i16], [i32], [i64], [i128], [isize]
-//! - [u8], [u16], [u32], [u64], [u128], [usize]
-//! - [f32], [f64]
-//! - [bool]
-//! - [char]
-//! - [String]
-//! - [axum::body::Bytes]
-//! - [chrono::DateTime](chrono_0_4::DateTime) (feature: `chrono_0_4`)
-//! - [chrono::NaiveDate](chrono_0_4::NaiveDate) (feature: `chrono_0_4`)
-//! - [tempfile::NamedTempFile](tempfile_3::NamedTempFile) (feature: `tempfile_3`)
-//! - [uuid::Uuid](uuid_1::Uuid) (feature: `uuid_1`)
-//! - [rust_decimal::Decimal](rust_decimal_1::Decimal) (feature: `rust_decimal_1`)
+//! - [`i8`], [`i16`], [`i32`], [`i64`], [`i128`], [`isize`]
+//! - [`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`usize`]
+//! - [`f32`], [`f64`]
+//! - [`bool`]
+//! - [`char`]
+//! - [`String`]
+//! - [`axum::body::Bytes`]
+//! - [`chrono::DateTime`](chrono_0_4::DateTime) (feature: `chrono_0_4`)
+//! - [`chrono::NaiveDate`](chrono_0_4::NaiveDate) (feature: `chrono_0_4`)
+//! - [`tempfile::NamedTempFile`](tempfile_3::NamedTempFile) (feature: `tempfile_3`)
+//! - [`uuid::Uuid`](uuid_1::Uuid) (feature: `uuid_1`)
+//! - [`rust_decimal::Decimal`](rust_decimal_1::Decimal) (feature: `rust_decimal_1`)
 //!
 //! If the request body is malformed the request will be aborted with an error.
 //!
-//! An error will be returned if at least one field is missing, except for [Option] and
-//! [Vec] types, which will be set respectively as [None] and `[]`.
+//! An error will be returned if at least one field is missing, except for [`Option`] and
+//! [`Vec`] types, which will be set respectively as [`None`] and `[]`.
 //!
 //! ```rust,no_run
 #![doc = include_str!("../examples/basic.rs")]
@@ -52,7 +52,7 @@
 //!
 //! ### Optional fields
 //!
-//! If a field is declared as an [Option] the value will default to [None] when the field is
+//! If a field is declared as an [`Option`] the value will default to [`None`] when the field is
 //! missing from the request body.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
@@ -105,7 +105,7 @@
 //! ### Default values
 //!
 //! If the `default` parameter in the `form_data` attribute is present the value will be populated
-//! using the type's [Default] implementation when the field is not supplied in the request.
+//! using the type's [`Default`] implementation when the field is not supplied in the request.
 //! ```rust
 //! use axum_typed_multipart::TryFromMultipart;
 //!
@@ -119,7 +119,7 @@
 //! ### Field metadata
 //!
 //! If you need access to the field metadata (e.g. the field headers like file name or content
-//! type) you can use the [FieldData] struct to wrap your field.
+//! type) you can use the [`FieldData`] struct to wrap your field.
 //! ```rust
 //! use axum::body::Bytes;
 //! use axum_typed_multipart::{FieldData, TryFromMultipart};
@@ -150,14 +150,14 @@
 //! ### Large uploads
 //!
 //! For large uploads you can save the contents of the field to the file system using
-//! [tempfile::NamedTempFile](tempfile_3::NamedTempFile). This will efficiently stream the field
+//! [`tempfile::NamedTempFile`](tempfile_3::NamedTempFile). This will efficiently stream the field
 //! data directly to the file system, without needing to fit all the data in memory. Once the
 //! upload is complete, you can then save the contents to a location of your choice. For more
-//! information check out the [NamedTempFile](tempfile_3::NamedTempFile) documentation.
+//! information check out the [`NamedTempFile`](tempfile_3::NamedTempFile) documentation.
 //!
 //! #### **Note**
 //! When handling large uploads you will need to increase the request body size limit using the
-//! [DefaultBodyLimit](axum::extract::DefaultBodyLimit) middleware.
+//! [`DefaultBodyLimit`](axum::extract::DefaultBodyLimit) middleware.
 //! ```rust,no_run
 #![doc = include_str!("../examples/upload.rs")]
 //! ```
@@ -165,10 +165,10 @@
 //! ### Lists
 //!
 //! If the incoming request will include multiple fields that share the same name (AKA lists) the
-//! field can be declared as a [Vec], allowing for all occurrences of the field to be stored.
+//! field can be declared as a [`Vec`], allowing for all occurrences of the field to be stored.
 //!
 //! #### **Warning**
-//! Field size limits for [Vec] fields are applied to **each** occurrence of the field. This means
+//! Field size limits for [`Vec`] fields are applied to **each** occurrence of the field. This means
 //! that if you have a 1GiB field limit and the field contains 5 entries, the total size of the
 //! request body will be 5GiB.
 //! ```rust
@@ -238,22 +238,22 @@
 //! ### Custom types
 //!
 //! If you would like to use a custom type for a field you need to implement the
-//! [TryFromField] trait for your type. This will allow the derive macro to
-//! generate the [TryFromMultipart] implementation automatically. Instead
+//! [`TryFromField`] trait for your type. This will allow the derive macro to
+//! generate the [`TryFromMultipart`] implementation automatically. Instead
 //! of implementing the trait directly, it is recommended to implement the
-//! [TryFromChunks] trait, which will automatically provide a [TryFromField]
+//! [`TryFromChunks`] trait, which will automatically provide a [`TryFromField`]
 //! implementation with proper size limit handling.
 //!
-//! To implement the [TryFromChunks] trait for external types you will need
+//! To implement the [`TryFromChunks`] trait for external types you will need
 //! to create a newtype wrapper and implement the trait for the wrapper.
 //!
 //! ### Custom error format
 //!
-//! When using [TypedMultipart] as an argument for your handlers, errors are
-//! serialized as strings. To customize the error format, use [BaseMultipart] instead.
+//! When using [`TypedMultipart`] as an argument for your handlers, errors are
+//! serialized as strings. To customize the error format, use [`BaseMultipart`] instead.
 //!
 //! To customize the error you will need to define a custom error type and implement
-//! [IntoResponse](axum::response::IntoResponse) and `From<TypedMultipartError>`.
+//! [`IntoResponse`](axum::response::IntoResponse) and `From<TypedMultipartError>`.
 //! ```rust,no_run
 #![doc = include_str!("../examples/custom_error.rs")]
 //! ```
@@ -261,7 +261,7 @@
 //! ### Injecting state into the parser
 //!
 //! Sometimes you may need to access application state during field parsing. This is supported
-//! through the [TryFromFieldWithState] trait.
+//! through the [`TryFromFieldWithState`] trait.
 //! ```rust,no_run
 #![doc = include_str!("../examples/state.rs")]
 //! ```
@@ -273,7 +273,7 @@
 //! for integration details.
 //!
 //! Note: File uploads in `utoipa` require `Vec<u8>` which differs from this crate's `Bytes` or
-//! [tempfile::NamedTempFile](tempfile_3::NamedTempFile). The example shows how to handle this.
+//! [`tempfile::NamedTempFile`](tempfile_3::NamedTempFile). The example shows how to handle this.
 //!
 //! ### Validation
 //!

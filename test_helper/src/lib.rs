@@ -1,7 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![cfg_attr(coverage_nightly, coverage(off))]
 
-//! Adapted from <https://github.com/tokio-rs/axum/blob/f84105ae8b078109987b089c47febc3b544e6b80/axum/src/test_helpers/test_client.rs>
+//! Adapted from <https://github.com/tokio-rs/axum/blob/f84105ae8b078109987b089c47febc3b544e6b80/axum/src/test_helpers/test_client.rs>.
 
 use axum::extract::Request;
 use axum::response::Response;
@@ -32,6 +32,9 @@ pub struct TestClient {
 }
 
 impl TestClient {
+    /// # Panics
+    ///
+    /// Panics if the service cannot be bound to a local port.
     pub fn new<S>(svc: S) -> Self
     where
         S: Service<Request, Response = Response, Error = Infallible> + Clone + Send + 'static,

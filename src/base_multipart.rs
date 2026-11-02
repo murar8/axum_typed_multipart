@@ -6,8 +6,8 @@ use std::ops::{Deref, DerefMut};
 
 /// Base extractor for multipart form data with custom error handling.
 ///
-/// Implements [FromRequest] when `T` implements [TryFromMultipart](crate::TryFromMultipart)
-/// and `R` implements [IntoResponse] and `From<TypedMultipartError>`.
+/// Implements [`FromRequest`] when `T` implements [`TryFromMultipart`](crate::TryFromMultipart)
+/// and `R` implements [`IntoResponse`] and `From<TypedMultipartError>`.
 ///
 /// ## Example
 ///
@@ -32,6 +32,7 @@ use std::ops::{Deref, DerefMut};
 /// }
 /// ```
 pub struct BaseMultipart<T, R> {
+    /// The parsed multipart form data.
     pub data: T,
     rejection: PhantomData<R>,
 }

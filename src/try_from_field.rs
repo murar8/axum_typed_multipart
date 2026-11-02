@@ -8,9 +8,9 @@ use std::mem;
 
 /// Types that can be created from a multipart field.
 ///
-/// Required for all fields in structs deriving [TryFromMultipart](crate::TryFromMultipart).
+/// Required for all fields in structs deriving [`TryFromMultipart`](crate::TryFromMultipart).
 ///
-/// **Note:** Prefer implementing [TryFromChunks] instead, which automatically provides
+/// **Note:** Prefer implementing [`TryFromChunks`] instead, which automatically provides
 /// this implementation with proper size limit handling.
 #[async_trait]
 pub trait TryFromField: Sized {
@@ -21,7 +21,7 @@ pub trait TryFromField: Sized {
     ) -> Result<Self, TypedMultipartError>;
 }
 
-/// Stateful variant of [TryFromField] that provides access to application state during parsing.
+/// Stateful variant of [`TryFromField`] that provides access to application state during parsing.
 ///
 /// ## Example
 ///

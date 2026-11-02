@@ -6,7 +6,7 @@ use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 use reqwest::multipart::Form;
 
 /// The fields are declared this way to make sure the derive macro supports all
-/// [Option] signatures.
+/// [`Option`] signatures.
 #[derive(TryFromMultipart)]
 struct Data {
     option_field: Option<String>,
