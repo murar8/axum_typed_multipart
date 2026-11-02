@@ -23,7 +23,7 @@ impl ToTokens for LimitBytes {
         tokens.extend(match self.0 {
             None => quote! { ::core::option::Option::None },
             Some(b) => {
-                let n = b.as_u64() as usize;
+                let n = proc_macro2::Literal::u64_unsuffixed(b.as_u64());
                 quote! { ::core::option::Option::Some(#n) }
             }
         });
