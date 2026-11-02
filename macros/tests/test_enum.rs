@@ -14,7 +14,7 @@ pub enum Interest {
     Programming,
 }
 
-#[derive(TryFromMultipart)]
+#[derive(Debug, TryFromMultipart)]
 pub struct Data {
     pub name: String,
     pub interests: Vec<Interest>,

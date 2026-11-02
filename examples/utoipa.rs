@@ -12,7 +12,7 @@ use utoipa_rapidoc::RapiDoc;
 #[openapi(paths(file_upload), components(schemas(FileUpload, Status)))]
 struct ApiDoc;
 
-#[derive(TryFromMultipart, ToSchema)]
+#[derive(Debug, TryFromMultipart, ToSchema)]
 pub struct FileUpload {
     /// User's name
     #[schema(example = "John Doe")]

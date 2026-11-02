@@ -25,6 +25,7 @@ where
     Ok(addr)
 }
 
+#[derive(Debug)]
 pub struct TestClient {
     client: reqwest::Client,
     addr: SocketAddr,

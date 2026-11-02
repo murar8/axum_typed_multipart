@@ -36,6 +36,15 @@ pub struct BaseMultipart<T, R> {
     rejection: PhantomData<R>,
 }
 
+impl<T: std::fmt::Debug, R> std::fmt::Debug for BaseMultipart<T, R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BaseMultipart")
+            .field("data", &self.data)
+            .field("rejection", &self.rejection)
+            .finish()
+    }
+}
+
 impl<T, R> Deref for BaseMultipart<T, R> {
     type Target = T;
 
@@ -98,6 +107,12 @@ mod tests {
             .send()
             .await
             .unwrap();
+    }
+
+    #[test]
+    fn test_debug() {
+        let tm = BaseMultipart { data: 1, rejection: PhantomData::<()> };
+        assert_eq!(format!("{tm:?}"), "BaseMultipart { data: 1, rejection: PhantomData<()> }");
     }
 
     #[test]
