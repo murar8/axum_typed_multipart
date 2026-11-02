@@ -1,6 +1,6 @@
+use axum::Router;
 use axum::http::StatusCode;
 use axum::routing::post;
-use axum::Router;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart, TypedMultipartError};
 
 /// A field that validates its value against application state.
@@ -36,13 +36,13 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
             // - Your type is public (part of your API), OR
             // - You use #[form_data(limit = "...")] on any field of this type
             // You MUST enforce the limit to prevent denial-of-service attacks from unbounded uploads.
-            if let Some(limit) = limit_bytes {
-                if value.len() + chunk.len() > limit {
-                    return Err(TypedMultipartError::FieldTooLarge {
-                        field_name: field.name().unwrap_or("unknown").to_string(),
-                        limit_bytes: limit,
-                    });
-                }
+            if let Some(limit) = limit_bytes
+                && value.len() + chunk.len() > limit
+            {
+                return Err(TypedMultipartError::FieldTooLarge {
+                    field_name: field.name().unwrap_or("unknown").to_string(),
+                    limit_bytes: limit,
+                });
             }
             value.push_str(std::str::from_utf8(&chunk).map_err(anyhow::Error::from)?);
         }

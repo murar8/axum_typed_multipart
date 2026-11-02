@@ -1,6 +1,6 @@
+use axum::Router;
 use axum::http::StatusCode;
 use axum::routing::post;
-use axum::Router;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 
 #[derive(TryFromMultipart)]

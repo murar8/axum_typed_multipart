@@ -73,10 +73,10 @@ impl IntoResponse for TypedMultipartError {
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
-    use axum::extract::{FromRequest, Multipart, Request};
-    use axum::http::{header, StatusCode};
-    use axum::routing::post;
     use axum::Router;
+    use axum::extract::{FromRequest, Multipart, Request};
+    use axum::http::{StatusCode, header};
+    use axum::routing::post;
     use axum_test_helper::TestClient;
 
     struct Data();

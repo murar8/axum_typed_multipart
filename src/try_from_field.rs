@@ -2,8 +2,8 @@ use crate::try_from_chunks::TryFromChunks;
 use crate::{FieldMetadata, TypedMultipartError};
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
-use futures_util::stream::StreamExt;
 use futures_util::TryStreamExt;
+use futures_util::stream::StreamExt;
 use std::mem;
 
 /// Types that can be created from a multipart field.
@@ -69,13 +69,13 @@ where
             if let Ok(chunk) = chunk.as_ref() {
                 size_bytes += chunk.len();
 
-                if let Some(limit_bytes) = limit_bytes {
-                    if size_bytes > limit_bytes {
-                        return Err(TypedMultipartError::FieldTooLarge {
-                            field_name: mem::take(&mut field_name),
-                            limit_bytes,
-                        });
-                    }
+                if let Some(limit_bytes) = limit_bytes
+                    && size_bytes > limit_bytes
+                {
+                    return Err(TypedMultipartError::FieldTooLarge {
+                        field_name: mem::take(&mut field_name),
+                        limit_bytes,
+                    });
                 }
             }
 
@@ -90,9 +90,9 @@ where
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
+    use axum::Router;
     use axum::extract::Multipart;
     use axum::routing::post;
-    use axum::Router;
     use axum_test_helper::TestClient;
     use futures_core::Stream;
     use reqwest::multipart::Form;
@@ -152,9 +152,9 @@ mod tests {
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests_with_state {
     use super::*;
+    use axum::Router;
     use axum::extract::Multipart;
     use axum::routing::post;
-    use axum::Router;
     use axum_test_helper::TestClient;
     use reqwest::multipart::Form;
 

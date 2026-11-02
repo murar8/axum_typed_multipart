@@ -56,8 +56,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::routing::post;
     use axum::Router;
+    use axum::routing::post;
     use axum_test_helper::TestClient;
     use reqwest::multipart::Form;
 
