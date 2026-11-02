@@ -63,19 +63,18 @@ where
     ) -> Result<Self, TypedMultipartError> {
         let metadata = FieldMetadata::from(&field);
         let mut field_name = metadata.name.clone().unwrap_or(String::new());
-        let mut size_bytes = 0;
+        let mut size_bytes = 0usize;
 
         let chunks = field.map_err(TypedMultipartError::from).map(|chunk| {
-            if let Ok(chunk) = chunk.as_ref() {
-                size_bytes += chunk.len();
-
-                if let Some(limit_bytes) = limit_bytes
-                    && size_bytes > limit_bytes
-                {
-                    return Err(TypedMultipartError::FieldTooLarge {
-                        field_name: mem::take(&mut field_name),
-                        limit_bytes,
-                    });
+            if let (Ok(chunk), Some(limit_bytes)) = (chunk.as_ref(), limit_bytes) {
+                match size_bytes.checked_add(chunk.len()) {
+                    Some(total) if total <= limit_bytes => size_bytes = total,
+                    _ => {
+                        return Err(TypedMultipartError::FieldTooLarge {
+                            field_name: mem::take(&mut field_name),
+                            limit_bytes,
+                        });
+                    }
                 }
             }
 
