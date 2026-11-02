@@ -50,7 +50,7 @@ async fn file_upload(
     TypedMultipart(FileUpload { name, file }): TypedMultipart<FileUpload>,
 ) -> Response {
     println!("User's name: {name}");
-    for f in file.into_iter() {
+    for f in file {
         println!("Filename: {:?}", f.metadata.file_name);
     }
     (StatusCode::OK, Json(Status { status: "ok".into(), error: None })).into_response()

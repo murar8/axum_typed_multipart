@@ -67,7 +67,7 @@ impl TryFromChunks for String {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
 
         String::from_utf8(bytes.into()).map_err(|err| TypedMultipartError::WrongFieldType {
@@ -84,7 +84,7 @@ impl TryFromChunks for bool {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let str = String::try_from_chunks(chunks, metadata).await?;
 
         util::str_to_bool(str).ok_or(TypedMultipartError::WrongFieldType {
@@ -105,7 +105,7 @@ macro_rules! gen_try_from_chunks_impl {
                 chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync+ Unpin,
                 metadata: FieldMetadata,
             ) -> Result<Self, TypedMultipartError> {
-                let field_name = get_field_name(&metadata.name);
+                let field_name = get_field_name(metadata.name.as_deref());
                 let text = String::try_from_chunks(chunks, metadata).await?;
 
                 str::parse(&text).map_err(|err| TypedMultipartError::WrongFieldType {
@@ -164,7 +164,7 @@ impl TryFromChunks for uuid_1::Uuid {
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         uuid_1::Uuid::try_parse_ascii(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
@@ -186,7 +186,7 @@ where
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
@@ -214,7 +214,7 @@ where
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
@@ -243,7 +243,7 @@ where
         chunks: impl Stream<Item = Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin,
         metadata: FieldMetadata,
     ) -> Result<Self, TypedMultipartError> {
-        let field_name = get_field_name(&metadata.name);
+        let field_name = get_field_name(metadata.name.as_deref());
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
@@ -261,9 +261,9 @@ where
     }
 }
 
-fn get_field_name(name: &Option<String>) -> String {
+fn get_field_name(name: Option<&str>) -> String {
     // Name should always be present, but handle the edge case.
-    name.clone().unwrap_or("<unknown>".into())
+    name.unwrap_or("<unknown>").to_string()
 }
 
 #[cfg(test)]

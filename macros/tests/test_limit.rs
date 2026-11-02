@@ -9,13 +9,13 @@ use reqwest::multipart::Form;
 #[allow(dead_code)]
 #[derive(TryFromMultipart)]
 struct Data {
-    default_unlimited_field: Option<Bytes>,
+    default_unlimited: Option<Bytes>,
 
     #[form_data(limit = "16KiB")]
-    limited_field: Option<Bytes>,
+    limited: Option<Bytes>,
 
     #[form_data(limit = "unlimited")]
-    unlimited_field: Option<Bytes>,
+    unlimited: Option<Bytes>,
 }
 
 #[tokio::test]
@@ -29,32 +29,32 @@ async fn test_limit() {
 
     let tests = [
         Test {
-            field: "default_unlimited_field",
+            field: "default_unlimited",
             size: 1000 * 1000 * 2, // 2MB (must be lower than the axum request limit)
             status: StatusCode::OK,
             error: None,
         },
         Test {
-            field: "limited_field",
+            field: "limited",
             size: 1024 * 16, // 16KiB
             status: StatusCode::OK,
             error: None,
         },
         Test {
-            field: "limited_field",
+            field: "limited",
             size: 1024 * 16 + 1, // 16.001KiB
             status: StatusCode::PAYLOAD_TOO_LARGE,
-            error: Some("field 'limited_field' is larger than 16384 bytes"),
+            error: Some("field 'limited' is larger than 16384 bytes"),
         },
         Test {
-            field: "unlimited_field",
+            field: "unlimited",
             size: 1000 * 1000 * 2, // 2MB (must be lower than the axum request limit)
             status: StatusCode::OK,
             error: None,
         },
     ];
 
-    for Test { field, size, status, error } in tests.into_iter() {
+    for Test { field, size, status, error } in tests {
         let res =
             TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async {})))
                 .post("/")

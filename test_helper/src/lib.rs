@@ -42,7 +42,7 @@ impl TestClient {
     {
         let addr = spawn_service(svc).expect("failed to spawn service");
         let client = reqwest::Client::default();
-        TestClient { addr, client }
+        TestClient { client, addr }
     }
 
     pub fn get(&self, url: &str) -> reqwest::RequestBuilder {
