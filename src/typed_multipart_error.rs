@@ -116,7 +116,7 @@ mod tests {
     use super::*;
     use axum::Router;
     use axum::extract::{FromRequest, Multipart, Request};
-    use axum::http::{StatusCode, header};
+    use axum::http::header;
     use axum::routing::post;
     use axum_test_helper::TestClient;
 

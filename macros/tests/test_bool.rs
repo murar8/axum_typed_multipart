@@ -17,7 +17,7 @@ async fn bool_true() {
     {
         let res = TestClient::new(Router::new().route(
             "/",
-            post(|TypedMultipart(data): TypedMultipart<Data>| async move {
+            post(async |TypedMultipart(data): TypedMultipart<Data>| {
                 assert!(data.bool_field);
             }),
         ))
@@ -37,7 +37,7 @@ async fn bool_false() {
     {
         let res = TestClient::new(Router::new().route(
             "/",
-            post(|TypedMultipart(data): TypedMultipart<Data>| async move {
+            post(async |TypedMultipart(data): TypedMultipart<Data>| {
                 assert!(!data.bool_field);
             }),
         ))
@@ -52,12 +52,11 @@ async fn bool_false() {
 
 #[tokio::test]
 async fn bool_invalid() {
-    let res =
-        TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async move {})))
-            .post("/")
-            .multipart(Form::new().text("bool_field", "invalid"))
-            .send()
-            .await
-            .unwrap();
+    let res = TestClient::new(Router::new().route("/", post(async |_: TypedMultipart<Data>| {})))
+        .post("/")
+        .multipart(Form::new().text("bool_field", "invalid"))
+        .send()
+        .await
+        .unwrap();
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 }

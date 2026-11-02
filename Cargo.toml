@@ -77,7 +77,26 @@ unwrap_used = "warn"
 verbose_file_reads = "warn"
 
 [workspace.lints.rust]
+ambiguous_negative_literals = "warn"
+closure_returning_async_block = "warn"
+deref_into_dyn_supertrait = "warn"
+explicit_outlives_requirements = "warn"
+impl_trait_redundant_captures = "warn"
+macro_use_extern_crate = "warn"
+meta_variable_misuse = "warn"
+missing_debug_implementations = "warn"
+non_ascii_idents = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+unnameable_types = "warn"
+unsafe_code = "forbid"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
 
 [workspace.dependencies]
 axum = { version = "0.8.1", default-features = false }

@@ -17,7 +17,7 @@ struct Data {
 
 #[tokio::test]
 async fn identifiers() {
-    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+    let handler = async |TypedMultipart(data): TypedMultipart<Data>| {
         assert_eq!(data.standard, "data");
         assert_eq!(data.r#raw, "bar");
         assert_eq!(data.renamed, "baz");
@@ -43,7 +43,7 @@ struct CamelCaseData {
 
 #[tokio::test]
 async fn rename_all() {
-    let handler = |TypedMultipart(data): TypedMultipart<CamelCaseData>| async move {
+    let handler = async |TypedMultipart(data): TypedMultipart<CamelCaseData>| {
         assert_eq!(data.my_field, "value");
     };
 

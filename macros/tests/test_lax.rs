@@ -12,7 +12,7 @@ struct Data {
 
 #[tokio::test]
 async fn field_order() {
-    let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
+    let handler = async |TypedMultipart(data): TypedMultipart<Data>| {
         assert_eq!(data.field, "baz");
     };
 

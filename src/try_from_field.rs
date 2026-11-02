@@ -116,7 +116,7 @@ mod tests {
         T: Into<Cow<'static, str>>,
         F: FnOnce(Result<Data, TypedMultipartError>) + Clone + Send + Sync + 'static,
     {
-        let handler = |mut multipart: Multipart| async move {
+        let handler = async |mut multipart: Multipart| {
             let field = multipart.next_field().await.unwrap().unwrap();
             let res = Data::try_from_field(field, Some(512)).await;
             validator(res);
@@ -176,7 +176,7 @@ mod tests_with_state {
 
     #[tokio::test]
     async fn try_from_field_with_state() {
-        let handler = |mut multipart: Multipart| async move {
+        let handler = async |mut multipart: Multipart| {
             let field = multipart.next_field().await.unwrap().unwrap();
             let state = State("Hello".to_owned());
             let res = DataWithState::try_from_field_with_state(field, Some(512), &state).await;

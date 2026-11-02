@@ -78,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn try_from_multipart_with_state() {
-        let handler = |mut multipart: Multipart| async move {
+        let handler = async |mut multipart: Multipart| {
             let res = Data::try_from_multipart_with_state(&mut multipart, &()).await;
             assert_eq!(res.unwrap().name, "Hello, world!");
         };

@@ -282,6 +282,7 @@
 //! [axum-valid docs](https://docs.rs/axum-valid/0.19.0/axum_valid/#-validatede-modifiede-validifiede-and-validifiedbyrefe)
 //! for examples.
 
+#![warn(missing_docs)]
 #![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 
 pub use anyhow;

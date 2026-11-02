@@ -82,7 +82,6 @@ mod tests {
     use crate::TryFromMultipart;
     use async_trait::async_trait;
     use axum::Router;
-    use axum::extract::Multipart;
     use axum::routing::post;
     use axum_test_helper::TestClient;
     use reqwest::multipart::Form;

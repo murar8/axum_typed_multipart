@@ -56,7 +56,7 @@ async fn limit() {
 
     for Test { field, size, status, error } in tests {
         let res =
-            TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async {})))
+            TestClient::new(Router::new().route("/", post(async |_: TypedMultipart<Data>| {})))
                 .post("/")
                 .multipart(Form::new().text(field, "x".repeat(size)))
                 .send()
