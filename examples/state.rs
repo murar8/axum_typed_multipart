@@ -37,7 +37,7 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
             // - You use #[form_data(limit = "...")] on any field of this type
             // You MUST enforce the limit to prevent denial-of-service attacks from unbounded uploads.
             if let Some(limit) = limit_bytes
-                && value.len() + chunk.len() > limit
+                && value.len().checked_add(chunk.len()).is_none_or(|total| total > limit)
             {
                 return Err(TypedMultipartError::FieldTooLarge {
                     field_name: field.name().unwrap_or("unknown").to_string(),
