@@ -63,7 +63,7 @@ where
 }
 
 #[tokio::test]
-async fn test_state_valid() {
+async fn state_valid() {
     async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
         assert_eq!(data.name.contents, "data");
         assert_eq!(data.items, vec!["bread", "cheese"]);
@@ -81,7 +81,7 @@ async fn test_state_valid() {
 }
 
 #[tokio::test]
-async fn test_state_invalid() {
+async fn state_invalid() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }

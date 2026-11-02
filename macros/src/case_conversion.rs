@@ -46,10 +46,10 @@ impl RenameCase {
     }
 }
 
-impl<'a> TryFrom<&'a str> for RenameCase {
+impl TryFrom<&str> for RenameCase {
     type Error = InvalidCase;
 
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "snake_case" => Ok(Self::Snake),
             "kebab-case" => Ok(Self::Kebab),
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_upper() {
+    fn convert_case_upper() {
         test_convert_case(
             RenameCase::Upper,
             "UPPERCASE",
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_snake() {
+    fn convert_case_snake() {
         test_convert_case(
             RenameCase::Snake,
             "snake_case",
@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_lower() {
+    fn convert_case_lower() {
         test_convert_case(
             RenameCase::Lower,
             "lowercase",
@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_kebab() {
+    fn convert_case_kebab() {
         test_convert_case(
             RenameCase::Kebab,
             "kebab-case",
@@ -110,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_pascal() {
+    fn convert_case_pascal() {
         test_convert_case(
             RenameCase::Pascal,
             "PascalCase",
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convert_case_camel() {
+    fn convert_case_camel() {
         test_convert_case(
             RenameCase::Camel,
             "camelCase",
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn test_try_from_valid() {
+    fn try_from_valid() {
         assert_eq!(RenameCase::try_from("snake_case").unwrap(), RenameCase::Snake);
         assert_eq!(RenameCase::try_from("kebab-case").unwrap(), RenameCase::Kebab);
         assert_eq!(RenameCase::try_from("camelCase").unwrap(), RenameCase::Camel);
@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn test_try_from_err() {
+    fn try_from_err() {
         let error = RenameCase::try_from("invalid_case").unwrap_err();
         assert!(matches!(error, InvalidCase));
         assert_eq!(error.to_string(), "invalid case conversion option");

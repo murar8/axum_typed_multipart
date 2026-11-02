@@ -46,7 +46,7 @@ impl FieldData {
             return field_name.clone();
         }
 
-        let ident = self.ident.as_ref().unwrap().to_string();
+        let ident = self.ident.as_ref().expect("supports(struct_named)").to_string();
         let field_in_struct = strip_leading_rawlit(&ident);
 
         if let Some(case_conversion) = rename_all {
@@ -58,20 +58,16 @@ impl FieldData {
 }
 
 /// Derive the `TryFromMultipart` trait for arbitrary named structs.
-#[expect(
-    clippy::too_many_lines,
-    reason = "linear codegen pipeline, splitting only moves code around"
-)]
 pub fn macro_impl(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
-    let InputData { ident, data, strict, rename_all, state } =
+    let InputData { ident: struct_ident, data, strict, rename_all, state } =
         match InputData::from_derive_input(&input) {
             Ok(input) => input,
             Err(err) => return err.write_errors().into(),
         };
 
-    let fields = data.take_struct().unwrap();
+    let fields = data.take_struct().expect("supports(struct_named)");
 
     let declarations = fields.iter().map(|FieldData { ident, ty, .. }| {
         if matches_vec_signature(ty) {
@@ -163,7 +159,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
 
     let output = quote! {
         #[::axum_typed_multipart::async_trait]
-        impl #generic ::axum_typed_multipart::TryFromMultipartWithState<#state> for #ident {
+        impl #generic ::axum_typed_multipart::TryFromMultipartWithState<#state> for #struct_ident {
             async fn try_from_multipart_with_state(multipart: &mut ::axum::extract::multipart::Multipart, state: &#state) -> ::core::result::Result<Self, ::axum_typed_multipart::TypedMultipartError> {
                 #(#declarations)*
 

@@ -14,7 +14,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_list() {
+async fn list() {
     let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
         assert_eq!(data.vec_field, vec!["Apple", "Orange"]);
         assert_eq!(data.std_vec_field, Vec::<String>::new());

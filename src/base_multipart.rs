@@ -97,7 +97,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_typed_multipart() {
+    async fn typed_multipart() {
         async fn handler(BaseMultipart { data, .. }: BaseMultipart<Data, TypedMultipartError>) {
             assert_eq!(data.0, "data");
         }
@@ -111,13 +111,13 @@ mod tests {
     }
 
     #[test]
-    fn test_debug() {
+    fn debug() {
         let tm = BaseMultipart { data: 1, rejection: PhantomData::<()> };
         assert_eq!(format!("{tm:?}"), "BaseMultipart { data: 1, rejection: PhantomData<()> }");
     }
 
     #[test]
-    fn test_deref() {
+    fn deref() {
         #[derive(Debug, Clone, Eq, PartialEq)]
         struct Data {
             v0: String,

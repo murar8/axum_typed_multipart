@@ -47,7 +47,7 @@
 //! [`Vec`] types, which will be set respectively as [`None`] and `[]`.
 //!
 //! ```rust,no_run
-#![doc = include_str!("../examples/basic.rs")]
+#![cfg_attr(doc, doc = include_str!("../examples/basic.rs"))]
 //! ```
 //!
 //! ### Optional fields
@@ -159,7 +159,7 @@
 //! When handling large uploads you will need to increase the request body size limit using the
 //! [`DefaultBodyLimit`](axum::extract::DefaultBodyLimit) middleware.
 //! ```rust,no_run
-#![doc = include_str!("../examples/upload.rs")]
+#![cfg_attr(doc, doc = include_str!("../examples/upload.rs"))]
 //! ```
 //!
 //! ### Lists
@@ -255,7 +255,7 @@
 //! To customize the error you will need to define a custom error type and implement
 //! [`IntoResponse`](axum::response::IntoResponse) and `From<TypedMultipartError>`.
 //! ```rust,no_run
-#![doc = include_str!("../examples/custom_error.rs")]
+#![cfg_attr(doc, doc = include_str!("../examples/custom_error.rs"))]
 //! ```
 //!
 //! ### Injecting state into the parser
@@ -263,7 +263,7 @@
 //! Sometimes you may need to access application state during field parsing. This is supported
 //! through the [`TryFromFieldWithState`] trait.
 //! ```rust,no_run
-#![doc = include_str!("../examples/state.rs")]
+#![cfg_attr(doc, doc = include_str!("../examples/state.rs"))]
 //! ```
 //!
 //! ### Usage with utoipa

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use axum::body::Bytes;
 use bytes::BytesMut;
 use futures_core::stream::Stream;
-use futures_util::stream::StreamExt;
+use futures_util::stream::StreamExt as _;
 use std::any::type_name;
 use std::str::FromStr;
 
@@ -72,7 +72,7 @@ impl TryFromChunks for String {
 
         String::from_utf8(bytes.into()).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
-            wanted_type: type_name::<String>().to_string(),
+            wanted_type: type_name::<String>().to_owned(),
             source: err.into(),
         })
     }
@@ -87,9 +87,9 @@ impl TryFromChunks for bool {
         let field_name = get_field_name(metadata.name.as_deref());
         let str = String::try_from_chunks(chunks, metadata).await?;
 
-        util::str_to_bool(str).ok_or(TypedMultipartError::WrongFieldType {
+        util::str_to_bool(&str).ok_or(TypedMultipartError::WrongFieldType {
             field_name,
-            wanted_type: type_name::<bool>().to_string(),
+            wanted_type: type_name::<bool>().to_owned(),
             source: anyhow::anyhow!("Invalid boolean value"),
         })
     }
@@ -168,7 +168,7 @@ impl TryFromChunks for uuid_1::Uuid {
         let bytes = Bytes::try_from_chunks(chunks, metadata).await?;
         uuid_1::Uuid::try_parse_ascii(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
             field_name,
-            wanted_type: type_name::<uuid_1::Uuid>().to_string(),
+            wanted_type: type_name::<uuid_1::Uuid>().to_owned(),
             source: err.into(),
         })
     }
@@ -191,13 +191,13 @@ where
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
                 field_name: field_name.clone(),
-                wanted_type: type_name::<chrono_0_4::DateTime<Tz>>().to_string(),
+                wanted_type: type_name::<chrono_0_4::DateTime<Tz>>().to_owned(),
                 source: err.into(),
             })?;
         chrono_0_4::DateTime::<Tz>::from_str(body_str).map_err(|err| {
             TypedMultipartError::WrongFieldType {
                 field_name,
-                wanted_type: type_name::<chrono_0_4::DateTime<Tz>>().to_string(),
+                wanted_type: type_name::<chrono_0_4::DateTime<Tz>>().to_owned(),
                 source: err.into(),
             }
         })
@@ -219,13 +219,13 @@ where
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
                 field_name: field_name.clone(),
-                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_string(),
+                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_owned(),
                 source: err.into(),
             })?;
         chrono_0_4::NaiveDate::from_str(body_str).map_err(|err| {
             TypedMultipartError::WrongFieldType {
                 field_name,
-                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_string(),
+                wanted_type: type_name::<chrono_0_4::NaiveDate>().to_owned(),
                 source: err.into(),
             }
         })
@@ -248,13 +248,13 @@ where
         let body_str =
             std::str::from_utf8(&bytes).map_err(|err| TypedMultipartError::WrongFieldType {
                 field_name: field_name.clone(),
-                wanted_type: type_name::<rust_decimal_1::Decimal>().to_string(),
+                wanted_type: type_name::<rust_decimal_1::Decimal>().to_owned(),
                 source: err.into(),
             })?;
         rust_decimal_1::Decimal::from_str(body_str).map_err(|err| {
             TypedMultipartError::WrongFieldType {
                 field_name,
-                wanted_type: type_name::<rust_decimal_1::Decimal>().to_string(),
+                wanted_type: type_name::<rust_decimal_1::Decimal>().to_owned(),
                 source: err.into(),
             }
         })
@@ -263,7 +263,7 @@ where
 
 fn get_field_name(name: Option<&str>) -> String {
     // Name should always be present, but handle the edge case.
-    name.unwrap_or("<unknown>").to_string()
+    name.unwrap_or("<unknown>").to_owned()
 }
 
 #[cfg(test)]
@@ -274,7 +274,7 @@ mod tests {
     use chrono_0_4::NaiveDate;
     use futures_util::stream;
     use std::fmt::Debug;
-    use std::io::Read;
+    use std::io::Read as _;
 
     fn create_chunks(
         value: impl Into<Bytes>,
@@ -309,115 +309,115 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_bytes() {
+    async fn try_from_chunks_bytes() {
         test_try_from_chunks_valid::<Bytes>("asd", "asd").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_string() {
+    async fn try_from_chunks_string() {
         test_try_from_chunks_valid::<String>("asd", "asd").await;
         test_try_from_chunks_invalid::<String>(Bytes::from(vec![0x80])).await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_i8() {
+    async fn try_from_chunks_i8() {
         test_try_from_chunks_valid::<i8>("-42", -42).await;
         test_try_from_chunks_invalid::<i8>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_i16() {
+    async fn try_from_chunks_i16() {
         test_try_from_chunks_valid::<i16>("-42", -42i16).await;
         test_try_from_chunks_invalid::<i16>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_i32() {
+    async fn try_from_chunks_i32() {
         test_try_from_chunks_valid::<i32>("-42", -42).await;
         test_try_from_chunks_invalid::<i32>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_i64() {
+    async fn try_from_chunks_i64() {
         test_try_from_chunks_valid::<i64>("-42", -42).await;
         test_try_from_chunks_invalid::<i64>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_i128() {
+    async fn try_from_chunks_i128() {
         test_try_from_chunks_valid::<i128>("-42", -42).await;
         test_try_from_chunks_invalid::<i128>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_isize() {
+    async fn try_from_chunks_isize() {
         test_try_from_chunks_valid::<isize>("-42", -42isize).await;
         test_try_from_chunks_invalid::<isize>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_u8() {
+    async fn try_from_chunks_u8() {
         test_try_from_chunks_valid::<u8>("42", 42).await;
         test_try_from_chunks_invalid::<u8>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_u16() {
+    async fn try_from_chunks_u16() {
         test_try_from_chunks_valid::<u16>("42", 42u16).await;
         test_try_from_chunks_invalid::<u16>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_u32() {
+    async fn try_from_chunks_u32() {
         test_try_from_chunks_valid::<u32>("42", 42u32).await;
         test_try_from_chunks_invalid::<u32>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_u64() {
+    async fn try_from_chunks_u64() {
         test_try_from_chunks_valid::<u64>("42", 42u64).await;
         test_try_from_chunks_invalid::<u64>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_u128() {
+    async fn try_from_chunks_u128() {
         test_try_from_chunks_valid::<u128>("42", 42u128).await;
         test_try_from_chunks_invalid::<u128>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_usize() {
+    async fn try_from_chunks_usize() {
         test_try_from_chunks_valid::<usize>("42", 42usize).await;
         test_try_from_chunks_invalid::<usize>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_f32() {
+    async fn try_from_chunks_f32() {
         test_try_from_chunks_valid::<f32>("42.0", 42.0f32).await;
         test_try_from_chunks_invalid::<f32>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_f64() {
+    async fn try_from_chunks_f64() {
         test_try_from_chunks_valid::<f64>("42.0", 42.0).await;
         test_try_from_chunks_invalid::<f64>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_bool() {
+    async fn try_from_chunks_bool() {
         test_try_from_chunks_valid::<bool>("true", true).await;
         test_try_from_chunks_valid::<bool>("false", false).await;
         test_try_from_chunks_invalid::<bool>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_char() {
+    async fn try_from_chunks_char() {
         test_try_from_chunks_valid::<char>("a", 'a').await;
         test_try_from_chunks_invalid::<char>("invalid").await;
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_uuid() {
+    async fn try_from_chunks_uuid() {
         let valid_input = "550e8400-e29b-41d4-a716-446655440000";
         let valid_output = uuid_1::Uuid::parse_str(valid_input).unwrap();
         test_try_from_chunks_valid::<uuid_1::Uuid>(valid_input, valid_output).await;
@@ -425,7 +425,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_chrono_datetime_fixed() {
+    async fn try_from_chunks_chrono_datetime_fixed() {
         type DateTime = chrono_0_4::DateTime<chrono_0_4::FixedOffset>;
         let valid_input = "2024-01-01T04:20:00Z";
         let valid_output = DateTime::parse_from_rfc3339(valid_input).unwrap();
@@ -434,7 +434,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_chrono_datetime_utc() {
+    async fn try_from_chunks_chrono_datetime_utc() {
         type DateTime = chrono_0_4::DateTime<chrono_0_4::Utc>;
         let valid_input = "2024-01-01T04:20:00Z";
         let valid_output = DateTime::from_str(valid_input).unwrap();
@@ -443,7 +443,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_rust_decimal() {
+    async fn try_from_chunks_rust_decimal() {
         let valid_input = "1.50";
         let valid_output = rust_decimal_1::Decimal::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<rust_decimal_1::Decimal>(valid_input, valid_output).await;
@@ -451,7 +451,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_chrono_native_date_fixed() {
+    async fn try_from_chunks_chrono_native_date_fixed() {
         let valid_input = "2024-01-01";
         let valid_output = NaiveDate::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<NaiveDate>(valid_input, valid_output).await;
@@ -459,7 +459,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_chunks_named_temp_file() {
+    async fn try_from_chunks_named_temp_file() {
         let chunks = create_chunks("Hello, dear world!");
         let metadata = FieldMetadata { name: Some("test".into()), ..Default::default() };
         let file = tempfile_3::NamedTempFile::try_from_chunks(chunks, metadata).await.unwrap();

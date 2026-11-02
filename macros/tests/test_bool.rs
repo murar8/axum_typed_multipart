@@ -11,7 +11,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_bool_true() {
+async fn bool_true() {
     for field in
         ["true", "True", "TRUE", "true", "1", "y", "Y", "yes", "Yes", "YES", "on", "On", "ON"]
     {
@@ -31,7 +31,7 @@ async fn test_bool_true() {
 }
 
 #[tokio::test]
-async fn test_bool_false() {
+async fn bool_false() {
     for field in
         ["false", "False", "FALSE", "false", "0", "n", "N", "no", "No", "NO", "off", "Off", "OFF"]
     {
@@ -51,7 +51,7 @@ async fn test_bool_false() {
 }
 
 #[tokio::test]
-async fn test_bool_invalid() {
+async fn bool_invalid() {
     let res =
         TestClient::new(Router::new().route("/", post(|_: TypedMultipart<Data>| async move {})))
             .post("/")

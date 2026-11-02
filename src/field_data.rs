@@ -105,7 +105,7 @@ mod tests {
     use reqwest::multipart::{Form, Part};
 
     #[tokio::test]
-    async fn test_field_data() {
+    async fn field_data() {
         let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
             let field_data =

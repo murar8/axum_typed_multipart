@@ -6,7 +6,7 @@
 //! will fail to compile.
 
 #![no_implicit_prelude]
-#![allow(dead_code)]
+#![expect(dead_code, reason = "compile-only fixtures")]
 
 // `#[async_trait]` (third-party) requires these in scope; our own macros
 // must not require anything beyond what they qualify themselves.

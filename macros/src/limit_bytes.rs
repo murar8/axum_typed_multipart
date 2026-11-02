@@ -36,21 +36,21 @@ impl ToTokens for LimitBytes {
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
-    use darling::FromMeta;
+    use darling::FromMeta as _;
 
     #[test]
-    fn test_valid_units() {
+    fn valid_units() {
         assert_eq!(LimitBytes::from_string("1MB").unwrap().0, Some(ByteUnit::Megabyte(1)));
         assert_eq!(LimitBytes::from_string("500KB").unwrap().0, Some(ByteUnit::Kilobyte(500)));
     }
 
     #[test]
-    fn test_unlimited() {
+    fn unlimited() {
         assert!(LimitBytes::from_string("unlimited").unwrap().0.is_none());
     }
 
     #[test]
-    fn test_invalid() {
+    fn invalid() {
         let err = LimitBytes::from_string("invalid").unwrap_err();
         assert!(err.to_string().contains("must be a valid byte unit"));
     }

@@ -77,7 +77,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_typed_multipart() {
+    async fn typed_multipart() {
         async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
             assert_eq!(data.0, "data");
         }
@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deref() {
+    fn deref() {
         #[derive(Debug, Clone, Eq, PartialEq)]
         struct Data {
             v0: String,
