@@ -1,6 +1,6 @@
 /// Converts a string literal representation of truth to true or false.
 ///
-/// Adapted from https://docs.rs/crate/clap_builder/4.5.40/source/src/util/str_to_bool.rs
+/// Adapted from <https://docs.rs/crate/clap_builder/4.5.40/source/src/util/str_to_bool.rs>.
 pub fn str_to_bool(val: impl AsRef<str>) -> Option<bool> {
     const TRUE_LITERALS: [&str; 6] = ["y", "yes", "t", "true", "on", "1"];
     const FALSE_LITERALS: [&str; 6] = ["n", "no", "f", "false", "off", "0"];

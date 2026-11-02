@@ -4,7 +4,7 @@ use axum::extract::Multipart;
 
 /// Types that can be created from multipart form data.
 ///
-/// Structs that implement this trait can be used with the [TypedMultipart](crate::TypedMultipart)
+/// Structs that implement this trait can be used with the [`TypedMultipart`](crate::TypedMultipart)
 /// extractor to parse multipart requests into strongly-typed data structures.
 ///
 /// ## Example
@@ -19,10 +19,11 @@ use axum::extract::Multipart;
 /// ```
 #[async_trait]
 pub trait TryFromMultipart: Sized {
+    /// Parses an instance from the multipart request body.
     async fn try_from_multipart(multipart: &mut Multipart) -> Result<Self, TypedMultipartError>;
 }
 
-/// Stateful variant of [TryFromMultipart] that provides access to application state during parsing.
+/// Stateful variant of [`TryFromMultipart`] that provides access to application state during parsing.
 ///
 /// This enables validation or transformation based on application-specific context.
 ///

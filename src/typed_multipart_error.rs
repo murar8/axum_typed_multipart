@@ -6,47 +6,87 @@ use axum::response::{IntoResponse, Response};
 #[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum TypedMultipartError {
+    /// The request cannot be extracted as multipart form data.
     #[error("request is malformed ({})", .source.body_text())]
     InvalidRequest {
         #[from]
+        /// The multipart extraction failure.
         source: MultipartRejection,
     },
 
+    /// Reading or parsing the multipart body failed.
     #[error("request body is malformed ({})", .source.body_text())]
     InvalidRequestBody {
         #[from]
+        /// The multipart body parsing failure.
         source: MultipartError,
     },
 
+    /// A required field was not supplied.
     #[error("field '{field_name}' is required")]
-    MissingField { field_name: String },
+    MissingField {
+        /// The required field name.
+        field_name: String,
+    },
 
+    /// A field could not be converted to its expected type.
     #[error("field '{field_name}' must be of type '{wanted_type}': {source}")]
-    WrongFieldType { field_name: String, wanted_type: String, source: anyhow::Error },
+    WrongFieldType {
+        /// The field that failed conversion.
+        field_name: String,
+        /// The expected type name.
+        wanted_type: String,
+        /// The underlying conversion failure.
+        source: anyhow::Error,
+    },
 
+    /// A non-repeated field was supplied more than once.
     #[error("field '{field_name}' is already present")]
-    DuplicateField { field_name: String },
+    DuplicateField {
+        /// The repeated field name.
+        field_name: String,
+    },
 
+    /// A field was rejected because it was not expected.
     #[error("field '{field_name}' is not expected")]
-    UnknownField { field_name: String },
+    UnknownField {
+        /// The unexpected field name.
+        field_name: String,
+    },
 
+    /// A field value did not match an accepted enum variant.
     #[error("'{value}' is not a valid value for field '{field_name}'")]
-    InvalidEnumValue { field_name: String, value: String },
+    InvalidEnumValue {
+        /// The field containing the invalid value.
+        field_name: String,
+        /// The rejected value.
+        value: String,
+    },
 
+    /// A multipart field had no name.
     #[error("field name is empty")]
     NamelessField,
 
+    /// A field exceeded its configured size limit.
     #[error("field '{field_name}' is larger than {limit_bytes} bytes")]
-    FieldTooLarge { field_name: String, limit_bytes: usize },
+    FieldTooLarge {
+        /// The oversized field name.
+        field_name: String,
+        /// The maximum permitted field size in bytes.
+        limit_bytes: usize,
+    },
 
+    /// An application-specific or otherwise unclassified parsing failure.
     #[error(transparent)]
     Other {
         #[from]
+        /// The underlying failure.
         source: anyhow::Error,
     },
 }
 
 impl TypedMultipartError {
+    /// Returns the HTTP status used when converting this error into a response.
     #[must_use]
     pub fn get_status(&self) -> StatusCode {
         match self {

@@ -7,11 +7,11 @@ use futures_util::stream::StreamExt;
 use std::any::type_name;
 use std::str::FromStr;
 
-/// Types that can be created from a [Stream] of [Bytes].
+/// Types that can be created from a [`Stream`] of [`Bytes`].
 ///
 /// All fields for a given struct must implement either this trait or the
-/// [TryFromField](crate::TryFromField) trait directly to be able to derive the
-/// [TryFromMultipart](crate::TryFromMultipart) trait.
+/// [`TryFromField`](crate::TryFromField) trait directly to be able to derive the
+/// [`TryFromMultipart`](crate::TryFromMultipart) trait.
 ///
 /// ## Example
 ///
@@ -35,7 +35,7 @@ use std::str::FromStr;
 /// ```
 #[async_trait]
 pub trait TryFromChunks: Sized {
-    /// Consume the input [Stream] of [Bytes] to create the supplied type.
+    /// Consume the input [`Stream`] of [`Bytes`] to create the supplied type.
     ///
     /// The `metadata` parameter contains information about the field.
     async fn try_from_chunks(
@@ -95,7 +95,7 @@ impl TryFromChunks for bool {
     }
 }
 
-/// Generate a [TryFromChunks] implementation for the supplied data type using
+/// Generate a [`TryFromChunks`] implementation for the supplied data type using
 /// the `str::parse` method on the textual representation of the field data.
 macro_rules! gen_try_from_chunks_impl {
     ( $type: ty ) => {

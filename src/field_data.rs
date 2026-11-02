@@ -8,7 +8,7 @@ use axum::http::HeaderMap;
 pub struct FieldMetadata {
     /// Name of the HTML field in the form.
     ///
-    /// If the [TryFromMultipart](crate::TryFromMultipart) implementation for
+    /// If the [`TryFromMultipart`](crate::TryFromMultipart) implementation for
     /// the struct where this field is used was generated using the derive macro
     /// it will make it safe to unwrap this value since the field name must
     /// always be present to allow for mapping it to a struct field.
@@ -56,7 +56,7 @@ impl From<&Field<'_>> for FieldMetadata {
 /// Useful for file uploads or any field where metadata (filename, content-type, headers)
 /// is needed alongside the actual content.
 ///
-/// Automatically implements [TryFromField](crate::TryFromField) when `T` implements it.
+/// Automatically implements [`TryFromField`](crate::TryFromField) when `T` implements it.
 ///
 /// ## Example
 ///
@@ -70,7 +70,9 @@ impl From<&Field<'_>> for FieldMetadata {
 /// ```
 #[derive(Debug)]
 pub struct FieldData<T> {
+    /// Headers and disposition information supplied with the field.
     pub metadata: FieldMetadata,
+    /// The parsed field contents.
     pub contents: T,
 }
 

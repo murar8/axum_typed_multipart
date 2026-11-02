@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 
 /// Extractor for type-safe multipart form data in Axum [Handlers](axum::handler::Handler).
 ///
-/// Implements [FromRequest] when `T` implements [TryFromMultipart](crate::TryFromMultipart).
+/// Implements [`FromRequest`] when `T` implements [`TryFromMultipart`](crate::TryFromMultipart).
 ///
 /// ## Example
 ///
