@@ -24,7 +24,7 @@ impl Error for InvalidCase {}
 
 impl darling::FromMeta for RenameCase {
     fn from_string(value: &str) -> darling::Result<Self> {
-        Self::try_from(value).map_err(|_| {
+        Self::try_from(value).map_err(|InvalidCase| {
             darling::Error::unknown_value_with_alts(
                 value,
                 &["snake_case", "camelCase", "PascalCase", "kebab-case", "UPPERCASE", "lowercase"],
