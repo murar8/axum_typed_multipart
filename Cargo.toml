@@ -11,6 +11,9 @@ license = "MIT"
 repository = "https://github.com/murar8/axum_typed_multipart"
 version = "0.0.0"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+
 [workspace.dependencies]
 axum = { version = "0.8.1", default-features = false }
 reqwest = "0.12.12"
@@ -36,8 +39,8 @@ rust_decimal_1 = ["dep:rust_decimal_1"]
 tempfile_3 = ["dep:tempfile_3", "dep:tokio"]
 uuid_1 = ["dep:uuid_1"]
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+[lints]
+workspace = true
 
 [dependencies]
 anyhow = "1.0.72"
