@@ -9,7 +9,7 @@ pub enum Sex {
     Female,
 }
 
-#[derive(TryFromMultipart)]
+#[derive(Debug, TryFromMultipart)]
 pub struct MultipartData {
     pub name: String,
     pub sex: Sex,
