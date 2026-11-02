@@ -19,9 +19,10 @@ pub fn app() -> Router {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or("0".into());
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
-    println!("Listening on http://{}", listener.local_addr().unwrap());
-    axum::serve(listener, app()).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    let addr = listener.local_addr()?;
+    println!("Listening on http://{addr}");
+    axum::serve(listener, app()).await
 }

@@ -30,7 +30,7 @@ pub trait TryFromMultipart: Sized {
 /// ## Example
 ///
 /// ```rust,no_run
-#[doc = include_str!("../examples/state.rs")]
+#[cfg_attr(doc, doc = include_str!("../examples/state.rs"))]
 /// ```
 #[async_trait]
 pub trait TryFromMultipartWithState<S>: Sized {
@@ -77,10 +77,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_multipart_with_state() {
+    async fn try_from_multipart_with_state() {
         let handler = |mut multipart: Multipart| async move {
             let res = Data::try_from_multipart_with_state(&mut multipart, &()).await;
-            assert!(res.is_ok());
             assert_eq!(res.unwrap().name, "Hello, world!");
         };
         TestClient::new(Router::new().route("/", post(handler)))

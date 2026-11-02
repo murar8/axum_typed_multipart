@@ -11,7 +11,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_field_order() {
+async fn field_order() {
     let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
         assert_eq!(data.field, "baz");
     };
@@ -38,7 +38,7 @@ async fn test_field_order() {
 }
 
 #[tokio::test]
-async fn test_missing_field() {
+async fn missing_field() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }

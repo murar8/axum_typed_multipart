@@ -6,7 +6,7 @@ use axum_test_helper::TestClient;
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
 use reqwest::multipart::Form;
 
-#[allow(dead_code)]
+#[expect(dead_code, reason = "fields never read")]
 #[derive(TryFromMultipart)]
 struct Data {
     default_unlimited: Option<Bytes>,
@@ -19,7 +19,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_limit() {
+async fn limit() {
     struct Test {
         field: &'static str,
         size: usize,

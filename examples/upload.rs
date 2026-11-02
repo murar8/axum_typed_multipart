@@ -20,7 +20,9 @@ struct UploadAssetRequest {
 async fn upload_asset(
     TypedMultipart(UploadAssetRequest { image, author }): TypedMultipart<UploadAssetRequest>,
 ) -> StatusCode {
-    let dir = tempfile_3::tempdir().unwrap();
+    let Ok(dir) = tempfile_3::tempdir() else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    };
     let file_name = image.metadata.file_name.unwrap_or(String::from("data.bin"));
     let path = dir.path().join(format!("{author}_{file_name}"));
 
@@ -38,9 +40,10 @@ pub fn app() -> Router {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or("0".into());
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
-    println!("Listening on http://{}", listener.local_addr().unwrap());
-    axum::serve(listener, app()).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    let addr = listener.local_addr()?;
+    println!("Listening on http://{addr}");
+    axum::serve(listener, app()).await
 }

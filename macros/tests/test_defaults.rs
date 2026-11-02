@@ -18,7 +18,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_defaults() {
+async fn defaults() {
     let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
         assert_eq!(data.field, "");
         assert_eq!(data.optional_field, Option::default());

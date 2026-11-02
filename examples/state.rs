@@ -40,7 +40,7 @@ impl axum_typed_multipart::TryFromFieldWithState<State> for ValidatedField {
                 && value.len().checked_add(chunk.len()).is_none_or(|total| total > limit)
             {
                 return Err(TypedMultipartError::FieldTooLarge {
-                    field_name: field.name().unwrap_or("unknown").to_string(),
+                    field_name: field.name().unwrap_or("unknown").to_owned(),
                     limit_bytes: limit,
                 });
             }
@@ -71,15 +71,15 @@ async fn update_user(TypedMultipart(data): TypedMultipart<UpdateUserRequest>) ->
 
 pub fn app() -> Router {
     let allowed_roles = ["admin", "editor", "viewer", "guest"];
-    let state =
-        State { allowed_values: allowed_roles.into_iter().map(ToString::to_string).collect() };
+    let state = State { allowed_values: allowed_roles.into_iter().map(str::to_owned).collect() };
     Router::new().route("/user/update", post(update_user)).with_state(state)
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT").unwrap_or("0".into());
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
-    println!("Listening on http://{}", listener.local_addr().unwrap());
-    axum::serve(listener, app()).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    let addr = listener.local_addr()?;
+    println!("Listening on http://{addr}");
+    axum::serve(listener, app()).await
 }

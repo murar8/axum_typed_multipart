@@ -21,7 +21,7 @@ pub struct Data {
 }
 
 #[tokio::test]
-async fn test_enum() {
+async fn enum_fields() {
     let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
         assert_eq!(data.name, "John");
         assert_eq!(data.interests[0], Interest::Jogging);

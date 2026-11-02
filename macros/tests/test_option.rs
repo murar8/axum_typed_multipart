@@ -15,7 +15,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_option() {
+async fn option() {
     let handler = |TypedMultipart(data): TypedMultipart<Data>| async move {
         assert_eq!(data.option, Some(String::from("John")));
         assert_eq!(data.std_option, None);

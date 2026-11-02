@@ -120,7 +120,7 @@ mod tests {
     use axum::routing::post;
     use axum_test_helper::TestClient;
 
-    struct Data();
+    struct Data;
 
     impl<S> FromRequest<S> for Data
     where
@@ -143,14 +143,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_invalid_request() {
+    async fn invalid_request() {
         let res = create_client().post("/").json(&"{}").send().await.unwrap();
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
         assert!(res.text().await.unwrap().contains("request is malformed"));
     }
 
     #[tokio::test]
-    async fn test_invalid_request_body() {
+    async fn invalid_request_body() {
         let res = create_client()
             .post("/")
             .header(header::CONTENT_TYPE.as_str(), "multipart/form-data; boundary=BOUNDARY")
@@ -164,17 +164,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_missing_field() {
-        let field_name = "data".to_string();
+    async fn missing_field() {
+        let field_name = "data".to_owned();
         let error = TypedMultipartError::MissingField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field 'data' is required");
     }
 
     #[tokio::test]
-    async fn test_wrong_field_type() {
-        let field_name = "data".to_string();
-        let wanted_type = "bar".to_string();
+    async fn wrong_field_type() {
+        let field_name = "data".to_owned();
+        let wanted_type = "bar".to_owned();
         let source = anyhow::anyhow!("invalid type");
         let error = TypedMultipartError::WrongFieldType { field_name, wanted_type, source };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
@@ -182,40 +182,40 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_duplicate_field() {
-        let field_name = "data".to_string();
+    async fn duplicate_field() {
+        let field_name = "data".to_owned();
         let error = TypedMultipartError::DuplicateField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field 'data' is already present");
     }
 
     #[tokio::test]
-    async fn test_unknown_field() {
-        let field_name = "data".to_string();
+    async fn unknown_field() {
+        let field_name = "data".to_owned();
         let error = TypedMultipartError::UnknownField { field_name };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field 'data' is not expected");
     }
 
     #[tokio::test]
-    async fn test_invalid_enum_value() {
-        let field_name = "status".to_string();
-        let value = "invalid".to_string();
+    async fn invalid_enum_value() {
+        let field_name = "status".to_owned();
+        let value = "invalid".to_owned();
         let error = TypedMultipartError::InvalidEnumValue { field_name, value };
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "'invalid' is not a valid value for field 'status'");
     }
 
     #[tokio::test]
-    async fn test_nameless_field() {
+    async fn nameless_field() {
         let error = TypedMultipartError::NamelessField;
         assert_eq!(error.get_status(), StatusCode::BAD_REQUEST);
         assert_eq!(error.to_string(), "field name is empty");
     }
 
     #[tokio::test]
-    async fn test_field_too_large() {
-        let field_name = "data".to_string();
+    async fn field_too_large() {
+        let field_name = "data".to_owned();
         let limit_bytes = 42;
         let error = TypedMultipartError::FieldTooLarge { field_name, limit_bytes };
         assert_eq!(error.get_status(), StatusCode::PAYLOAD_TOO_LARGE);
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_other() {
+    async fn other() {
         let source = anyhow::anyhow!("data");
         let error = TypedMultipartError::Other { source };
         assert_eq!(error.get_status(), StatusCode::INTERNAL_SERVER_ERROR);

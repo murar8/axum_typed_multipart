@@ -49,7 +49,7 @@ pub fn macro_impl(input: TokenStream) -> TokenStream {
             Ok(input) => input,
             Err(err) => return err.write_errors().into(),
         };
-    let fields = data.take_enum().unwrap();
+    let fields = data.take_enum().expect("supports(enum_unit)");
 
     let match_arms = fields.iter().map(|f| {
         let name = f.name(rename_all);

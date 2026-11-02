@@ -15,7 +15,7 @@ struct Data {
 }
 
 #[tokio::test]
-async fn test_strict() {
+async fn strict() {
     async fn handler(TypedMultipart(data): TypedMultipart<Data>) {
         assert_eq!(data.name, "data");
         assert_eq!(data.items, vec!["bread", "cheese"]);
@@ -38,7 +38,7 @@ async fn test_strict() {
 }
 
 #[tokio::test]
-async fn test_strict_unknown_field() {
+async fn strict_unknown_field() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }
@@ -55,7 +55,7 @@ async fn test_strict_unknown_field() {
 }
 
 #[tokio::test]
-async fn test_strict_duplicate_field() {
+async fn strict_duplicate_field() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }
@@ -72,7 +72,7 @@ async fn test_strict_duplicate_field() {
 }
 
 #[tokio::test]
-async fn test_strict_missing_field_name() {
+async fn strict_missing_field_name() {
     async fn handler(_: TypedMultipart<Data>) {
         panic!("should not be called");
     }

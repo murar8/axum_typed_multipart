@@ -2,8 +2,8 @@ use crate::try_from_chunks::TryFromChunks;
 use crate::{FieldMetadata, TypedMultipartError};
 use async_trait::async_trait;
 use axum::extract::multipart::Field;
-use futures_util::TryStreamExt;
-use futures_util::stream::StreamExt;
+use futures_util::TryStreamExt as _;
+use futures_util::stream::StreamExt as _;
 use std::mem;
 
 /// Types that can be created from a multipart field.
@@ -26,7 +26,7 @@ pub trait TryFromField: Sized {
 /// ## Example
 ///
 /// ```rust,no_run
-#[doc = include_str!("../examples/state.rs")]
+#[cfg_attr(doc, doc = include_str!("../examples/state.rs"))]
 /// ```
 #[async_trait]
 pub trait TryFromFieldWithState<S>: Sized {
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_field_valid() {
+    async fn try_from_field_valid() {
         let validator = |res: Result<Data, TypedMultipartError>| {
             assert_eq!(res.unwrap().0, "Hello, world!");
         };
@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_try_from_too_large() {
+    async fn try_from_too_large() {
         let validator = |res: Result<Data, TypedMultipartError>| {
             assert!(matches!(res, Err(TypedMultipartError::FieldTooLarge { .. })));
         };
@@ -175,10 +175,10 @@ mod tests_with_state {
     }
 
     #[tokio::test]
-    async fn test_try_from_field_with_state() {
+    async fn try_from_field_with_state() {
         let handler = |mut multipart: Multipart| async move {
             let field = multipart.next_field().await.unwrap().unwrap();
-            let state = State("Hello".to_string());
+            let state = State("Hello".to_owned());
             let res = DataWithState::try_from_field_with_state(field, Some(512), &state).await;
             assert_eq!(res.unwrap().0, "Hello, world!");
         };
