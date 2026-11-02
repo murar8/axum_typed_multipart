@@ -17,6 +17,7 @@ repos:
           - id: check-symlinks # Checks for symlinks which do not point to anything.
           - id: check-vcs-permalinks # Ensures that links to vcs websites are permalinks.
           - id: destroyed-symlinks # Detects symlinks which are changed to regular files with a content of a path which that symlink was pointing to.
+          - id: detect-private-key # Prevents private keys from being committed.
 
     - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
       rev: v9.27.0
@@ -31,7 +32,7 @@ repos:
           - id: actionlint
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.49.1
+      rev: v0.50.0
       hooks:
           - id: markdownlint
 
@@ -58,15 +59,15 @@ repos:
             name: cargo-fmt
             language: system
             types: [rust]
+            pass_filenames: false
             entry: cargo fmt
             args:
                 - --all
-                - --
 
           - id: cargo-clippy
             name: cargo-clippy
             language: system
-            types: [rust]
+            files: '(\.rs$|(^|/)Cargo\.(toml|lock)$|(^|/)\.?clippy\.toml$)'
             pass_filenames: false
             entry: cargo clippy
             args:
@@ -80,7 +81,7 @@ repos:
           - id: cargo-doc
             name: cargo-doc
             language: system
-            types: [rust]
+            files: '(\.rs$|(^|/)Cargo\.(toml|lock)$)'
             pass_filenames: false
             entry: cargo doc
             args:
