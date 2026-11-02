@@ -106,7 +106,7 @@ mod tests {
 
     #[tokio::test]
     async fn field_data() {
-        let handler = |mut multipart: Multipart| async move {
+        let handler = async |mut multipart: Multipart| {
             let field = multipart.next_field().await.unwrap().unwrap();
             let field_data =
                 <FieldData<String> as TryFromFieldWithState<_>>::try_from_field_with_state(

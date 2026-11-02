@@ -270,7 +270,6 @@ fn get_field_name(name: Option<&str>) -> String {
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
-    use bytes::Bytes;
     use chrono_0_4::NaiveDate;
     use futures_util::stream;
     use std::fmt::Debug;
