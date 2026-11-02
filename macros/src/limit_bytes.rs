@@ -1,4 +1,4 @@
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use ubyte::ByteUnit;
 
 /// Parsed byte limit from attribute (e.g., `limit = "1MB"` or `limit = "unlimited"`).

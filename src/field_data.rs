@@ -95,10 +95,10 @@ where
 #[cfg_attr(all(coverage_nightly, test), coverage(off))]
 mod tests {
     use super::*;
+    use axum::Router;
     use axum::extract::Multipart;
     use axum::http::StatusCode;
     use axum::routing::post;
-    use axum::Router;
     use axum_test_helper::TestClient;
     use reqwest::multipart::{Form, Part};
 
