@@ -1,4 +1,4 @@
-error: must be a valid byte unit (e.g., "1MB", "500KB")
+error: must be a valid byte unit (e.g., "1MB", "500KB"): unexpected character 'n' at index `1`
  --> tests/ui/multipart_invalid_limit.rs:5:25
   |
 5 |     #[form_data(limit = "invalid")]

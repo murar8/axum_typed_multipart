@@ -11,8 +11,10 @@ impl darling::FromMeta for LimitBytes {
         if value == "unlimited" {
             Ok(Self(None))
         } else {
-            value.parse::<ByteUnit>().map(|b| Self(Some(b))).map_err(|_| {
-                darling::Error::custom("must be a valid byte unit (e.g., \"1MB\", \"500KB\")")
+            value.parse::<ByteUnit>().map(|b| Self(Some(b))).map_err(|err| {
+                darling::Error::custom(format!(
+                    "must be a valid byte unit (e.g., \"1MB\", \"500KB\"): {err}"
+                ))
             })
         }
     }
