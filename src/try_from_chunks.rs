@@ -447,6 +447,7 @@ mod tests {
         let valid_output = rust_decimal_1::Decimal::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<rust_decimal_1::Decimal>(valid_input, valid_output).await;
         test_try_from_chunks_invalid::<rust_decimal_1::Decimal>("invalid").await;
+        test_try_from_chunks_invalid::<rust_decimal_1::Decimal>(Bytes::from_static(&[0x80])).await;
     }
 
     #[tokio::test]
@@ -455,6 +456,7 @@ mod tests {
         let valid_output = NaiveDate::from_str(valid_input).unwrap();
         test_try_from_chunks_valid::<NaiveDate>(valid_input, valid_output).await;
         test_try_from_chunks_invalid::<NaiveDate>("invalid").await;
+        test_try_from_chunks_invalid::<NaiveDate>(Bytes::from_static(&[0x80])).await;
     }
 
     #[tokio::test]
