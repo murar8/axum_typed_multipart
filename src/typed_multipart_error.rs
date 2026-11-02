@@ -47,6 +47,7 @@ pub enum TypedMultipartError {
 }
 
 impl TypedMultipartError {
+    #[must_use]
     pub fn get_status(&self) -> StatusCode {
         match self {
             | Self::MissingField { .. }
